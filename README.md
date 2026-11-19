@@ -361,6 +361,13 @@ attributions).
   in the noise. The number did not move because one kind of error replaced another, and only the
   placement shows that.
 
+The noisy two seconds on their own, with the clean recording above the degraded one:
+
+<p align="center">
+  <img src="figures/controlled_noise_wer_zoom__2094-142345-0024.png" width="860" alt="The window from 0.4 to 2.9 s: the clean and the degraded spectrogram, then for each model its clean and degraded words placed where their erasure evidence ranks first">
+  <br><sub>Under the noise the harmonics of "my iron's twite" are gone and so are the words. "told" survives in both Whisper models because its evidence sits at 2.45 to 2.65 s, where the noise ends and the last syllable comes through; moonshine hears "cold" on the same patch.</sub>
+</p>
+
 <details>
 <summary><b>Stats for nerds</b> (the clean-to-degraded change per model)</summary>
 
