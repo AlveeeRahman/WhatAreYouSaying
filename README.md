@@ -36,6 +36,10 @@ what is wrong with a recording and where, every 20 ms. The speech models are Whi
 re-executable research [[5]](#ref-5) [[6]](#ref-6), drawn in [Reproducibility](#reproducibility).
 MIT licence. Changes are in [CHANGELOG.md](CHANGELOG.md).
 
+**Help build WAYS.** It is looking for contributors: a CI workflow, a live vLLM or llama.cpp run, a
+larger model, other languages and new tools. The open work is in [docs/help-wanted.md](docs/help-wanted.md),
+and [CONTRIBUTING.md](CONTRIBUTING.md) covers setup and tests.
+
 **Contents:** [What it answers](#what-it-answers) · [How it works](#how-it-works) · [What I verified](#what-i-verified) · [100 VoxCeleb clips](#100-voxceleb-clips-three-models) · [Detector backbones](#does-the-detectors-backbone-matter) · [Controlled damage](#controlled-damage-on-librispeech) · [One ambiguous clip](#one-ambiguous-clip-read-in-depth) · [Noise on and off](#real-noise-that-comes-and-goes-voicebank-demand) · [Latent space](#noise-in-the-latent-space) · [Install and use](#install-and-use) · [The tool framework](#the-tool-framework-sound-token-aud-cam-and-cross-check) · [The figure](#the-figure-plug-and-play) · [Backends](#backends-local-weights-vllm-llamacpp) · [Reproducibility](#reproducibility) · [Limitations](#limitations-and-future-work) · [Status](#status) · [References](#references) · [Layout](#repository-layout) · [Credits and licence](#credits-and-licence)
 
 <details>
@@ -882,7 +886,8 @@ commands a workflow would run are `make test` and `make lint`.
   gradient view and the ambiguous-clip experiment, tests, the three datasets through three models,
   the detector-backbone check, clean-environment run, provenance.
 * Next: a CI workflow once Actions minutes are available (the test command is fixed), a live vLLM
-  transcription run, a larger model on the same clips.
+  transcription run, a larger model on the same clips. Each is open to contributors in
+  [docs/help-wanted.md](docs/help-wanted.md).
 
 ## References
 

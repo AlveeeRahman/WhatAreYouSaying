@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- **docs/help-wanted.md**: the open work for contributors (CI workflow, a live vLLM or llama.cpp run, a
+  larger model, other languages, new tools, reproduction reports), linked from the README.
+
 ## 0.3.0
 
 - **cross-check**, a third registered tool: one model, one clip, one transcript, and for every token the
