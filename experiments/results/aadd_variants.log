@@ -1,5 +1,5 @@
-Failed to load <site-packages>/torchao/_C_cutlass_90a.abi3.so: Could not load this library: <site-packages>/torchao/_C_cutlass_90a.abi3.so
-Failed to load <site-packages>/torchao/_C_mxfp8.cpython-310-x86_64-linux-gnu.so: Could not load this library: <site-packages>/torchao/_C_mxfp8.cpython-310-x86_64-linux-gnu.so
+Failed to load <venv>/lib/python3.12/site-packages/torchao/_C_cutlass_90a.abi3.so: Could not load this library: <venv>/lib/python3.12/site-packages/torchao/_C_cutlass_90a.abi3.so
+Failed to load <venv>/lib/python3.12/site-packages/torchao/_C_mxfp8.cpython-310-x86_64-linux-gnu.so: Could not load this library: <venv>/lib/python3.12/site-packages/torchao/_C_mxfp8.cpython-310-x86_64-linux-gnu.so
 v3 {'classes': ['noise', 'music', 'reverb', 'clipping', 'lowpass', 'highpass', 'codec', 'packet_loss', 'hum', 'clicks', 'pitch_shift', 'time_stretch'], 'resolution_s': 0.02, 'checkpoint': 'v3', 'n_params': 88625177, 'seconds': 1.5}
 downloading https://huggingface.co/gertelrina/aadd/resolve/main/aadd_v3_1_lite_crnn_frames.pt -> ~/.cache/aadd/aadd_v3_1_lite_crnn_frames.pt
 v3-lite {'classes': ['noise', 'music', 'reverb', 'clipping', 'lowpass', 'highpass', 'codec', 'packet_loss', 'hum', 'clicks', 'pitch_shift', 'time_stretch'], 'resolution_s': 0.02, 'checkpoint': 'v3-lite', 'n_params': 1347916, 'seconds': 0.6}

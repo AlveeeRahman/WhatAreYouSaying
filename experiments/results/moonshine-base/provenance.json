@@ -16,8 +16,8 @@
  },
  "input_paths": {
   "sample100.csv": "experiments/sample100.csv",
-  "gold_tsv": "$WAYS_DATA/transcripts.tsv",
-  "aadd_seg20ms_csv": "$WAYS_DATA/aadd_frames_20ms.csv"
+  "gold_tsv": "<data>/transcripts.tsv",
+  "aadd_seg20ms_csv": "<data>/aadd_frames_20ms.csv"
  },
  "models": {
   "UsefulSensors/moonshine-base": "7a73d8d55ac0ba2ef3ae761593f6784b51f96dcf"

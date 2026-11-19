@@ -13,7 +13,7 @@ import numpy as np
 import pandas as pd
 
 from common import pipeline_repo
-from ways.provenance import sha256
+from ways.provenance import public_path, sha256
 
 SEED = 8001
 N = 100
@@ -31,7 +31,7 @@ idx = np.sort(rng.choice(len(test), N, replace=False))
 s = test.iloc[idx].reset_index(drop=True)
 s.to_csv(HERE / "sample100.csv", index=False)
 prov = dict(rule=f"numpy.random.default_rng({SEED}).choice(len(test), {N}, replace=False), rows sorted by position",
-            seed=SEED, n=N, test_csv=str(PE / "test.csv"), test_csv_sha256=sha256(PE / "test.csv"),
+            seed=SEED, n=N, test_csv=public_path(PE / "test.csv"), test_csv_sha256=sha256(PE / "test.csv"),
             test_rows=int(len(test)), development_rows=int(len(dev)), heldout_rows=int(len(load)),
             heldout_audio_read=False, sample_sha256=sha256(HERE / "sample100.csv"),
             labels=s.label.value_counts().to_dict(), total_duration_s=float(s.duration.sum()),

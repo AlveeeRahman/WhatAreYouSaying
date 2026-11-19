@@ -6,7 +6,7 @@
 # dependency set it observed next to the claimed one.
 set -euo pipefail
 cd "$(dirname "$0")/.."
-exec > >(tee provenance/clean_env_run.log) 2>&1
+exec > >(sed -u "s|$PWD/||g; s|$HOME|~|g" | tee provenance/clean_env_run.log) 2>&1   # no absolute paths or user name in the public log
 VENV=${VENV:-$(mktemp -d)/ways-clean-venv}
 PYTHON=${PYTHON:-python3}
 echo "clean venv at $VENV, $($PYTHON --version)"

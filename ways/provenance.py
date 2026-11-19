@@ -76,6 +76,19 @@ def hf_snapshot(model_id: str) -> str | None:
     return None
 
 
+def public_path(p) -> str:
+    """A path as it may appear in a public file: relative to this repository when inside it, `<pipeline>/...`
+    inside the sibling pipeline checkout, `~/...` elsewhere under the home directory. Never the user name."""
+    p = Path(p).expanduser().resolve()
+    repo = Path(__file__).resolve().parents[1]
+    for root, tag in ((repo, ""), (repo.parent / "pipeline", "<pipeline>/"), (Path.home(), "~/")):
+        try:
+            return tag + p.relative_to(root).as_posix()
+        except ValueError:
+            continue
+    return p.as_posix()
+
+
 def manifest(inputs: dict[str, str] | None = None, seeds: dict | None = None,
              models: list[str] | dict[str, str | None] | None = None, extra: dict | None = None) -> dict:
     """`models` is a list of Hub ids (the newest cached snapshot is recorded) or {id: pinned revision}."""
@@ -91,7 +104,7 @@ def manifest(inputs: dict[str, str] | None = None, seeds: dict | None = None,
         gpu=torch.cuda.get_device_name(0) if torch.cuda.is_available() else None,
         seeds=seeds or {},
         inputs={k: sha256(v) for k, v in (inputs or {}).items()},
-        input_paths=dict(inputs or {}),
+        input_paths={k: public_path(v) for k, v in (inputs or {}).items()},
         models={mid: rev or hf_snapshot(mid) for mid, rev in models.items()},
         claimed_dependencies=claimed_dependencies(),
         runtime_dependencies=runtime_dependencies(),
