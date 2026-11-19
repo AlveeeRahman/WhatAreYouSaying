@@ -107,7 +107,7 @@ for i, m in enumerate(ASR):
     ax.bar(x + (i - 1) * w, v, width=w, color=CAT[i], label=m, yerr=e, capsize=3, error_kw=dict(ecolor=TXT2, lw=1))
 ax.axhline(1, color=TXT2, lw=1, ls="--"); ax.set_xticks(x); ax.set_xticklabels([n.replace(" (", "\n(") for n in names])
 ax.set_ylabel("evidence on flagged audio / share flagged"); ax.legend(frameon=False, title="speech-to-text model", title_fontsize=11)
-_label(ax, "(b) Noise-focus ratio on the 100 VoxCeleb clips, with 95 % intervals")
+_label(ax, "(b) Noise-focus ratio, 100 VoxCeleb clips (95 % intervals)")
 for a_ in axes:
     for s in a_.spines.values():
         s.set_color(BORDER)
