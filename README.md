@@ -33,7 +33,7 @@ the pipeline repository,
 rewritten so that it does not depend on that pipeline and so that the same erasure operator serves
 every model.
 
-**Contents:** [What it answers](#what-it-answers) · [How it works](#how-it-works) · [What I verified](#what-i-verified) · [Results on 100 random test clips](#results-on-100-random-test-clips) · [Does the detector matter](#does-the-detector-matter) · [Controlled degradation](#controlled-degradation-on-librispeech) · [Install and use](#install-and-use) · [Backends](#backends-local-weights-vllm-llamacpp) · [Reproducibility](#reproducibility) · [Limitations and future work](#limitations-and-future-work) · [Status](#status) · [References](#references) · [Repository layout](#repository-layout) · [Credits and licence](#credits-and-licence)
+**Contents:** [What it answers](#what-it-answers) · [How it works](#how-it-works) · [What I verified](#what-i-verified) · [Results on 100 random test clips](#results-on-100-random-test-clips) · [Does the detector's backbone matter](#does-the-detectors-backbone-matter) · [Controlled degradation](#controlled-degradation-on-librispeech) · [Install and use](#install-and-use) · [Backends](#backends-local-weights-vllm-llamacpp) · [Reproducibility](#reproducibility) · [Limitations and future work](#limitations-and-future-work) · [Status](#status) · [References](#references) · [Repository layout](#repository-layout) · [Credits and licence](#credits-and-licence)
 
 <details><summary>Stats for nerds</summary>
 
@@ -45,7 +45,7 @@ every model.
 | cost | one teacher-forced forward pass per patch, batched 64 at a time; 4.3 s per clip for moonshine-base, about 15 s for whisper-base on an RTX 4000 Ada (20 GB) |
 | sample | 100 clips, simple random sample with seed 8001 from the saved 1 500-clip test slice (sha256 `dfb0451d…`), total 862 s of audio |
 | controlled set | 60 LibriSpeech test-clean utterances, one 2 s degradation each from AADD's synthesiser, clean and degraded twins, three models |
-| detectors | AADD v3.1 (Whisper-small backbone, 88.6 M parameters, 20 ms), v3-lite (CRNN, 1.3 M, 20 ms), v2 (EfficientNet-B0, 4.0 M, 1 s) |
+| detectors | AADD v3.1 (whisper-small backbone, 88.6 M parameters); AADD's head trained here on whisper-base and on moonshine-base encoders (21 M each, LibriSpeech dev-clean); plus AADD v3-lite (CRNN, 1.3 M) and v2 (EfficientNet-B0, 4.0 M) |
 | tests | 12 CPU checks of the operator and the formulas, 2 end-to-end HTTP checks against a mock OpenAI-compatible server |
 
 </details>
@@ -245,25 +245,57 @@ What this says, in order of how sure I am:
   <br><sub>A degraded clip (AADD flags every frame as noise). All three models get it with one error; the boxes still sit on the voiced harmonics, not on the noise floor.</sub>
 </p>
 
-## Does the detector matter
+## Does the detector's backbone matter
 
-AADD v3.1 has a Whisper-small encoder inside it. If the noise-focus result depended on that, a
-Whisper model being attributed and the detector judging its audio would share a backbone. So the
-same question was asked with three detectors that share nothing but the task: v3.1 (Whisper-small,
-88.6 M parameters, 20 ms frames, 12 classes), v3-lite (a 1.3 M-parameter CRNN distilled from v3.1,
-same grid) and v2 (EfficientNet-B0 on log-mel, 4.0 M parameters, 1 s segments, 7 synthetic classes).
-Each was run on the same 100 waveforms through the AADD Python API; the v3.1 run reproduces the
-pipeline's CLI scan to 5e-5. The attribution maps are the same; only the flag changes.
+AADD v3.1 has a whisper-small encoder inside it, so when it judges the audio that a Whisper model is
+being explained on, the detector and the model share a family. To check that the noise-focus
+result does not hang on that, I trained two more detectors with AADD's own recipe and head
+(`experiments/train_detectors.py`): one on the whisper-base encoder, which AADD's code already
+supports, and one on the Moonshine encoder, which reads the raw waveform. Both were trained on
+LibriSpeech dev-clean (never test-clean, which the controlled set uses) with AADD's event sampler,
+coloured noise and a crowd of other speakers for noise, synthetic room responses for reverb, 4 000
+steps of 12 windows each, in under three minutes apiece on the GPU below. Validation frame AUC:
+0.982 for the whisper-base detector and 0.967 for the Moonshine one. The attribution maps never change
+in this check; only the flags that the noise-focus ratio is computed against do.
+
+<p align="center">
+  <img src="figures/detector_backbones.png" width="860" alt="Two panels: how often each of the three detectors flags frames inside and outside the known damaged window on the 60 LibriSpeech clips, and the noise-focus ratio of each speech-to-text model under each detector on the 100 VoxCeleb clips with 95 percent intervals">
+</p>
+
+| detector backbone | parameters | trained by | flags inside the damaged 2 s | flags outside | right class inside |
+|---|---|---|---|---|---|
+| whisper-small (AADD v3.1) | 88.6 M | AADD | 0.92 | 0.12 | 0.91 |
+| whisper-base (trained here) | 21.0 M | this repository | 0.83 | 0.17 | 0.77 |
+| moonshine-base (trained here) | 21.0 M | this repository | 0.74 | 0.20 | 0.58 |
+
+| detector backbone | whisper-tiny | whisper-base | moonshine-base | paired whisper-base − moonshine-base |
+|---|---|---|---|---|
+| whisper-small (AADD v3.1) | 0.95 [0.87, 1.04] (n=46) | 1.02 [0.91, 1.17] (n=46) | 1.04 [0.93, 1.15] (n=46) | -0.013 [-0.163, +0.127] |
+| whisper-base (trained here) | 0.97 [0.90, 1.03] (n=92) | 0.99 [0.93, 1.05] (n=92) | 0.95 [0.89, 1.01] (n=92) | +0.031 [-0.020, +0.094] |
+| moonshine-base (trained here) | 0.84 [0.78, 0.91] (n=91) | 0.94 [0.85, 1.05] (n=91) | 0.85 [0.78, 0.91] (n=91) | +0.095 [+0.018, +0.190] |
+
+* On the controlled clips, where the damaged 2 s is known, AADD's own detector is the best of the
+  three (92% of frames flagged inside the window, 12% outside), the whisper-base detector trained
+  here is close (84% and 18%), and the Moonshine one is the weakest (74% and 20%, right class
+  58%).
+* Under the two detectors that find the damage reliably, the answer is the one from before: every
+  speech-to-text model's noise-focus ratio sits at 1, with intervals that contain 1, and the
+  whisper-base against moonshine-base difference contains 0. The Whisper-family overlap between
+  detector and model does not create a preference for degraded audio.
+* Under the weakest detector the ratios drop below 1 for whisper-tiny and moonshine-base
+  (0.84 and 0.85). A detector that is wrong about where the damage is flags frames the models do not
+  lean on, so the ratio reads "avoids" when the honest reading is "the flags are off". Detector
+  quality sets a floor for this measure; that is the practical lesson, and it is why the controlled
+  set, which needs no detector, carries the main claim.
+
+Two further AADD detectors with other backbones (v3-lite, a 1.3 M-parameter CRNN, and v2, an
+EfficientNet-B0 on log-mel at 1 s resolution) give the same picture, every interval containing 1:
 
 | detector | whisper-tiny | whisper-base | moonshine-base | paired base - moonshine |
 |---|---|---|---|---|
 | v3 | 0.95 [0.87, 1.04] (n=46) | 1.02 [0.91, 1.17] (n=46) | 1.04 [0.93, 1.15] (n=46) | -0.013 [-0.163, +0.127] |
 | v3-lite | 1.00 [0.94, 1.06] (n=41) | 0.99 [0.94, 1.05] (n=41) | 1.00 [0.95, 1.06] (n=41) | -0.012 [-0.046, +0.019] |
 | v2 | 0.92 [0.84, 1.01] (n=51) | 0.92 [0.83, 1.01] (n=51) | 0.91 [0.82, 1.00] (n=51) | +0.005 [-0.059, +0.067] |
-
-The answer does not move: every interval contains 1 and every paired difference contains 0. The
-number of informative clips changes with the detector (v2 flags fewer frames, so more clips have a
-mix), but the conclusion is the same under all three.
 
 ## Controlled degradation on LibriSpeech
 
@@ -438,8 +470,8 @@ then tested on real hardware. The full checklist is [docs/reproducibility.md](do
 ## Status
 
 * Done: operator, three backends, scores, summaries, AADD context, CLI, figures, tests, 100-clip
-  runs for three models, three-detector check, the controlled LibriSpeech set, clean-environment
-  run, provenance.
+  runs for three models, the detector-backbone check (whisper-small, whisper-base, moonshine-base),
+  the controlled LibriSpeech set, clean-environment run, provenance.
 * Next: CI workflow once Actions minutes are available (the test command is fixed); a live vLLM
   transcription run; the same 100 clips on Modal if a larger model is wanted.
 
@@ -470,7 +502,7 @@ then tested on real hardware. The full checklist is [docs/reproducibility.md](do
 | `ways/provenance.py` | the provenance manifest (claimed and runtime dependencies, hashes, model commits) |
 | `ways/cli.py` | `ways explain`, `ways quality` |
 | `tests/` | operator and formula checks; mock OpenAI-compatible server and the HTTP test |
-| `experiments/` | sample selection, the three-model runs, the three-detector run, comparison tables, the example clip, the controlled LibriSpeech set (`controlled.py`) |
+| `experiments/` | sample selection, the three-model runs, the detector runs (`run_aadd_variants.py`, `train_detectors.py`, `detector_backbones.py`), comparison tables, the example clip, the controlled LibriSpeech set (`controlled.py`) |
 | `experiments/results/` | per-clip rows, per-token tables, `comparison.json`, `comparison.md`, provenance (npz maps are not committed) |
 | `figures/` | the method figure, per-model clip figures, the three-model figures (VoxCeleb clean and degraded, LibriSpeech clean and degraded), the comparison figures |
 | `docs/` | backends, reproducibility checklist; `docs/images/`: the icon and its drawing script, the two hand-drawn workflow figures (sources in `src/`, rendered by `render.py`), the two GIFs |

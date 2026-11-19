@@ -1,0 +1,258 @@
+{
+ "detectors": {
+  "whisper-small (AADD v3.1)": {
+   "n_params": 88625177,
+   "trained_by": "AADD"
+  },
+  "whisper-base (trained here)": {
+   "n_params": 21015059,
+   "trained_by": "this repository",
+   "val_auc": 0.9818009638043992,
+   "steps": 3400
+  },
+  "moonshine-base (trained here)": {
+   "n_params": 21017717,
+   "trained_by": "this repository",
+   "val_auc": 0.9667974937399069,
+   "steps": 2600
+  }
+ },
+ "controlled": {
+  "whisper-small (AADD v3.1)": {
+   "overall": {
+    "flagged_inside": 0.919,
+    "flagged_outside": 0.125,
+    "class_inside": 0.912
+   },
+   "by_class": {
+    "clicks": {
+     "flagged_inside": 0.7,
+     "flagged_outside": 0.1,
+     "class_inside": 0.68
+    },
+    "clipping": {
+     "flagged_inside": 0.9,
+     "flagged_outside": 0.15,
+     "class_inside": 0.89
+    },
+    "hum": {
+     "flagged_inside": 0.92,
+     "flagged_outside": 0.23,
+     "class_inside": 0.91
+    },
+    "lowpass": {
+     "flagged_inside": 1.0,
+     "flagged_outside": 0.05,
+     "class_inside": 1.0
+    },
+    "noise": {
+     "flagged_inside": 1.0,
+     "flagged_outside": 0.03,
+     "class_inside": 1.0
+    },
+    "reverb": {
+     "flagged_inside": 1.0,
+     "flagged_outside": 0.2,
+     "class_inside": 1.0
+    }
+   }
+  },
+  "whisper-base (trained here)": {
+   "overall": {
+    "flagged_inside": 0.835,
+    "flagged_outside": 0.175,
+    "class_inside": 0.767
+   },
+   "by_class": {
+    "clicks": {
+     "flagged_inside": 0.5,
+     "flagged_outside": 0.12,
+     "class_inside": 0.44
+    },
+    "clipping": {
+     "flagged_inside": 0.9,
+     "flagged_outside": 0.19,
+     "class_inside": 0.9
+    },
+    "hum": {
+     "flagged_inside": 0.69,
+     "flagged_outside": 0.24,
+     "class_inside": 0.69
+    },
+    "lowpass": {
+     "flagged_inside": 0.99,
+     "flagged_outside": 0.18,
+     "class_inside": 0.99
+    },
+    "noise": {
+     "flagged_inside": 0.95,
+     "flagged_outside": 0.19,
+     "class_inside": 0.6
+    },
+    "reverb": {
+     "flagged_inside": 0.99,
+     "flagged_outside": 0.13,
+     "class_inside": 0.99
+    }
+   }
+  },
+  "moonshine-base (trained here)": {
+   "overall": {
+    "flagged_inside": 0.736,
+    "flagged_outside": 0.195,
+    "class_inside": 0.583
+   },
+   "by_class": {
+    "clicks": {
+     "flagged_inside": 0.28,
+     "flagged_outside": 0.22,
+     "class_inside": 0.08
+    },
+    "clipping": {
+     "flagged_inside": 0.93,
+     "flagged_outside": 0.23,
+     "class_inside": 0.92
+    },
+    "hum": {
+     "flagged_inside": 0.38,
+     "flagged_outside": 0.16,
+     "class_inside": 0.37
+    },
+    "lowpass": {
+     "flagged_inside": 0.98,
+     "flagged_outside": 0.18,
+     "class_inside": 0.92
+    },
+    "noise": {
+     "flagged_inside": 0.85,
+     "flagged_outside": 0.23,
+     "class_inside": 0.22
+    },
+    "reverb": {
+     "flagged_inside": 0.99,
+     "flagged_outside": 0.15,
+     "class_inside": 0.99
+    }
+   }
+  }
+ },
+ "focus": {
+  "whisper-small (AADD v3.1)": {
+   "whisper-tiny": {
+    "n": 46,
+    "mean": 0.953260825950806,
+    "median": 0.9996230058006117,
+    "ci": [
+     0.8713143489816383,
+     1.0446975250204404
+    ]
+   },
+   "whisper-base": {
+    "n": 46,
+    "mean": 1.0243970572514043,
+    "median": 1.0000384172161256,
+    "ci": [
+     0.910092774119074,
+     1.1730805578120291
+    ]
+   },
+   "moonshine-base": {
+    "n": 46,
+    "mean": 1.037699160559912,
+    "median": 1.0014272343514694,
+    "ci": [
+     0.9314010590417351,
+     1.1521534961209607
+    ]
+   },
+   "paired whisper-base - moonshine-base": {
+    "n": 46,
+    "mean": -0.01330210330850768,
+    "median": -0.0007337400651524772,
+    "ci": [
+     -0.16293771688732273,
+     0.12713048866808077
+    ],
+    "n_pairs": 46
+   }
+  },
+  "whisper-base (trained here)": {
+   "whisper-tiny": {
+    "n": 92,
+    "mean": 0.9661734861163241,
+    "median": 1.0017918525432852,
+    "ci": [
+     0.8979299335869554,
+     1.0349415668424977
+    ]
+   },
+   "whisper-base": {
+    "n": 92,
+    "mean": 0.9852150622902435,
+    "median": 1.0022847665460377,
+    "ci": [
+     0.9253859240714097,
+     1.048817226785134
+    ]
+   },
+   "moonshine-base": {
+    "n": 92,
+    "mean": 0.9541869892270808,
+    "median": 0.995842602153953,
+    "ci": [
+     0.8931469731920698,
+     1.012507332782947
+    ]
+   },
+   "paired whisper-base - moonshine-base": {
+    "n": 92,
+    "mean": 0.031028073063162687,
+    "median": -0.00028403528982456905,
+    "ci": [
+     -0.02034018248391971,
+     0.09397661787468911
+    ],
+    "n_pairs": 92
+   }
+  },
+  "moonshine-base (trained here)": {
+   "whisper-tiny": {
+    "n": 91,
+    "mean": 0.8447475912548914,
+    "median": 0.8979591981045069,
+    "ci": [
+     0.7818676529914218,
+     0.908494010002764
+    ]
+   },
+   "whisper-base": {
+    "n": 91,
+    "mean": 0.9426344699878886,
+    "median": 0.8996322214298111,
+    "ci": [
+     0.8542774626185962,
+     1.046783329954123
+    ]
+   },
+   "moonshine-base": {
+    "n": 91,
+    "mean": 0.8477116528782864,
+    "median": 0.8934847972316738,
+    "ci": [
+     0.782149451101313,
+     0.9143326754996965
+    ]
+   },
+   "paired whisper-base - moonshine-base": {
+    "n": 91,
+    "mean": 0.09492281710960214,
+    "median": 0.03674269363700955,
+    "ci": [
+     0.018114428642371363,
+     0.19031957278182407
+    ],
+    "n_pairs": 91
+   }
+  }
+ }
+}

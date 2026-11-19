@@ -5,3 +5,4 @@ experiments/results/**/*.npz
 experiments/cache/
 *.wav
 .pytest_cache/
+experiments/results/detectors/*.pt

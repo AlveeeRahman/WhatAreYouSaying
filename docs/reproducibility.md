@@ -70,6 +70,8 @@ python experiments/example_clip.py <pipeline repo>
 python experiments/vox_mixed_figures.py <pipeline repo>
 # controlled set: LibriSpeech test-clean into experiments/cache/librispeech/, then
 python experiments/controlled.py prepare && experiments/run_controlled.sh && python experiments/controlled_figures.py
+# detector backbones: LibriSpeech dev-clean into experiments/cache/librispeech/, then
+experiments/run_backbones.sh                      # trains two detectors (about 5 minutes) and runs the comparison
 ```
 
 The pipeline repository is the pipeline repository (the earlier study); the
