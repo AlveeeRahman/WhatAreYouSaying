@@ -35,11 +35,9 @@ fig = plt.figure(figsize=(5.12, 5.12), dpi=100)
 ax = fig.add_axes([0, 0, 1, 1]); ax.set_xlim(0, 100); ax.set_ylim(0, 100); ax.set_aspect("equal"); ax.axis("off")
 ax.add_patch(Circle((50, 50), 49, facecolor=BG, edgecolor="#e4e3df", lw=1.5))
 
-# --- hand, cupped behind the ear (drawn first so the ear sits in front of the palm) -------------
 palm = bez([(58, 22), ((52, 30), (50, 48), (56, 62)), ((60, 72), (72, 80), (84, 76)), ((94, 72), (96, 50), (90, 34)),
             ((86, 24), (70, 16), (58, 22))])
 ax.add_patch(PathPatch(palm, facecolor=HAND, edgecolor=LINE, lw=2.2, joinstyle="round"))
-# four fingers fanning up and over the top of the ear, slightly curled to the left
 fingers = [
     bez([(56, 60), ((50, 72), (48, 84), (54, 90)), ((58, 94), (64, 92), (64, 86)), ((64, 78), (66, 70), (68, 64)), ((64, 62), (60, 61), (56, 60))]),
     bez([(66, 64), ((62, 76), (62, 88), (68, 93)), ((72, 97), (78, 94), (77, 88)), ((76, 80), (78, 72), (79, 66)), ((75, 64), (70, 63), (66, 64))]),
@@ -48,11 +46,9 @@ fingers = [
 ]
 for f in fingers:
     ax.add_patch(PathPatch(f, facecolor=HAND, edgecolor=LINE, lw=2.2, joinstyle="round"))
-# thumb along the bottom, tucked under the lobe
 thumb = bez([(64, 26), ((58, 16), (50, 10), (44, 13)), ((39, 16), (41, 23), (47, 27)), ((53, 31), (60, 32), (64, 26))])
 ax.add_patch(PathPatch(thumb, facecolor=HAND, edgecolor=LINE, lw=2.2, joinstyle="round"))
 
-# --- the ear ----------------------------------------------------------------------------------
 outer = bez([(36, 70), ((36, 84), (48, 92), (58, 88)), ((70, 84), (74, 70), (70, 56)), ((67, 46), (62, 42), (58, 32)),
              ((55, 22), (46, 18), (40, 24)), ((34, 30), (36, 40), (38, 48)), ((38, 56), (36, 62), (36, 70))])
 from matplotlib.transforms import Affine2D
@@ -71,7 +67,6 @@ canal = bez_open([(50, 52), ((54, 56), (58, 52), (54, 46))])
 for pth, lw in ((helix, 2.2), (antihelix, 2.2), (tragus, 2.0), (canal, 1.8)):
     ax.add_patch(PathPatch(pth, facecolor="none", edgecolor=LINE, lw=lw, capstyle="round"))
 
-# --- sound coming in from the left: tapered crescents, fat in the middle, with a lighter highlight ---
 import numpy as np
 from matplotlib.patches import Polygon
 
@@ -79,11 +74,10 @@ BLUE_DARK, BLUE_LIGHT = "#174f9c", "#8fbdf0"
 cx, cy = 40, 52
 for r, half, span in ((13, 2.6, 0.26), (21, 3.1, 0.28), (29, 3.6, 0.30)):
     t = np.linspace(np.pi * (1 - span), np.pi * (1 + span), 90)
-    bulge = np.sin((t - t[0]) / (t[-1] - t[0]) * np.pi) ** 0.7          # 0 at the ends, 1 in the middle
+    bulge = np.sin((t - t[0]) / (t[-1] - t[0]) * np.pi) ** 0.7
     w = 0.6 + (half - 0.6) * bulge
     outer = np.stack([cx + (r + w) * np.cos(t), cy + (r + w) * np.sin(t)], 1)
     inner = np.stack([cx + (r - w) * np.cos(t), cy + (r - w) * np.sin(t)], 1)
-    # soft shadow, then the body, then a highlight along the outer edge
     ax.add_patch(Polygon(np.vstack([outer, inner[::-1]]) + [0.7, -0.7], closed=True, facecolor=BLUE_DARK, edgecolor="none", alpha=0.35))
     ax.add_patch(Polygon(np.vstack([outer, inner[::-1]]), closed=True, facecolor=BLUE, edgecolor=BLUE_DARK, lw=1.2, joinstyle="round"))
     hw = w * 0.38

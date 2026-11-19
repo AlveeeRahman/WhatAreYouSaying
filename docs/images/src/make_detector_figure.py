@@ -28,7 +28,6 @@ names = list(S["detectors"])
 ref_left = xpos(1.0)
 short = {n: n.replace(" detector", "").replace(" (AADD v3.1)", " · AADD v3.1") for n in names}
 
-# ---- panel (a): dumbbells --------------------------------------------------------------------------
 rows_a = []
 for n in names:
     o = S["controlled"][n]["overall"]
@@ -45,7 +44,6 @@ for n in names:
   <div style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: {SOFT};"><span style="color: #2a78d6; font-weight: 600;">{pct(i)}</span> / <span style="color: #c2185b; font-weight: 600;">{pct(out)}</span></div>
 </div>''')
 
-# per-class hit rate (right class flagged inside its window), one cell per damage kind and detector
 CLS = ["noise", "reverb", "clipping", "lowpass", "hum", "clicks"]
 def cell(v):
     a = 0.12 + 0.75 * v
@@ -56,7 +54,6 @@ by_class = f'''
 <div style="margin-top: 10px; font-size: 14px; font-weight: 600;">Right kind of damage flagged inside its window, per kind</div>
 <div style="display: grid; grid-template-columns: 90px repeat(3, minmax(0, 1fr)); gap: 6px 10px; align-items: center;"><div></div>{head}{table}</div>'''
 
-# ---- panel (b): dot and interval -------------------------------------------------------------------
 groups_b = []
 for n in names:
     rows = []

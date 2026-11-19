@@ -9,6 +9,7 @@ import pandas as pd
 import soundfile as sf
 
 from ways.attribution import Attribution
+from ways.figure import save_figure
 from ways.plots import BORDER, CAT, DPI, TXT, TXT2, _label, three_models_figure
 from ways.quality import CLASSES as AADD_CLASSES
 
@@ -25,7 +26,7 @@ clips = pd.read_csv(OUT / "clips.csv")
 def example(cls="noise"):
     """The clip of this class where whisper-base lost the most words to the degradation."""
     c = clips[(clips.model == "whisper-base") & (clips.degradation == cls)]
-    cid = c.sort_values("wer_deg", ascending=False).id.iloc[0]
+    cid = c.sort_values(["wer_deg", "id"], ascending=[False, True], kind="stable").id.iloc[0]
     a, b = man.loc[cid, "win_start"], man.loc[cid, "win_end"]
     for cond in ("clean", "deg"):
         wav, _ = sf.read(CACHE / f"{cid}_{cond}.wav", dtype="float32")
@@ -60,7 +61,7 @@ def summary():
     axes[0].legend(frameon=False, title="speech-to-text model", title_fontsize=11)
     fig.suptitle("Clean audiobook speech (LibriSpeech), 60 clips, one kind of damage put into one 2 s window of each clip", x=0.06, ha="left", fontsize=13, fontweight="bold", color=TXT, y=0.97)
     fig.text(0.06, 0.905, "Each clip was explained twice, clean and damaged, by three speech-to-text models. Bars are damaged minus clean, averaged over the 10 clips of each damage kind.", fontsize=11, color=TXT2)
-    fig.savefig(FIG / "controlled_summary.png", dpi=DPI); fig.savefig(FIG / "controlled_summary.svg"); plt.close(fig)
+    save_figure(fig, FIG / "controlled_summary.png", DPI); plt.close(fig)
 
 
 if __name__ == "__main__":

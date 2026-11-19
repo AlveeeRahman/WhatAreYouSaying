@@ -31,7 +31,6 @@ MODELS = {"whisper-tiny": ("hf-whisper", "openai/whisper-tiny"), "whisper-base":
           "moonshine-base": ("hf-moonshine", "UsefulSensors/moonshine-base")}
 
 
-# ----------------------------------------------------------------------------- prepare
 def _synth_rirs(rng, n=3):
     """Synthetic room impulse responses: direct path, a few early reflections, exponentially decaying
     diffuse tail with RT60 of 0.6 to 1.0 s (no recorded RIR corpus is needed)."""
@@ -73,7 +72,7 @@ def prepare():
     assets = Assets(noises=[], music=[], rirs=_synth_rirs(rng), babble=None)
 
     class Controlled(Synthesizer):
-        def _noise(self, x, ev, rng_, srms):           # pink noise at a fixed 0 dB SNR, no corpus needed
+        def _noise(self, x, ev, rng_, srms):
             n = rng_.standard_normal(self.n).astype(np.float32)
             f = np.fft.rfftfreq(self.n, 1 / SR); f[0] = f[1]
             n = np.fft.irfft(np.fft.rfft(n) / np.sqrt(f), n=self.n).astype(np.float32)
@@ -112,7 +111,6 @@ def prepare():
     sel.to_csv(CACHE / "manifest.csv", index=False)
     OUT.mkdir(parents=True, exist_ok=True)
     sel.drop(columns=["path"]).to_csv(OUT / "manifest.csv", index=False)
-    # AADD v3 on the degraded clips, against the ground-truth window
     from ways.quality import CLASSES as AADD_CLASSES
     from ways.quality import Quality
     q = Quality("v3")
@@ -132,9 +130,8 @@ def prepare():
     print(pd.DataFrame(det).groupby("degradation")[["flagged_inside", "flagged_outside", "class_inside", "class_outside"]].mean().round(2))
 
 
-# ----------------------------------------------------------------------------- run
 def run(name, kind, model_id):
-    from common import REVISIONS
+    from common import REVISIONS, resume_rows
 
     from ways import explain, load_backend
     from ways.metrics import wer
@@ -142,7 +139,7 @@ def run(name, kind, model_id):
     man = pd.read_csv(CACHE / "manifest.csv")
     d = OUT / name; (d / "npz").mkdir(parents=True, exist_ok=True)
     rows_f = d / "rows.jsonl"
-    done = {(json.loads(l)["id"], json.loads(l)["cond"]) for l in open(rows_f)} if rows_f.exists() else set()
+    done = {(r["id"], r["cond"]) for r in resume_rows(rows_f, lambda r: (d / "npz" / f"{r['id']}_{r['cond']}.npz").exists())}
     be = load_backend(kind, model_id, revision=REVISIONS.get(model_id))
     for r in man.itertuples():
         for cond in ("clean", "deg"):
@@ -164,12 +161,11 @@ def run(name, kind, model_id):
                    extra=dict(backend=be.describe(), patch_s=0.1, n_bands=8, n_clips=int(len(man)), conditions=["clean", "deg"]))
 
 
-# ----------------------------------------------------------------------------- summarise
 def _mass_in_window(att, a, b):
     from ways.metrics import token_mass
-    m = token_mass(att); prof = np.nansum(m, axis=1)          # [K, T]
+    m = token_mass(att); prof = np.nansum(m, axis=1)
     t0 = np.arange(att.n_t) * att.patch_s; t1 = t0 + att.patch_s
-    f = np.clip((np.minimum(t1, b) - np.maximum(t0, a)) / att.patch_s, 0, 1)   # overlap fraction per patch
+    f = np.clip((np.minimum(t1, b) - np.maximum(t0, a)) / att.patch_s, 0, 1)
     return prof @ f, f.mean()
 
 
@@ -196,7 +192,7 @@ def summarise():
             mc, fbar = _mass_in_window(ac, a, b); md, _ = _mass_in_window(ad, a, b)
             sm = SequenceMatcher(None, list(ac.token_ids), list(ad.token_ids), autojunk=False)
             pairs = [(i + o, j + o) for i, j, n in sm.get_matching_blocks() for o in range(n)]
-            in_win = {i for i in range(len(mc)) if np.isfinite(mc[i]) and mc[i] >= 0.5}   # token leaned on the window when clean
+            in_win = {i for i in range(len(mc)) if np.isfinite(mc[i]) and mc[i] >= 0.5}
             wc = float(g[g.cond == "clean"].wer.iloc[0]); wd = float(g[g.cond == "deg"].wer.iloc[0])
             cr = dict(model=name, id=cid, degradation=man.loc[cid, "degradation"], wer_clean=wc, wer_deg=wd, n_clean=len(mc), n_deg=len(md),
                       n_matched=len(pairs), n_in_window=len(in_win), window_share=float(fbar))

@@ -102,7 +102,6 @@ def test_same_inputs_same_bytes(tmp_path):
 
 
 def test_strict_layout_error_is_raised_when_text_cannot_be_separated(tmp_path):
-    # a style whose font is absurdly large cannot be laid out without overlaps
     with pytest.raises(LayoutError):
         ways_figure(_wav(), 16000, quality=_quality(), quality_classes=["noise", "reverb", "hum"], models=_models(), title="x",
                     style=dict(font_size=40.0, label_size=40.0, strip_size=40.0))
@@ -138,7 +137,7 @@ def test_window_accepts_one_span_or_a_list(tmp_path):
                      window=[(0.3, 0.8), (1.4, 1.9), (2.4, 2.8)], out=tmp_path / "w3.png")
     assert text_overlaps(f1) == [] and text_overlaps(f2) == []
     svg = (tmp_path / "w3.svg").read_text()
-    assert svg.count("stroke-dasharray") >= 6          # two dashed edges per window
+    assert svg.count("stroke-dasharray") >= 6
 
 
 def test_explicit_line_break_in_title_is_wrapped_per_line_and_nothing_leaves_the_page(tmp_path):

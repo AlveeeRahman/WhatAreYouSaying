@@ -27,10 +27,10 @@ def _discover():
     for ep in entry_points(group="ways.tools"):
         try:
             obj = ep.load()
-        except Exception:               # a broken plug-in must not take the CLI down
+            if isinstance(obj, Tool):
+                register(obj)
+        except Exception:
             continue
-        if isinstance(obj, Tool):
-            register(obj)
 
 
 def get(name: str) -> Tool:

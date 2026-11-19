@@ -33,6 +33,15 @@ def git_commit(repo: Path | None = None) -> str | None:
         return None
 
 
+def git_dirty(repo: Path | None = None) -> bool | None:
+    """True when tracked files differ from the commit, so the commit alone does not identify the code."""
+    repo = repo or Path(__file__).resolve().parents[1]
+    try:
+        return bool(subprocess.check_output(["git", "-C", str(repo), "status", "--porcelain", "--untracked-files=no"], text=True).strip())
+    except Exception:
+        return None
+
+
 def claimed_dependencies(req: Path | None = None) -> dict[str, str]:
     req = req or Path(__file__).resolve().parents[1] / "requirements.txt"
     out = {}
@@ -63,12 +72,16 @@ def runtime_dependencies() -> dict[str, str]:
 
 
 def hf_snapshot(model_id: str) -> str | None:
-    """Commit hash of the locally cached snapshot of a Hugging Face model (its revision)."""
+    """Commit hash of the cached snapshot that an unpinned load of a Hugging Face model resolves to:
+    the one `main` points at, or the most recently modified one when the cache has no `main` ref."""
     try:
         from huggingface_hub import scan_cache_dir
 
         for repo in scan_cache_dir().repos:
             if repo.repo_id == model_id:
+                for rev in repo.revisions:
+                    if "main" in rev.refs:
+                        return rev.commit_hash
                 revs = sorted(repo.revisions, key=lambda r: r.last_modified)
                 return revs[-1].commit_hash
     except Exception:
@@ -100,6 +113,7 @@ def manifest(inputs: dict[str, str] | None = None, seeds: dict | None = None,
     models = models if isinstance(models, dict) else {mid: None for mid in (models or [])}
     m = dict(
         code_commit=git_commit(),
+        code_dirty=git_dirty(),
         python=sys.version.split()[0],
         platform=platform.platform(),
         torch=torch.__version__,

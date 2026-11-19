@@ -23,6 +23,7 @@ class WhisperBackend(Backend):
         for p in self.model.parameters():
             p.requires_grad_(False)
         self.eot = self.proc.tokenizer.eos_token_id
+        self.max_seconds = 30.0
         self.has_alignment_heads = getattr(self.model.generation_config, "alignment_heads", None) is not None
 
     def features(self, wavs: np.ndarray):

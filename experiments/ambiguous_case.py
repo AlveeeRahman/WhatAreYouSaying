@@ -26,11 +26,13 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import soundfile as sf
+from common import REVISIONS
 from scipy.stats import spearmanr
 
 from ways.figure import from_attribution
 from ways.latent import token_cam, token_cam_summary
 from ways.metrics import token_mass, token_summary
+from ways.provenance import public_path
 from ways.provenance import write as write_manifest
 from ways.tools import aud_cam, cross_check, sound_token
 from ways.tools.cross_check import table as cross_table
@@ -43,8 +45,6 @@ FIG = HERE.parent / "figures"
 CLIP = "2094-142345-0024"
 MODELS = {"whisper-tiny": ("hf-whisper", "openai/whisper-tiny"), "whisper-base": ("hf-whisper", "openai/whisper-base"),
           "moonshine-base": ("hf-moonshine", "UsefulSensors/moonshine-base")}
-PROV = HERE / "results/controlled/provenance.json"
-REVISIONS = json.load(open(PROV)).get("models", {}) if PROV.exists() else {}
 HOP = 0.02
 
 
@@ -74,19 +74,19 @@ def run():
         wav, sr = sf.read(CACHE / f"{CLIP}_{cond}.wav", dtype="float32")
         inputs[f"{CLIP}_{cond}.wav"] = str(CACHE / f"{CLIP}_{cond}.wav")
         for name, (kind, mid) in MODELS.items():
-            st = sound_token(wav, sr, backends=[(kind, mid)], window=(a, b))
+            st = sound_token(wav, sr, backends=[(kind, mid)], window=(a, b), revision=REVISIONS[mid])
             att = st.data["attributions"][0]
             m = token_mass(att)
-            prof = np.where(np.isnan(m).all((1, 2))[:, None], np.nan, m.sum(1))      # [K, patches] erasure profile per token
-            top = from_attribution(att)["top"]                      # the same first-ranked patch the sound-token figure draws
+            prof = np.where(np.isnan(m).all((1, 2))[:, None], np.nan, m.sum(1))
+            top = from_attribution(att)["top"]
             erase_t = np.array([(tp[1] + 0.5) * att.patch_s if tp is not None else np.nan for tp in top])
             bands = {r["k"]: r.get("top_band") for r in token_summary(att)}
             what = f"pink noise at 0 dB over {a:.1f}-{b:.1f} s" if cond == "deg" else "the clean recording"
             stem = FIG / f"ambiguous__{CLIP}__{name}__{cond}"
-            ac = aud_cam(wav, sr, backend=(kind, mid), window=(a, b), tokens=True, erase_t=erase_t, out=stem,
+            ac = aud_cam(wav, sr, backend=(kind, mid), window=(a, b), tokens=True, erase_t=erase_t, out=stem, revision=REVISIONS[mid],
                          title=f"{name}, {what}: gradient saliency per token against the erasure test\ngold: '{gold}'")
             tc, tr = ac.data["token_cam"], ac.data["transcript"]
-            tc_pooled, _ = token_cam(backend(kind, mid), wav, tr, pooled=True)
+            tc_pooled, _ = token_cam(backend(kind, mid, REVISIONS[mid]), wav, tr, pooled=True)
             np.savez_compressed(OUT / f"token_maps__{name}__{cond}.npz", grad_x_act=tc, grad_cam=tc_pooled, pieces=np.array(tr.pieces),
                                 degraded=ac.data["result"].degraded, erase_t=erase_t)
             per_token = token_cam_summary(tc, ac.data["result"].degraded, tr.pieces, erase_profile=prof, erase_hop=att.patch_s)
@@ -101,7 +101,7 @@ def run():
                                  gradcam_width_s=float(wg), erase_top_band=bands.get(r["k"]),
                                  **{f"cam_in_l{l}": v for l, v in enumerate(r["cam_in_layers"])}))
             runs.append(dict(model=name, cond=cond, text=att.text, n_tokens=len(per_token), degraded_share=ac.summary["degraded_share"],
-                             per_layer=ac.summary["per_layer"], figures=dict(main=str(ac.figure), **ac.figures)))
+                             per_layer=ac.summary["per_layer"], figures={k: public_path(v) for k, v in dict(main=ac.figure, **ac.figures).items()}))
             print(name, cond, repr(att.text), {mm["method"]: round(mm["rho_order"], 2) for mm in methods[-3:]})
     df = pd.DataFrame(rows); df.to_csv(OUT / "tokens.csv", index=False)
     pd.DataFrame(methods).to_csv(OUT / "methods.csv", index=False)
@@ -158,10 +158,12 @@ def cross_checks():
     wav, sr = sf.read(CACHE / f"{CLIP}_deg.wav", dtype="float32")
     OUT.mkdir(parents=True, exist_ok=True)
     for name, (kind, mid) in MODELS.items():
-        res = cross_check(wav, sr, backend=(kind, mid), window=(a, b), wer_reference=gold, out=FIG / f"cross_check__{CLIP}__{name}",
+        res = cross_check(wav, sr, backend=(kind, mid), window=(a, b), wer_reference=gold, revision=REVISIONS[mid], out=FIG / f"cross_check__{CLIP}__{name}",
                           title=f"{name} on the degraded recording (pink noise at 0 dB over {a:.1f}-{b:.1f} s): the erasure test and the "
                                 f"encoder's gradient, token by token\ngold: '{gold}'")
-        (OUT / f"cross_check__{name}.json").write_text(res.to_json())
+        d = json.loads(res.to_json())
+        d["figure"] = public_path(d["figure"]); d["figures"] = {k: public_path(v) for k, v in d["figures"].items()}
+        (OUT / f"cross_check__{name}.json").write_text(json.dumps(d, indent=1, default=float))
         (OUT / f"cross_check__{name}.md").write_text(f"**{name}: '{res.summary['text']}'**  \n\n" + cross_table(res) + "\nTokens on the degraded "
                                                      f"audio: {res.summary['on_degraded']}\n")
         print(name, res.summary["on_degraded"], res.figure)

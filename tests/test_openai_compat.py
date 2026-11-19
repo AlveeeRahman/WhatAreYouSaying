@@ -47,16 +47,13 @@ def test_black_box_selection_scoring_matches_white_box_flips(server, route):
     from ways.backends.openai_compat import OpenAICompatBackend
 
     wav, sr = sf.read(CLIP, dtype="float32")
-    wav = wav[: 3 * sr]                          # 3 s keeps the number of HTTP calls small
+    wav = wav[: 3 * sr]
     bb = OpenAICompatBackend(base_url=server, model_id="openai/whisper-tiny", route=route)
     att = explain(bb, wav, patch_s=0.5, n_bands=2, batch=8)
     assert att.mode == "selection" and att.delta.shape[1:] == (2, 6)
     assert att.text == bb.transcribe(wav).text
     assert set(np.unique(att.delta)) <= {0.0, 1.0}
     assert att.delta.sum() > 0, "erasing half-second, half-spectrum patches changed no word at all"
-    # the same model white-box: a word whose every token keeps its argmax under erasure of patch P
-    # cannot change under greedy re-decoding of P unless an earlier word changed (teacher forcing
-    # holds the prefix fixed); so word-level change implies some flip in or before that word
     wb = WhisperBackend("openai/whisper-tiny")
     att_w = explain(wb, wav, patch_s=0.5, n_bands=2, batch=8)
     tr = wb.transcribe(wav)

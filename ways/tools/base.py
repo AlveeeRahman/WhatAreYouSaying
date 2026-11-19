@@ -18,12 +18,13 @@ import numpy as np
 
 @dataclass
 class ToolResult:
-    """What a tool returns. `summary` is JSON-serialisable; `data` holds arrays and objects that are not."""
+    """What a tool returns. `summary` is JSON-serialisable; `data` holds arrays and objects that are not.
+    `figure` is the main figure path (None when no `out` was given) and `figures` the named extra ones."""
     tool: str
     summary: dict[str, Any]
-    figure: str | None = None                 # the tool's main figure, or None when no `out` was given
-    figures: dict[str, str] = field(default_factory=dict)   # named extra figures (granular lanes)
-    data: dict[str, Any] = field(default_factory=dict)      # Attribution objects, LatentResult, arrays
+    figure: str | None = None
+    figures: dict[str, str] = field(default_factory=dict)
+    data: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
         return dict(tool=self.tool, summary=self.summary, figure=self.figure, figures=dict(self.figures))
@@ -50,12 +51,14 @@ class Tool:
 
     run(wav, sr, **kwargs) -> ToolResult. `parameters` is the JSON schema of the keyword arguments
     (OpenAI function shape; `audio` is added by `schema()` for callers that pass a file path).
+    `summary` is one line for `ways tools` and the schema. `needs_white_box` is True when the tool
+    reads the encoder, which rules out the openai-compat backend.
     """
     name: str
-    summary: str                              # one line, for `ways tools` and the schema description
+    summary: str
     run: Callable[..., ToolResult]
     parameters: dict[str, Any]
-    needs_white_box: bool = False             # True when the tool reads the encoder (no openai-compat)
+    needs_white_box: bool = False
 
     def schema(self) -> dict[str, Any]:
         """The tool as a function-calling schema with `audio` (a file path) as the one required argument."""

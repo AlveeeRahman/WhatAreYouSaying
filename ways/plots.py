@@ -12,13 +12,14 @@ from matplotlib.colors import LinearSegmentedColormap, Normalize
 from matplotlib.patches import Rectangle
 
 from .attribution import Attribution
+from .figure import save_figure
 from .metrics import token_mass
 from .quality import CLASSES, SEG_S
 
 BG, GRID, BORDER, TXT, TXT2, MUTED = "#fcfcfb", "#ecebe7", "#e4e3df", "#0b0b0b", "#52514e", "#77766f"
 SEQ = ["#f0efec", "#cde2fb", "#9ec5f4", "#6da7ec", "#3987e5", "#256abf", "#184f95", "#0d366b"]
 BLUE = LinearSegmentedColormap.from_list("aadd_seq", SEQ)
-CAT = ["#2a78d6", "#c2185b", "#1b9e77", "#7e3fc2"]      # validated: CVD-safe adjacent pairs, no mel hue
+CAT = ["#2a78d6", "#c2185b", "#1b9e77", "#7e3fc2"]
 MEL_CMAP = "YlOrBr"
 DPI = 300
 plt.rcParams.update({"font.family": "DejaVu Sans", "font.size": 12, "axes.titlesize": 12, "axes.labelsize": 12,
@@ -171,7 +172,7 @@ def _place_labels(rows, att, dur, axis_in, mel_h=80, char_in=0.085, line_h=7.0):
     B, ps = att.n_bands, att.patch_s
     mpb = mel_h // B
     placed, out = [], []
-    cw = char_in * dur / axis_in                           # data units per character
+    cw = char_in * dur / axis_in
     for r in sorted(rows, key=lambda r: (r.get("top_t", 0), r["k"])):
         if "patch" not in r:
             continue
@@ -262,7 +263,7 @@ def method_figure(att: Attribution, probs, wav, path, k: int | None = None, titl
     L = logmel(wav); dur = att.duration; ps, B = att.patch_s, att.n_bands
     mpb = 80 // B
     rows = token_rows(att)
-    if k is None:   # the token with the most concentrated, strongest map
+    if k is None:
         cand = [(att.delta[r["k"]].max(), r["k"]) for r in rows if "patch" in r and 1 <= r["k"] < len(rows) - 1]
         k = max(cand)[1] if cand else 0
     b, t = rows[k]["patch"]
@@ -274,7 +275,6 @@ def method_figure(att: Attribution, probs, wav, path, k: int | None = None, titl
                           left=0.09, right=0.97, top=0.88, bottom=0.13)
     axa = fig.add_subplot(gs[0, :]); axb = fig.add_subplot(gs[1, 0]); axc = fig.add_subplot(gs[1, 1])
     axd = fig.add_subplot(gs[2, :]); axq = fig.add_subplot(gs[3, :])
-    # (a) the grid and the erased patch on the original spectrogram
     _mel(axa, L); _tidy(axa, dur)
     for tt in range(grid.n_t + 1):
         axa.axvline(tt * ps, color="white", lw=0.3, alpha=0.6)
@@ -282,7 +282,6 @@ def method_figure(att: Attribution, probs, wav, path, k: int | None = None, titl
         axa.axhline(bb * mpb, color="white", lw=0.3, alpha=0.6)
     axa.add_patch(Rectangle((t * ps, b * mpb), ps, mpb, fill=False, edgecolor=col(k), lw=2.5, zorder=4))
     _label(axa, f"(a) Erasure grid: {ps * 1000:.0f} ms x {B} bands = {grid.n_t * B} patches. Highlighted: patch P = (band {b}, {t * ps:.1f}-{(t + 1) * ps:.1f} s)")
-    # (b) zoom: before and after erasing P, in the model's input domain
     f0, f1 = grid.frame_range(t); z0, z1 = max(0, f0 - 15), min(L.shape[1], f1 + 15)
     for ax, M, lab in ((axb, L, "(b) before"), (axc, Le, "(c) after erasing P")):
         ax.imshow(M[:, z0:z1], origin="lower", aspect="auto", cmap=MEL_CMAP, extent=[z0 * 0.01, z1 * 0.01, 0, 80], interpolation="nearest",
@@ -291,7 +290,6 @@ def method_figure(att: Attribution, probs, wav, path, k: int | None = None, titl
         ax.set_yticks([0, 40, 80]); ax.set_yticklabels(["0", "1.9 k", "8 k"]); ax.set_xlabel("time (s)")
         drop = 10 * (L[b * mpb:(b + 1) * mpb, f0:f1].mean() - M[b * mpb:(b + 1) * mpb, f0:f1].mean())
         _label(ax, lab + (f": patch down {drop:.0f} dB" if ax is axc else ", log-mel input"))
-    # (d) every token's surprisal change for this one patch
     d = att.delta[:, b, t]
     K = len(d)
     axd.bar(np.arange(K), d, color=[col(k) if i == k else "#c9c7c1" for i in range(K)], width=0.8)
@@ -301,7 +299,6 @@ def method_figure(att: Attribution, probs, wav, path, k: int | None = None, titl
     _label(axd, f"(d) delta_k(P) = S_k(x\\P) - S_k(x) for every token k; token {k} '{att.pieces[k].strip()}' loses most")
     for s in axd.spines.values():
         s.set_color(BORDER)
-    # (e) token k's full map against the AADD flags
     M = np.clip(att.delta[k], 0, None)
     axq.imshow(M, origin="lower", aspect="auto", cmap="Greys", extent=[0, grid.n_t * ps, 0, B], interpolation="nearest", vmin=0, vmax=max(M.max(), 1e-6))
     axq.add_patch(Rectangle((t * ps, b), ps, 1, fill=False, edgecolor=col(k), lw=2.0))
@@ -317,7 +314,7 @@ def method_figure(att: Attribution, probs, wav, path, k: int | None = None, titl
     fig.text(0.09, 0.012, "Erase one patch of the spectrogram, re-score the model's own transcript with the earlier tokens held fixed, "
              "record how much each token's surprisal rises. Repeat for every patch.", fontsize=10, color=TXT2, va="bottom", wrap=True)
     axq.set_xlabel("time (s)", labelpad=2)
-    fig.savefig(path, dpi=DPI); fig.savefig(str(path).rsplit(".", 1)[0] + ".svg"); plt.close(fig)
+    save_figure(fig, path, DPI); plt.close(fig)
     return k, (b, t)
 
 
@@ -335,7 +332,6 @@ def comparison_figure(clips: dict, tokens: dict, path, title="", band_edges=None
     """Per model: WER, noise-focus ratio per clip, and the band shares. clips/tokens: {name: DataFrame}."""
     names = list(clips)
     fig, axes = plt.subplots(1, 3, figsize=(13, 5.2), gridspec_kw=dict(left=0.06, right=0.98, top=0.82, bottom=0.2, wspace=0.36))
-    # WER
     ax = axes[0]
     for i, n in enumerate(names):
         w = clips[n]["wer"].dropna().clip(upper=1.5)
@@ -344,7 +340,6 @@ def comparison_figure(clips: dict, tokens: dict, path, title="", band_edges=None
                    flierprops=dict(marker=".", markeredgecolor=col(i), alpha=0.5))
     ax.set_xticks(range(len(names))); ax.set_xticklabels(names, rotation=15); ax.set_ylabel("word error rate per clip (capped at 1.5)")
     _label(ax, "(a) How many words each model gets wrong")
-    # focus ratio
     ax = axes[1]
     for i, n in enumerate(names):
         c = clips[n]
@@ -355,7 +350,6 @@ def comparison_figure(clips: dict, tokens: dict, path, title="", band_edges=None
     ax.axhline(1, color=TXT2, lw=1, ls="--"); ax.text(len(names) - 0.5, 1.02, "no preference", ha="right", va="bottom", fontsize=10, color=TXT2)
     ax.set_xticks(range(len(names))); ax.set_xticklabels(names, rotation=15); ax.set_ylabel("evidence on degraded audio / share of audio degraded")
     _label(ax, f"(b) Does a model lean on degraded audio? ({len(f)} clips)")
-    # band shares
     ax = axes[2]
     B = 8
     w = 0.8 / len(names)
@@ -372,4 +366,4 @@ def comparison_figure(clips: dict, tokens: dict, path, title="", band_edges=None
             s.set_color(BORDER)
     axes[2].legend(frameon=False, title="speech-to-text model", title_fontsize=11)
     fig.suptitle(title, x=0.06, ha="left", fontsize=13, fontweight="bold", color=TXT, y=0.97)
-    fig.savefig(path, dpi=DPI); fig.savefig(str(path).rsplit(".", 1)[0] + ".svg"); plt.close(fig)
+    save_figure(fig, path, DPI); plt.close(fig)

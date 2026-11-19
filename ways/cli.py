@@ -70,6 +70,8 @@ def cmd_latent(a):
     from . import load_backend
     from .latent import latent_view
 
+    if not a.aadd and not a.window:
+        raise SystemExit("ways latent needs --aadd or --window: without a degraded stretch there is nothing to erase")
     wav = _load(a.audio)
     be = load_backend(a.backend, a.model, **(dict(revision=a.revision) if a.revision else {}))
     probs = None
@@ -176,7 +178,7 @@ def main(argv=None):
     l.add_argument("--out", default="ways_out")
     l.set_defaults(fn=cmd_latent)
     from .tools import tools as registered_tools
-    for tool in registered_tools():                       # one subcommand per registered tool, plug-ins included
+    for tool in registered_tools():
         t = sub.add_parser(tool.name, help=tool.summary.split(". ")[0].rstrip("."))
         t.add_argument("audio")
         t.add_argument("--backend", action="append", default=None, metavar="KIND=MODEL",

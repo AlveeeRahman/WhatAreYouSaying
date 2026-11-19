@@ -58,7 +58,7 @@ class OpenAICompatBackend(Backend):
         words = text.split()
         pieces = [" " + w for w in words]
         n = len(words)
-        ids = np.arange(n + 2, dtype=np.int64)  # placeholder ids: one pseudo token per word
+        ids = np.arange(n + 2, dtype=np.int64)
         tr = Transcript(ids=ids, keep=np.arange(n, dtype=np.int64), pieces=pieces, text=text, times=None)
         tr.group_words()
         return tr

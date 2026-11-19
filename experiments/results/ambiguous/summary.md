@@ -1,6 +1,6 @@
 **2094-142345-0024, pink noise at 0 dB SNR over 0.6-2.6 s. Gold: 'munny my iron's twite told pease put it down to warm'**
 
-Three ways of placing each token in time. The tokens are in spoken order, so rho(order) near 1 means the placement follows the speech; width is the median effective width of a token's map at the top layer.
+Three ways of placing each token in time. The tokens are in spoken order, so rho(order) near 1 means the placement follows the speech. Width is the median effective width of a token's map at the top layer.
 
 | model | recording | method | rho(order) | median width (s) | tokens placed in the window |
 |---|---|---|---|---|---|

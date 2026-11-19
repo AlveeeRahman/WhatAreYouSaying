@@ -6,9 +6,9 @@
 
 | paired difference | WER | noise-focus ratio | top-patch share |
 |---|---|---|---|
-| whisper-base - moonshine-base | -0.124 [-0.380, +0.035] | -0.008 [-0.097, +0.077] | -0.050 [-0.069, -0.032] |
-| whisper-tiny - whisper-base | +0.151 [+0.023, +0.355] | -0.042 [-0.089, -0.004] | +0.043 [+0.029, +0.058] |
-| whisper-tiny - moonshine-base | +0.027 [-0.266, +0.305] | -0.050 [-0.131, +0.016] | -0.007 [-0.031, +0.017] |
+| whisper-base - moonshine-base | -0.124 [-0.380, +0.035] | +0.004 [-0.088, +0.097] | -0.050 [-0.069, -0.032] |
+| whisper-tiny - whisper-base | +0.151 [+0.023, +0.355] | -0.111 [-0.209, -0.026] | +0.043 [+0.029, +0.058] |
+| whisper-tiny - moonshine-base | +0.027 [-0.266, +0.305] | -0.107 [-0.217, -0.024] | -0.007 [-0.031, +0.017] |
 
 | detector | whisper-tiny | whisper-base | moonshine-base | paired base - moonshine |
 |---|---|---|---|---|

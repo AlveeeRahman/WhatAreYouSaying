@@ -19,6 +19,7 @@ Model revisions: the snapshot commits recorded in experiments/results/<model>/pr
 (`models` field). Passing them as `revision=` makes a re-run load the same weights even after the
 Hub repository moves on.
 """
+import json
 import os
 import sys
 from pathlib import Path
@@ -44,3 +45,19 @@ def data_root(arg: str | None = None, need: tuple[str, ...] = (AUDIO_DIR,)) -> P
                  "Point WAYS at a folder with the layout described in experiments/common.py: pass its path as the "
                  "argument, or set WAYS_DATA=/path/to/it.")
     return p
+
+
+def resume_rows(rows_f: Path, has_outputs) -> list[dict]:
+    """The rows of a finished-work file whose saved outputs still exist.
+
+    A row counts as done only when `has_outputs(row)` is true. Rows whose outputs are missing (a
+    fresh clone has the tracked rows but not the ignored npz maps) are dropped from the file, so the
+    run that follows recomputes them and writes each row once.
+    """
+    if not rows_f.exists():
+        return []
+    rows = [json.loads(line) for line in open(rows_f)]
+    kept = [r for r in rows if has_outputs(r)]
+    if len(kept) != len(rows):
+        rows_f.write_text("".join(json.dumps(r) + "\n" for r in kept))
+    return kept

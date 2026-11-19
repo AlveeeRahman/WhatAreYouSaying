@@ -65,13 +65,14 @@ def intervals(probs: np.ndarray, threshold: float = 0.5, min_s: float = 0.1, cla
 
 
 def flag_profile(probs: np.ndarray | None, n_t: int, patch_s: float = 0.1, threshold: float = 0.5) -> np.ndarray | None:
-    """Fraction of flagged 20 ms frames inside each attribution patch -> f [n_t] in [0, 1]."""
+    """Fraction of flagged 20 ms frames that overlap each attribution patch -> f [n_t] in [0, 1]."""
     if probs is None:
         return None
     flag = flagged_mask(probs, threshold).astype(np.float32)
-    per = int(round(patch_s / SEG_S))
     f = np.zeros(n_t, np.float32)
     for t in range(n_t):
-        seg = flag[t * per:(t + 1) * per]
+        lo = int(np.floor(t * patch_s / SEG_S + 1e-9))
+        hi = max(int(np.ceil((t + 1) * patch_s / SEG_S - 1e-9)), lo + 1)
+        seg = flag[lo:hi]
         f[t] = seg.mean() if len(seg) else 0.0
     return f

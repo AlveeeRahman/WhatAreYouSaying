@@ -57,6 +57,20 @@ was imported during the run, which is Vangala et al.'s D_r). It also writes the 
 Their runtime sets were measured in the development environment, which holds more packages than
 `requirements.txt` installs, so they are an upper bound on what a clean install loads.
 
+Three limits of these records, found in a review on 2026-11-19:
+
+* The three 100-clip runs were made before the model revisions were passed explicitly, so their
+  manifests say `"revision": null`. The local cache held one snapshot per model, the one now pinned
+  in `experiments/common.py`.
+* The manifests of the controlled, on-and-off and latent runs were written when the finished runs
+  were re-entered, so their Python, torch and dependency fields describe that later process. Their
+  `code_commit` predates a rewrite of this repository's history and no longer resolves.
+* From 0.3.1 a manifest also records `code_dirty`, which is true when tracked files differed from
+  the commit at the time of the run.
+
+A model pass skips a clip only when its saved map exists. The maps (`npz`) are not committed, so
+on a fresh clone every pass recomputes its clips and rewrites the tracked rows.
+
 ## 4. Clean-environment execution test
 
 `scripts/reproduce_clean_env.sh` creates a fresh virtual environment with no system site packages,
@@ -91,7 +105,7 @@ by default.
 python -m venv .venv && . .venv/bin/activate
 pip install --extra-index-url https://download.pytorch.org/whl/cu128 -r requirements.txt
 pip install --no-deps -e .
-pytest tests -q                                   # math and operator checks, CPU, about a second
+pytest tests -q -m "not gpu and not slow"         # the CPU checks, under a minute
 export WAYS_DATA=/path/to/ways-data
 python experiments/sample_test100.py "$WAYS_DATA"
 HF_HUB_OFFLINE=0 TRANSFORMERS_OFFLINE=0 experiments/run_all.sh   # three models, 100 clips, about 40 minutes on the GPU above
@@ -101,18 +115,37 @@ python experiments/example_clip.py "$WAYS_DATA"
 python experiments/vox_mixed_figures.py "$WAYS_DATA"
 python experiments/gif_erase_sweep.py "$WAYS_DATA"
 # controlled set: LibriSpeech test-clean into experiments/cache/librispeech/, then
-mkdir -p experiments/cache/librispeech
-curl -L https://www.openslr.org/resources/12/test-clean.tar.gz | tar xz -C experiments/cache/librispeech
+mkdir -p experiments/cache/librispeech && cd experiments/cache/librispeech
+curl -LO https://www.openslr.org/resources/12/test-clean.tar.gz
+echo "39fde525e59672dc6d1551919b1478f724438a95aa55f874b576be21967e6c23  test-clean.tar.gz" | sha256sum -c && tar xzf test-clean.tar.gz
+cd ../../..
 python experiments/controlled.py prepare && experiments/run_controlled.sh && python experiments/controlled_figures.py
 # detector backbones: LibriSpeech dev-clean into experiments/cache/librispeech/, then
-curl -L https://www.openslr.org/resources/12/dev-clean.tar.gz | tar xz -C experiments/cache/librispeech
+cd experiments/cache/librispeech && curl -LO https://www.openslr.org/resources/12/dev-clean.tar.gz
+echo "76f87d090650617fca0cac8f88b9416e0ebf80350acb97b343a85fa903728ab3  dev-clean.tar.gz" | sha256sum -c && tar xzf dev-clean.tar.gz
+cd ../../..
 experiments/run_backbones.sh                      # trains two detectors (about 5 minutes) and runs the comparison
 # VoiceBank-DEMAND on-and-off set: demand.py downloads the four test-set archives from Edinburgh DataShare
 # (about 330 MB, SHA-256 checked), then the three models with a 30 minute cap each, then the figures
-experiments/run_demand.sh && python experiments/demand_figures.py && python docs/images/src/make_demand_figure.py && python docs/images/render.py demand_tracking
-# the hand-drawn workflow figures and the detector figure (fonts are in docs/images/fonts, no internet needed)
-python -m playwright install chromium && python docs/images/render.py
+experiments/run_demand.sh && python experiments/demand_figures.py
+# the latent view: three models over the 100 VoxCeleb clips and the 60 controlled clips
+experiments/run_latent.sh
+# the ambiguous clip under both methods (needs the controlled set above)
+python experiments/ambiguous_case.py && python experiments/ambiguous_wer.py
+# the hand-drawn workflow figures and the two charts (fonts are in docs/images/fonts, no internet needed)
+python -m playwright install chromium
+python docs/images/src/make_detector_figure.py && python docs/images/src/make_demand_figure.py && python docs/images/render.py
 ```
+
+Two things this sequence does not cover. The nine example figures `figures/latent__*` and
+`figures/tool_*` were drawn with the `ways aud-cam` and `ways sound-token` commands on clip
+`id10274_89UnsytX6Y8_00006` and no script regenerates them. The detector comparison reuses the
+saved detector probabilities only while `weights.sha256` next to them matches the checkpoint, so
+retrained detectors are always rescored.
+
+To install the exact CPU closure of the clean-environment run instead of the direct pins, use
+`pip install -r provenance/requirements-lock.txt`. There is no lock file for the CUDA build that
+produced the results. `requirements.txt` pins its direct dependencies.
 
 The VoxCeleb audio and transcripts in the data folder are not redistributed here; the clip ids,
 the hashes and every derived number are.

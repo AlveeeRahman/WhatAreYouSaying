@@ -66,18 +66,17 @@ write_manifest(OUT / "provenance.json", inputs={"sample100.csv": str(HERE / "sam
                seeds={"sample": 8001, "bootstrap": 8001}, models={model_id: REVISIONS.get(model_id)},
                extra=dict(backend=be.describe(), passes=["vox", "controlled"]))
 
-# summary per layer, bootstrap over clips
 from ways.metrics import bootstrap_ci
 
 S = {}
 for tag in ("vox", "controlled"):
     rows = [json.loads(l) for l in open(OUT / f"{tag}.jsonl")]
     if tag == "vox":
-        rows = [r for r in rows if 0.05 <= r["degraded_share"] <= 0.95]   # informative clips only, same rule as compare.py
+        rows = [r for r in rows if 0.05 <= r["degraded_share"] <= 0.95]
     L = rows[0]["layers"]
     S[tag] = dict(n_clips=len(rows), layers=[])
     for l in range(L):
-        get = lambda k, l=l, rows=rows: [r["summary"][l][k] for r in rows]   # bound per layer
+        get = lambda k, l=l, rows=rows: [r["summary"][l][k] for r in rows]
         S[tag]["layers"].append(dict(layer=l, shift_out=bootstrap_ci(get("shift_out")), shift_in=bootstrap_ci(get("shift_in")),
                                      cam_focus=bootstrap_ci(get("cam_focus")), rho_loud=bootstrap_ci(get("rho_loud"))))
 (OUT / "summary.json").write_text(json.dumps(S, indent=1, default=float))

@@ -22,7 +22,7 @@ import torch
 SR = 16000
 N_FFT = 400
 HOP = 160
-N_BINS = N_FFT // 2 + 1  # 201 bins, 40 Hz apart
+N_BINS = N_FFT // 2 + 1
 BIN_HZ = SR / N_FFT
 
 _WINDOWS: dict = {}
@@ -52,10 +52,12 @@ def band_edges_hz(n_bands: int = 8, n_mels: int = 80, fmax: float = SR / 2) -> n
 
 
 def band_bins(n_bands: int = 8) -> list[tuple[int, int]]:
-    """[lo_bin, hi_bin) STFT bin ranges per band, disjoint and covering all 201 bins."""
+    """[lo_bin, hi_bin) STFT bin ranges per band, disjoint, non-empty and covering all 201 bins."""
     edges = band_edges_hz(n_bands)
     bins = [int(round(e / BIN_HZ)) for e in edges]
     bins[0], bins[-1] = 0, N_BINS
+    if any(bins[b + 1] <= bins[b] for b in range(n_bands)):
+        raise ValueError(f"{n_bands} bands leave a band with no STFT bin (bins are {BIN_HZ:g} Hz apart). Use fewer bands.")
     return [(bins[b], bins[b + 1]) for b in range(n_bands)]
 
 
@@ -68,7 +70,7 @@ class PatchGrid:
     n_bands: int = 8
 
     @property
-    def n_frames(self) -> int:  # torch.stft with center=True
+    def n_frames(self) -> int:
         return self.n_samples // HOP + 1
 
     @property
@@ -79,7 +81,7 @@ class PatchGrid:
 
     @property
     def n_t(self) -> int:
-        return int(np.ceil(self.n_samples / SR / self.patch_s))
+        return -(-self.n_samples // (self.frames_per_patch * HOP))
 
     @property
     def duration(self) -> float:
@@ -124,7 +126,8 @@ def erase(wav: torch.Tensor, grid: PatchGrid, patches: list[tuple[int, int]], n_
     so the resynthesised signal's own STFT regains some energy in the patch from the neighbouring
     frames and bins (the usual STFT consistency problem). ``n_iter`` alternating projections
     (zero the patch, resynthesise, re-analyse) tighten it; see tests/test_erasure.py and the
-    README for the measured suppression. The waveform outside the patch's time span is unchanged.
+    README for the measured suppression. The waveform more than 20 ms outside the patch's time span
+    is unchanged.
     """
     assert wav.ndim == 1 and len(wav) == grid.n_samples
     if not patches:

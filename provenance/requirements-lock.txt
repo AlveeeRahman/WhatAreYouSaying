@@ -1,3 +1,4 @@
+--extra-index-url https://download.pytorch.org/whl/cpu
 aadd @ git+https://github.com/gertelrina/aadd@c6a2debc706b55d940426dffcc4ac31c85e875be
 annotated-doc==0.0.7
 annotated-types==0.8.0
@@ -50,8 +51,8 @@ playwright==1.65.2
 pluggy==1.7.0
 pooch==1.9.0
 pycparser==3.12
-pydantic==2.14.3
-pydantic_core==2.50.4
+pydantic==2.14.4
+pydantic_core==2.50.5
 Pygments==2.21.0
 pyparsing==3.3.3
 pytest==8.4.2
@@ -61,6 +62,7 @@ RapidFuzz==3.14.6
 regex==2026.11.19
 requests==2.34.2
 rich==15.0.0
+ruff==0.17.5
 safetensors==0.8.0
 scikit-learn==1.9.1
 scipy==1.18.0

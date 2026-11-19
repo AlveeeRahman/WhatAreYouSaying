@@ -60,8 +60,8 @@ def token_summary(att: Attribution, aadd_probs: np.ndarray | None = None, thresh
         if np.isnan(m[k]).any():
             rows.append(r)
             continue
-        prof = m[k].sum(0)            # [T]
-        bands = m[k].sum(1)           # [B]
+        prof = m[k].sum(0)
+        bands = m[k].sum(1)
         top = int(prof.argmax())
         r.update(top_t=top, top_centre_s=(top + 0.5) * att.patch_s, top_share=float(prof.max()),
                  top_band=int(bands.argmax()), entropy_time=float(-(prof[prof > 0] * np.log(prof[prof > 0])).sum()))
@@ -102,7 +102,6 @@ def clip_summary(att: Attribution, rows: list[dict], aadd_probs=None, threshold:
     return out
 
 
-# ------------------------------------------------------------------ statistics
 def bootstrap_ci(x, B: int = 10000, seed: int = 8001, stat=np.mean):
     x = np.asarray(x, float)
     x = x[np.isfinite(x)]

@@ -13,7 +13,7 @@ from pathlib import Path
 
 import pandas as pd
 import soundfile as sf
-from common import AADD_CSV, AUDIO_DIR, REVISIONS, TRANSCRIPTS_TSV, data_root
+from common import AADD_CSV, AUDIO_DIR, REVISIONS, TRANSCRIPTS_TSV, data_root, resume_rows
 
 from ways import explain, load_backend
 from ways.metrics import clip_summary, token_summary, wer
@@ -45,7 +45,7 @@ aadd = load_scan_csv(AADD_CSV)
 be = load_backend(kind, model_id, revision=REVISIONS.get(model_id))
 say("backend", json.dumps(be.describe()))
 rows_f = OUT / "rows.jsonl"
-done = {json.loads(l)["clip"] for l in open(rows_f)} if rows_f.exists() else set()
+done = {r["clip"] for r in resume_rows(rows_f, lambda r: all((OUT / "npz" / f"{r['clip']}{ext}").exists() for ext in (".npz", "_tokens.csv")))}
 tok_rows = []
 for i, r in sample.iterrows():
     clip = r["file"]
@@ -72,7 +72,6 @@ for i, r in sample.iterrows():
     say(f"[{i + 1}/{len(sample)}] {clip} K={att.delta.shape[0]} patches={att.n_bands * att.n_t} WER={w['wer']:.2f} "
         f"focus={cs.get('focus_ratio_mean', float('nan')):.2f} {time.time() - t0:.1f}s")
 
-# tables
 df = pd.DataFrame([json.loads(l) for l in open(rows_f)]).drop_duplicates("clip", keep="last")
 df.to_csv(OUT / "clips.csv", index=False)
 toks = pd.concat([pd.read_csv(p) for p in sorted((OUT / "npz").glob("*_tokens.csv"))], ignore_index=True)

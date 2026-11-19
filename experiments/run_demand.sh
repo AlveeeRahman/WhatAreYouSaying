@@ -5,7 +5,7 @@ cd "$(dirname "$0")/.."
 PY=${PY:-python}
 MAX_MIN=${MAX_MIN:-30}
 export HF_HUB_OFFLINE=${HF_HUB_OFFLINE:-1} TRANSFORMERS_OFFLINE=${TRANSFORMERS_OFFLINE:-1} PYTHONUNBUFFERED=1
-[ -f experiments/results/demand/manifest.csv ] || $PY experiments/demand.py prepare
+ls experiments/cache/demand/*_alt.wav >/dev/null 2>&1 || $PY experiments/demand.py prepare
 for spec in "whisper-base hf-whisper openai/whisper-base" \
             "moonshine-base hf-moonshine UsefulSensors/moonshine-base" \
             "whisper-tiny hf-whisper openai/whisper-tiny"; do

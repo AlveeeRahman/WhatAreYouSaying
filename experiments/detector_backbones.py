@@ -19,9 +19,11 @@ import torch
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 from common import AUDIO_DIR, data_root  # noqa: E402
+from train_detectors import OUT as DET_OUT  # noqa: E402
 from train_detectors import frame_probs, load_detector  # noqa: E402
 
 from ways.metrics import bootstrap_ci, paired_bootstrap  # noqa: E402
+from ways.provenance import sha256  # noqa: E402
 from ways.quality import CLASSES as AADD_CLASSES  # noqa: E402
 
 AUDIO = data_root(sys.argv[1] if len(sys.argv) > 1 else None) / AUDIO_DIR
@@ -48,7 +50,15 @@ S = dict(detectors={}, controlled={}, focus={})
 for name, fn, info in detectors():
     key = name.split(" ")[0]
     S["detectors"][name] = info
-    # (a) controlled set: ground-truth window
+    ddir = RES / "aadd" / f"det_{key}"; ddir.mkdir(exist_ok=True)
+    ckpt = DET_OUT / f"{key}.pt"
+    tag = sha256(ckpt) if ckpt.exists() else "aadd-v3.1-release"
+    tag_f = ddir / "weights.sha256"
+    if not tag_f.exists() or tag_f.read_text().strip() != tag:
+        for old in ddir.glob("*.npy"):
+            old.unlink()
+        tag_f.write_text(tag + "\n")
+    info["weights_sha256"] = tag
     rows = []
     for r in man.itertuples():
         f = RES / "aadd" / f"det_{key}" / f"{r.id}.npy"; f.parent.mkdir(exist_ok=True)
@@ -62,14 +72,12 @@ for name, fn, info in detectors():
     d = pd.DataFrame(rows)
     S["controlled"][name] = dict(overall=d[["flagged_inside", "flagged_outside", "class_inside"]].mean().round(3).to_dict(),
                                  by_class=d.groupby("degradation")[["flagged_inside", "flagged_outside", "class_inside"]].mean().round(2).to_dict("index"))
-    # (b) VoxCeleb: probabilities for the noise-focus ratio
     for clip in sample.file:
         f = RES / "aadd" / f"det_{key}" / f"{clip}.npy"
         if not f.exists():
             w, _ = sf.read(AUDIO / f"{clip}.wav", dtype="float32"); np.save(f, fn(w))
     print(name, S["controlled"][name]["overall"], flush=True)
 
-# noise-focus ratio of every speech-to-text model under every detector, reusing compare.py's function
 import compare  # noqa: E402  (loads the clips and tokens tables)
 
 compare.DETS.update({f"det_{n.split(' ')[0]}": 0.02 for n in S["detectors"]})

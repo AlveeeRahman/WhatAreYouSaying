@@ -44,7 +44,6 @@ for name in ["v3", "v3-lite", "v2"]:
         np.save(f, np.asarray(probs, np.float32))
     info[name]["seconds"] = round(time.time() - t0, 1)
     print(name, info[name], flush=True)
-# consistency with the scan CSV in the data folder (same v3 weights, CLI path)
 csv = load_scan_csv(AADD_CSV)
 c0 = sample.file[0]
 a, b = np.load(OUT / "v3" / f"{c0}.npy"), csv[c0]

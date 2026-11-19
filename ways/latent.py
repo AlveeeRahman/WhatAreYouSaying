@@ -34,14 +34,18 @@ SEG_S = 0.02
 
 @dataclass
 class LatentResult:
+    """The latent view of one clip. With L layers: cam is [L, n_frames] and each layer sums to 1
+    (zeros if the layer has no positive CAM), shift is [L, n_frames] the relative latent shift under
+    erasure of the degraded frames, loudness_db is [n_frames], degraded is [n_frames] bool, and
+    summary has one dict per layer (cam_focus, rho_loud, shift_in, shift_out)."""
     model: str
     n_frames: int
     layers: int
-    cam: np.ndarray            # [L, n_frames], each layer sums to 1 (zeros if the layer has no positive CAM)
-    shift: np.ndarray          # [L, n_frames] relative latent shift under erasure of D
-    loudness_db: np.ndarray    # [n_frames]
-    degraded: np.ndarray       # [n_frames] bool, the erased frames D
-    summary: list[dict]        # per layer: cam_focus, rho_loud, shift_in, shift_out
+    cam: np.ndarray
+    shift: np.ndarray
+    loudness_db: np.ndarray
+    degraded: np.ndarray
+    summary: list[dict]
     text: str
 
     def to_dict(self):
@@ -236,7 +240,10 @@ def layer_summary(cam: np.ndarray, shift: np.ndarray, degraded: np.ndarray, loud
 
 def latent_view(backend: Backend, wav: np.ndarray, probs=None, window=None, threshold: float = 0.5,
                 transcript: Transcript | None = None) -> LatentResult:
+    from .attribution import _check_length
+
     wav = np.asarray(wav, np.float32)
+    _check_length(backend, wav)
     n20 = int(len(wav) // (SEG_S * 16000))
     tr = transcript or backend.transcribe(wav)
     degraded = degraded_frames(probs, n20, threshold, window)

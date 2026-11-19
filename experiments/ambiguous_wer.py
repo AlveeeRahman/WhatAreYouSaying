@@ -14,7 +14,7 @@ import pandas as pd
 from matplotlib.patches import Rectangle
 
 from ways.attribution import Attribution
-from ways.figure import FigureStyle, _rc, logmel, text_width_pt, wrap_to_width
+from ways.figure import FigureStyle, _rc, logmel, save_figure, text_width_pt, wrap_to_width
 from ways.metrics import normalize_text, token_mass
 
 HERE = Path(__file__).resolve().parent
@@ -39,7 +39,7 @@ def words_of(att: Attribution):
     for w in words:
         p = np.nanmean(prof[w["ks"]], 0) if np.isfinite(prof[w["ks"]]).any() else np.full(prof.shape[1], np.nan)
         norm = normalize_text(w["text"])
-        if not norm:                         # a punctuation-only token hangs on the previous word
+        if not norm:
             if out:
                 out[-1]["ks"] += w["ks"]
             continue
@@ -95,7 +95,6 @@ def main():
                 inwin = a <= w["t"] <= b if np.isfinite(w["t"]) else False
                 mass_in = float(np.nansum(w["prof"][int(a / att.patch_s): int(np.ceil(b / att.patch_s))])) if np.isfinite(w["prof"]).any() else np.nan
                 rows.append(dict(model=model, cond=cond, word=w["text"], norm=w["norm"], status=st, t=w["t"], in_window=inwin, mass_in_window=mass_in))
-        # words both transcripts share (same normalised word, nearest in time), counted for the table
         used = set()
         for wc in per["clean"]["words"]:
             cands = [(abs(wd["t"] - wc["t"]), j) for j, wd in enumerate(per["deg"]["words"]) if wd["norm"] == wc["norm"] and j not in used]
@@ -103,7 +102,7 @@ def main():
                 used.add(min(cands)[1])
         for cond, y, sign in (("clean", 1.0, 1), ("deg", 0.0, -1)):
             p = per[cond]
-            rows_end = [-1.0, -1.0, -1.0]                       # right edge of the last label in each label row
+            rows_end = [-1.0, -1.0, -1.0]
             for w, st in sorted(zip(p["words"], p["status"], strict=True), key=lambda r: r[0]["t"]):
                 if not np.isfinite(w["t"]):
                     continue
@@ -146,7 +145,7 @@ def main():
              "insertion. Blue band = the noisy two seconds.", axis_pt, S.label_size, font=S.font),
              fontsize=S.label_size, color=S.text_soft, va="bottom")
     out = FIG / f"controlled_noise_wer__{CLIP}.png"
-    fig.savefig(out, dpi=S.dpi, facecolor=S.background); fig.savefig(out.with_suffix(".svg"), facecolor=S.background); plt.close(fig)
+    save_figure(fig, out, S.dpi, facecolor=S.background); plt.close(fig)
     OUT.mkdir(parents=True, exist_ok=True)
     pd.DataFrame(rows).to_csv(OUT / "wer_words.csv", index=False)
     lines = ["| model | WER clean -> degraded | words on the noisy stretch | right on it | right outside it | shared words | evidence in the noise, window words | evidence in the noise, outside words |",

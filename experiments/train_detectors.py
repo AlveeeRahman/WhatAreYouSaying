@@ -34,7 +34,6 @@ SR, FRAME, SECONDS = 16000, 320, 8.0
 N = int(SECONDS * SR)
 
 
-# ----------------------------------------------------------------------------- data
 def load_speech(limit=None):
     files = sorted(LS.rglob("*.flac"))[:limit]
     wavs = []
@@ -77,7 +76,6 @@ class SynthWindows(Dataset):
         return torch.from_numpy(x), torch.from_numpy(y), torch.from_numpy(ig)
 
 
-# ----------------------------------------------------------------------------- models
 class MoonshineFrameModel(nn.Module):
     """AADD's v3 head (weighted sum of all encoder layers, LayerNorm, two convs, sigmoid per class) on the
     Moonshine encoder, which reads the raw waveform; its frames (~24 ms) are resampled to the 20 ms grid."""
@@ -102,9 +100,9 @@ class MoonshineFrameModel(nn.Module):
         w = torch.softmax(self.layer_w, 0)
         h = sum(w[i] * hs[i] for i in range(len(hs)))
         h = self.norm(h).transpose(1, 2)
-        h = self.head(h)                                                   # [B, head_dim, T']
+        h = self.head(h)
         h = F.interpolate(h, size=self.n_frames, mode="linear", align_corners=False).transpose(1, 2)
-        return self.out(h)                                                 # [B, 400, C]
+        return self.out(h)
 
 
 def build(name):
@@ -136,7 +134,6 @@ def frame_auc(p, y, ig):
     return float(np.mean(aucs)) if aucs else float("nan")
 
 
-# ----------------------------------------------------------------------------- inference, AADD style
 @torch.no_grad()
 def frame_probs(model, y, device, overlap=1.0, batch=8):
     """Sliding 8 s windows with 1 s overlap, probabilities averaged where windows overlap, the 0.5 s at
@@ -165,7 +162,6 @@ def load_detector(name, device):
     return m, ck
 
 
-# ----------------------------------------------------------------------------- train
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("name", choices=["whisper-base", "moonshine-base"])

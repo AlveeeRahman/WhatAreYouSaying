@@ -32,7 +32,7 @@ out = dict(python=sys.version.split()[0], n_claimed=len(cl), n_runtime=len(rt), 
 json.dump(out, open("provenance/clean_env_run.json", "w"), indent=1)
 print(f"claimed {len(cl)} packages, runtime {len(rt)}, multiplier {len(rt)/max(len(cl),1):.1f}x; not claimed: {len(gap)}")
 PY
-# the full transitive closure the clean venv resolved, as a lock file for anyone who wants bit-for-bit the same set
-"$VENV/bin/pip" freeze --exclude-editable | grep -v "^ways" > provenance/requirements-lock.txt
-echo "lock file: $(wc -l < provenance/requirements-lock.txt) pinned distributions in provenance/requirements-lock.txt"
+# the full transitive closure the clean venv resolved (CPU torch), installable with pip install -r provenance/requirements-lock.txt
+{ echo "--extra-index-url https://download.pytorch.org/whl/cpu"; "$VENV/bin/pip" freeze --exclude-editable | grep -v "^ways"; } > provenance/requirements-lock.txt
+echo "lock file: $(grep -c "==\| @ " provenance/requirements-lock.txt) pinned distributions in provenance/requirements-lock.txt"
 echo "clean-environment run passed"

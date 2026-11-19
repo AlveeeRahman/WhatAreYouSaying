@@ -5,6 +5,32 @@
 - **docs/help-wanted.md**: the open work for contributors (CI workflow, a live vLLM or llama.cpp run, a
   larger model, other languages, new tools, reproduction reports), linked from the README.
 
+## 0.3.1
+
+An independent review of the code and of the experiment scripts, and what it changed.
+
+- **Fresh-clone re-runs work.** A model pass skips a clip only when its saved map exists
+  (`experiments/common.py:resume_rows`). Before, the tracked row files made every pass skip all clips
+  and the summaries then failed on the missing maps. `run_demand.sh` prepares the set when its cache is
+  missing, `demand.py summarise` refuses to write empty results, and a run stopped by the time cap
+  exits non-zero.
+- **Clean install fixed.** The licence classifier that current setuptools rejects is removed, `scipy`
+  is declared in `pyproject.toml`, `ruff` is pinned in `requirements.txt`, and the lock file carries the
+  index line it needs. `docs/images/render.py` exits non-zero on a missing font or an overflow.
+- **Paired noise-focus differences use the informative clips**, as the per-model ratios already did.
+  The whisper-tiny differences change from -0.04 and -0.05 to -0.11 and -0.11, with intervals that
+  exclude 0.
+- **Black-box word-change map**: a punctuation-only word no longer shifts the alignment.
+- **Guards**: Whisper clips over 30 s are refused, `ways latent` needs `--aadd` or `--window`, a band
+  count that leaves an empty band is refused, a plug-in with a duplicate name no longer stops the CLI.
+- `flag_profile` follows time for any patch length, and `PatchGrid.n_t` uses integer arithmetic. Both
+  are unchanged at the default 100 ms.
+- **Provenance**: `code_dirty` is recorded, an unpinned model resolves to the snapshot `main` points
+  at, `ambiguous_case.py` pins its three models, and its result files hold repository-relative paths.
+- Every figure is written through `ways.figure.save_figure` (no dates, fixed SVG ids).
+- The sweep animation tries all 376 patches in the order the code erases them, band by band.
+- Code comments removed. Field documentation moved into class docstrings. 7 new tests (50 in all).
+
 ## 0.3.0
 
 - **cross-check**, a third registered tool: one model, one clip, one transcript, and for every token the

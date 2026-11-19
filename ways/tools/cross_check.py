@@ -43,7 +43,7 @@ def cross_check(wav, sr=16000, backend=("hf-whisper", "openai/whisper-base"), qu
     tcam, _ = token_cam(be, wav, tr)
     w = wer(wer_reference, att.text)["wer"] if wer_reference else None
     name = model.split("/")[-1] if model else be.name
-    entry = from_attribution(att, name, w)                   # the same first-ranked (band, patch) as the sound-token figure draws
+    entry = from_attribution(att, name, w)
     m = token_mass(att)
     prof = np.where(np.isnan(m).all((1, 2))[:, None], np.nan, m.sum(1))
     erase_t = [float((tp[1] + 0.5) * patch_s) if tp is not None else float("nan") for tp in entry["top"]]

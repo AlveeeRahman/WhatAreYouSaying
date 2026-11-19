@@ -9,7 +9,7 @@
   <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/python-3.12%2B-blue.svg" alt="Python 3.12+"></a>
   <a href="requirements.txt"><img src="https://img.shields.io/badge/PyTorch-2.11-EE4C2C.svg" alt="PyTorch 2.11"></a>
   <a href="https://github.com/gertelrina/aadd"><img src="https://img.shields.io/badge/AADD-v3.1-191919.svg" alt="AADD v3.1"></a>
-  <a href="tests/"><img src="https://img.shields.io/badge/tests-43%20passed-brightgreen.svg" alt="tests: 43 passed"></a>
+  <a href="tests/"><img src="https://img.shields.io/badge/tests-50%20passed-brightgreen.svg" alt="tests: 50 passed"></a>
   <a href="provenance/clean_env_run.log"><img src="https://img.shields.io/badge/clean--env%20run-passed-brightgreen.svg" alt="clean-environment run: passed"></a>
   <a href="#reproducibility"><img src="https://img.shields.io/badge/CI-not%20set%20up%20yet-lightgrey.svg" alt="CI: not set up yet"></a>
 </p>
@@ -19,8 +19,8 @@
 </p>
 
 <p align="center">
-  <img src="docs/images/erase_sweep.gif" width="720" alt="Animation: a patch sweeps along one pitch band of the example clip's spectrogram; for each position the bars show how much less sure whisper-base became of every word, and the map of the word that reacts most builds up underneath">
-  <br><sub>One band of whisper-base's input, erased one patch at a time. The surprisal of the word "Ron" rises for one patch and barely changes for the others.</sub>
+  <img src="docs/images/erase_sweep.gif" width="720" alt="Animation: one patch at a time is erased from the example clip's spectrogram, left to right along the lowest pitch band and then along each band above it; for each patch the bars show how much less sure whisper-base became of every word, and the map of the word that reacts most fills in underneath">
+  <br><sub>The 376 patches of one clip in the order the code erases them: left to right along the lowest band, then the next band up. Each patch is erased from the original audio and scored on its own. The surprisal of the word "Ron" rises for a few patches near 2.0 s and barely changes for the others.</sub>
 </p>
 
 WhatAreYouSaying (WAYS) is an attribution tool for speech-to-text models. For every token a model
@@ -56,7 +56,7 @@ and [CONTRIBUTING.md](CONTRIBUTING.md) covers setup and tests.
 | controlled set | 60 LibriSpeech test-clean utterances, one 2 s degradation each from AADD's synthesiser, clean and degraded twins, three models |
 | on-and-off set | 100 VoiceBank-DEMAND sentences (CC BY 4.0), real noise at 2.5 to 17.5 dB switched on and off in 4 to 7 segments per sentence, clean and noisy-throughout twins, three models, 30 min cap per model |
 | detectors | AADD v3.1 (whisper-small backbone, 88.6 M parameters); AADD's head on whisper-base and on moonshine-base encoders (21 M each, AADD recipe on LibriSpeech dev-clean); plus AADD v3-lite (CRNN, 1.3 M) and v2 (EfficientNet-B0, 4.0 M) |
-| tests | 41 CPU checks of the operator, the formulas, the figures (overlaps, page edges, repeatability, editable text), the latent view and the tool framework, 2 end-to-end HTTP checks against a mock OpenAI-compatible server |
+| tests | 48 CPU checks of the operator, the formulas, the figures (overlaps, page edges, repeatability, editable text), the latent view and the tool framework, 2 end-to-end HTTP checks against a mock OpenAI-compatible server |
 
 </details>
 
@@ -129,7 +129,7 @@ $$
   on three real clips, the patch falls by 33 to 36 dB on average and by at least 17 dB in the worst
   case, below the clip's own 10th-percentile background. Without resynthesis the drop would be
   56 dB. The residual is the cost of resynthesising a waveform, which every backend takes as input. The waveform outside the
-  patch's time span is unchanged to 1e-5, and only the two patches that share a window edge with P
+  patch's time span by more than 20 ms is unchanged to 1e-5, and only the two patches that share a window edge with P
   lose a little of their own energy (up to about 10 % of P's effect).
 * Dividing by S_k(x) is a per-token constant, so every within-token summary is the same from Δ or
   from r. r only matters between tokens and is unstable for tokens the model was nearly certain of
@@ -198,7 +198,9 @@ over clips.
   model's choice for a minority of tokens: 45 %, 33 % and 29 % of tokens have at least one such
   patch.
 * **No model shows a preference for degraded audio on this data.** The noise-focus ratio is 0.93,
-  1.04 and 1.04 on the 22 informative clips, and every interval contains 1. This reflects the data
+  1.04 and 1.04 on the 22 informative clips, and every interval contains 1. Paired on those clips,
+  whisper-tiny's ratio is 0.11 below each of the other two, with intervals that exclude 0, so it
+  draws less of its evidence from flagged audio than they do. The flat result reflects the data
   as much as the models. AADD flags 59 % of all frames, every frame in 32 clips and none in 22, so
   the flag varies little within a clip. The two datasets below were added for that reason.
 * **Word error rate.** Corpus WER is 0.182 for whisper-base, 0.256 for moonshine-base and 0.383 for
@@ -213,11 +215,11 @@ over clips.
 | whisper-base | 3267 | 0.20 [0.17, 0.22] | 0.182 | 0.26 [0.25, 0.27] | 0.33 [0.30, 0.36] | 1.01 [0.95, 1.10] | 1.04 [0.92, 1.18] (n=22) |
 | moonshine-base | 4055 | 0.32 [0.16, 0.57] | 0.256 | 0.31 [0.29, 0.33] | 0.29 [0.26, 0.32] | 1.02 [0.96, 1.09] | 1.04 [0.93, 1.15] (n=22) |
 
-| paired difference | WER | noise-focus ratio | top-patch share |
+| paired difference | WER | noise-focus ratio (22 informative clips) | top-patch share |
 |---|---|---|---|
-| whisper-base - moonshine-base | -0.124 [-0.380, +0.035] | -0.008 [-0.097, +0.077] | -0.050 [-0.069, -0.032] |
-| whisper-tiny - whisper-base | +0.151 [+0.023, +0.355] | -0.042 [-0.089, -0.004] | +0.043 [+0.029, +0.058] |
-| whisper-tiny - moonshine-base | +0.027 [-0.266, +0.305] | -0.050 [-0.131, +0.016] | -0.007 [-0.031, +0.017] |
+| whisper-base - moonshine-base | -0.124 [-0.380, +0.035] | +0.004 [-0.088, +0.097] | -0.050 [-0.069, -0.032] |
+| whisper-tiny - whisper-base | +0.151 [+0.023, +0.355] | -0.111 [-0.209, -0.026] | +0.043 [+0.029, +0.058] |
+| whisper-tiny - moonshine-base | +0.027 [-0.266, +0.305] | -0.107 [-0.217, -0.024] | -0.007 [-0.031, +0.017] |
 
 | model | 0.0-0.4 kHz | 0.4-0.7 kHz | 0.7-1.1 kHz | 1.1-1.7 kHz | 1.7-2.4 kHz | 2.4-3.6 kHz | 3.6-5.2 kHz | 5.2-8.0 kHz |
 |---|---|---|---|---|---|---|---|---|
@@ -304,9 +306,9 @@ half their evidence from the window when the audio was clean.
 
 * **Damage increases the share of evidence inside the damaged window.** For in-window tokens the
   share inside the window rises from 0.73 to 0.82 for whisper-base (paired +0.088 [+0.067,
-  +0.110]), from 0.76 to 0.83 for whisper-tiny and from 0.76 to 0.84 for moonshine-base. Tokens
-  spoken outside the window also draw slightly more from it (paired +0.056 [+0.041, +0.074] for
-  whisper-base). In-window tokens become 0.10 nats more surprising to whisper-base and
+  +0.110]), from 0.76 to 0.83 for whisper-tiny and from 0.76 to 0.84 for moonshine-base.
+  Out-of-window tokens also draw more from it (paired +0.056 [+0.041, +0.074] for whisper-base),
+  so only part of the rise is specific to the tokens of the window. In-window tokens become 0.10 nats more surprising to whisper-base and
   out-of-window tokens 0.02, so the evidence concentrates where the transcript is least certain.
 * **AADD finds the inserted damage.** It flags 100 % of frames inside a noise or reverb window and
   3 to 20 % outside, with the right class. Clicks are the hardest class (70 % inside).
@@ -449,7 +451,8 @@ a second run of the tool returned the same five.
 
 **Reading 2, the encoder's gradient (aud-cam, `tokens=True`).** For the same tokens, where the
 per-frame gradient map sits at the top encoder layer, how wide it is, how much of it lies on the
-noise, and the lowest that share gets over the seven layers.
+noise, and the lowest that share gets over the seven encoder states (the embedding output, numbered
+0, and the six transformer layers).
 
 | token | gradient centre (s) | width (s) | share on the noise, top layer | lowest share over layers | reading |
 |---|---|---|---|---|---|
@@ -882,7 +885,7 @@ commands a workflow would run are `make test` and `make lint`.
   dependency list, plus the difference between the two.
 * `scripts/reproduce_clean_env.sh` builds a fresh venv, installs only `requirements.txt` (CPU
   torch), runs the tests, imports every third-party module the code uses, and records what loaded:
-  passed, 15 claimed packages, 60 distributions loaded, 83 resolved versions in
+  passed, 16 claimed packages, 60 distributions loaded, 84 resolved versions in
   `provenance/requirements-lock.txt`.
 
 </details>
@@ -903,13 +906,20 @@ commands a workflow would run are `make test` and `make lint`.
   view uses the per-frame gradient map, which is a saliency and not an erasure test.
 * **The per-token comparison of erasure and gradient is one clip.** It shows what the two methods
   can separate. Why they disagree on some tokens is not established.
+* **In-window tokens are chosen by their evidence on the clean recording**, not by where the word
+  is spoken, and the in-window and out-of-window changes are not tested against each other.
+* **Whisper clips are limited to 30 s**, the model's input window. Longer clips are refused.
+* **The WER normaliser removes hyphens instead of splitting on them** and does not normalise
+  numbers, so "twenty-one" against "twenty one" counts as two errors.
+* **The per-layer tables count the embedding output as layer 0**, so whisper-base has seven rows
+  for six transformer layers.
 * **No live vLLM or llama.cpp run yet**, only the mock server.
 * **Scale.** The results cover three small models and 260 clips. That supports paired comparisons
   with intervals, not claims about large models or other languages.
 
 ## Status
 
-* Done (0.3.0): operator, three backends, scores, summaries, AADD context, the figure system, the
+* Done (0.3.1): operator, three backends, scores, summaries, AADD context, the figure system, the
   latent view, the tool framework with three registered tools and plug-in discovery, the per-token
   gradient view and the ambiguous-clip experiment, tests, the three datasets through three models,
   the detector-backbone check, clean-environment run, provenance.

@@ -58,7 +58,6 @@ from matplotlib.patches import Rectangle
 from matplotlib.text import Text
 from matplotlib.textpath import TextPath
 
-# ----------------------------------------------------------------------------- style and text
 SEQ = ["#f0efec", "#cde2fb", "#9ec5f4", "#6da7ec", "#3987e5", "#256abf", "#184f95", "#0d366b"]
 BLUE = LinearSegmentedColormap.from_list("ways_seq", SEQ)
 
@@ -68,19 +67,19 @@ class FigureStyle:
     """Colours, fonts and sizes. The defaults are the palette used in the README."""
     width_in: float = 12.0
     dpi: int = 300
-    font: str = "DejaVu Sans"           # bundled with matplotlib, so the same on every machine
+    font: str = "DejaVu Sans"
     font_size: float = 12.0
-    label_size: float = 10.0            # word labels on the spectrogram
-    strip_size: float = 12.0            # transcript strip
+    label_size: float = 10.0
+    strip_size: float = 12.0
     background: str = "#fcfcfb"
     text: str = "#0b0b0b"
     text_soft: str = "#52514e"
     muted: str = "#77766f"
     border: str = "#e4e3df"
-    degraded: str = "#0d366b"           # bands, rules, underlines
+    degraded: str = "#0d366b"
     band_alpha: float = 0.16
     mel_cmap: str = "YlOrBr"
-    token_colours: tuple = ("#2a78d6", "#c2185b", "#1b9e77", "#7e3fc2")   # colour-blind safe adjacent pairs
+    token_colours: tuple = ("#2a78d6", "#c2185b", "#1b9e77", "#7e3fc2")
     svg_hashsalt: str = "ways"
 
 
@@ -94,7 +93,7 @@ class FigureText:
     damage_clean: str = "nothing reaches {threshold:g}: clean"
     damage_max_row: str = "max"
     spectrogram_only: str = "Spectrogram (orange = loud, pale = quiet). Blue bands = degraded audio."
-    model_row: str = "{name}{wer}  ·  {verdict}"            # wer is "" or the rendered `wer` field
+    model_row: str = "{name}{wer}  ·  {verdict}"
     wer: str = "  ·  WER {wer:.0%}"
     verdict_none: str = "no degraded audio in this clip ({K} words)"
     verdict_all: str = "every frame degraded, so all {K} words sit on degraded audio"
@@ -179,7 +178,6 @@ def _rc(style: FigureStyle):
                      "path.simplify": False})
 
 
-# ----------------------------------------------------------------------------- measuring text
 def text_width_pt(s: str, size: float, weight: str = "normal", font: str = "DejaVu Sans") -> float:
     """Width of a string in points at a font size, from the glyph outlines (no renderer needed)."""
     if not s:
@@ -209,7 +207,7 @@ def text_overlaps(fig, min_px: float = 0.5) -> list[tuple[str, str]]:
     fig.canvas.draw()
     r = fig.canvas.get_renderer()
     W, Hpx = fig.bbox.width, fig.bbox.height
-    hidden = set()                                   # tick labels outside their axis range are never drawn
+    hidden = set()
     for ax in fig.get_axes():
         for axis, lim in ((ax.xaxis, ax.get_xlim()), (ax.yaxis, ax.get_ylim())):
             lo, hi = min(lim), max(lim)
@@ -248,7 +246,7 @@ def _settle(fig, gs, strict: bool, rounds: int = 8, step: float = 0.12):
         if not ov:
             fig.ways_overlaps = []
             return
-        if all(b == "page edge" for _, b in ov):     # wider rows cannot pull a text back onto the page
+        if all(b == "page edge" for _, b in ov):
             break
         hspace += step
         gs.update(hspace=hspace)
@@ -260,19 +258,24 @@ def _settle(fig, gs, strict: bool, rounds: int = 8, step: float = 0.12):
         warnings.warn("figure has overlapping text: " + "; ".join(f"{a!r} / {b!r}" for a, b in ov[:6]), stacklevel=2)
 
 
-def _save(fig, out, dpi):
-    """Write PNG (and an SVG twin) without the metadata that changes between runs."""
+def save_figure(fig, out, dpi, **kw):
+    """Write PNG (and an SVG twin) without the metadata that changes between runs, and with a fixed
+    SVG id salt, so the same figure gives the same bytes."""
     out = Path(out)
-    if out.suffix.lower() == ".png":
-        fig.savefig(out, dpi=dpi, metadata={"Software": None})
-        fig.savefig(out.with_suffix(".svg"), metadata={"Date": None, "Creator": None})
-    elif out.suffix.lower() == ".svg":
-        fig.savefig(out, metadata={"Date": None, "Creator": None})
-    else:
-        fig.savefig(out, dpi=dpi)
+    salt = plt.rcParams["svg.hashsalt"] or FigureStyle.svg_hashsalt
+    with plt.rc_context({"svg.hashsalt": salt}):
+        if out.suffix.lower() == ".png":
+            fig.savefig(out, dpi=dpi, metadata={"Software": None}, **kw)
+            fig.savefig(out.with_suffix(".svg"), metadata={"Date": None, "Creator": None}, **kw)
+        elif out.suffix.lower() == ".svg":
+            fig.savefig(out, metadata={"Date": None, "Creator": None}, **kw)
+        else:
+            fig.savefig(out, dpi=dpi, **kw)
 
 
-# ----------------------------------------------------------------------------- audio -> log-mel (numpy only)
+_save = save_figure
+
+
 def _slaney_mel_edges(n_mels, fmin, fmax):
     f_sp, min_log_hz, logstep = 200.0 / 3, 1000.0, np.log(6.4) / 27
     hz_to_mel = lambda f: np.where(f >= min_log_hz, 15 + np.log(np.maximum(f, 1e-9) / min_log_hz) / logstep, f / f_sp)
@@ -301,7 +304,6 @@ def logmel(wav, sr=16000, n_fft=400, hop=160, n_mels=80, fmax=None):
     return np.maximum(L, L.max() - 8)
 
 
-# ----------------------------------------------------------------------------- degraded spans
 def degraded_spans(quality, hop, threshold=0.5, min_gap=0.1):
     """(start_s, end_s) stretches where any class is at or above threshold; gaps under min_gap merged."""
     if quality is None:
@@ -351,7 +353,6 @@ def verdict(on_degraded, frac, text: FigureText | None = None):
     return T.verdict_mixed.format(k=k, K=K, expected=frac * K, frac=frac)
 
 
-# ----------------------------------------------------------------------------- drawing helpers
 class _Canvas:
     """Shared state for one figure: style, geometry and the measured-text helpers."""
 
@@ -360,7 +361,7 @@ class _Canvas:
         self.left, self.right = 0.12, right
         self.axis_in = width_in * (self.right - self.left)
         self.axis_pt = self.axis_in * 72
-        self.mel_axis_in = 2.0          # set once the grid is known; used to turn points into mel units
+        self.mel_axis_in = 2.0
 
     def col(self, k):
         return self.S.token_colours[k % len(self.S.token_colours)]
@@ -408,7 +409,7 @@ class _Canvas:
 
     def place_labels(self, items, mel_h=80):
         """Non-overlapping positions beside the boxes, from measured text widths. items: [(k, text, b, t, patch_s, mpb)]."""
-        line_h = (self.S.label_size * 1.3 / 72) / max(self.mel_axis_in, 0.5) * mel_h      # one text line, in mel units
+        line_h = (self.S.label_size * 1.3 / 72) / max(self.mel_axis_in, 0.5) * mel_h
         pt_to_data = self.dur / self.axis_pt
         placed, out = [], []
         for k, text, b, t, ps, mpb in sorted(items, key=lambda r: (r[3], r[0])):
@@ -475,7 +476,6 @@ def _title_and_caption(fig, C, title, caption):
     return t_in, c_in
 
 
-# ----------------------------------------------------------------------------- the figure
 def ways_figure(wav, sr=16000, quality=None, quality_hop=0.02, quality_classes=None, threshold=0.5, models=None, window=None,
                 title=None, out=None, text=None, style=None, strict=True):
     """Draw the standard WAYS figure. Returns the matplotlib Figure; writes `out` (PNG plus an SVG twin) when given.
@@ -499,7 +499,7 @@ def ways_figure(wav, sr=16000, quality=None, quality_hop=0.02, quality_classes=N
         n = int(np.ceil(dur / quality_hop)); fl = (q[:n] >= threshold).any(1)
         frac = float(fl.mean()) if len(fl) else 0.0
     windows = [] if window is None else ([tuple(window)] if np.isscalar(window[0]) else [tuple(w) for w in window])
-    if windows:                                     # known damaged spans beat the detector as the reference
+    if windows:
         frac = float(sum(min(b, dur) - max(a, 0.0) for a, b in windows) / dur)
     models = models or []
     prepared = []
@@ -515,14 +515,13 @@ def ways_figure(wav, sr=16000, quality=None, quality_hop=0.02, quality_classes=N
     if quality is not None:
         q = np.asarray(quality, np.float32); q = q[:, None] if q.ndim == 1 else q
         n_dmg_rows = max(1, sum(int(q[:, j].max() >= threshold) for j in range(q.shape[1])) + (1 if q.shape[1] > 1 else 0))
-    # lane heights in inches: a damage row needs 1.6 text lines, a transcript line 1.9, the spectrogram 2.4
     row_in = S.label_size * 1.6 / 72; line_in = S.strip_size * 1.9 / 72
     hs = [row_in * n_dmg_rows + 0.08]
     for _, _, nl in prepared:
         hs += [2.4, line_in * nl + 0.12]
     if not prepared:
         hs += [2.4]
-    gap_in = S.font_size * 2.6 / 72                        # room for a lane title between lanes
+    gap_in = S.font_size * 2.6 / 72
     t_in = (wrap_to_width(T.title, C.axis_pt, S.font_size + 1, "bold", S.font).count("\n") + 1) * (S.font_size + 1) * 1.3 / 72 if T.title else 0.0
     c_in = (wrap_to_width(T.caption, C.axis_pt, S.label_size, font=S.font).count("\n") + 1) * S.label_size * 1.3 / 72 if T.caption else 0.0
     H = min(t_in + 0.35 + sum(hs) + gap_in * len(hs) + c_in + 0.6, 40.0)
@@ -582,7 +581,6 @@ def from_attribution(att, name=None, wer=None):
     return dict(name=name or att.model, tokens=list(att.pieces), top=top, patch_s=att.patch_s, n_bands=att.n_bands, wer=wer)
 
 
-# ----------------------------------------------------------------------------- the latent-space figure
 def latent_figure(wav, sr=16000, quality=None, quality_hop=0.02, quality_classes=None, threshold=0.5, cam=None, shift=None,
                   degraded=None, loudness_db=None, summary=None, layer_hop=0.02, model_name="", title=None, out=None,
                   text=None, style=None, strict=True):
@@ -607,7 +605,7 @@ def latent_figure(wav, sr=16000, quality=None, quality_hop=0.02, quality_classes
     gap_in = S.font_size * 2.6 / 72
     t_in = (wrap_to_width(T.title, C.axis_pt, S.font_size + 1, "bold", S.font).count("\n") + 1) * (S.font_size + 1) * 1.3 / 72 if T.title else 0.0
     c_in = (wrap_to_width(T.caption, C.axis_pt, S.label_size, font=S.font).count("\n") + 1) * S.label_size * 1.3 / 72 if T.caption else 0.0
-    H = min(t_in + 0.35 + sum(hs) + gap_in * 5 + 0.6 + c_in + 0.6, 40.0)     # extra 0.6 for the legend row above the summary
+    H = min(t_in + 0.35 + sum(hs) + gap_in * 5 + 0.6 + c_in + 0.6, 40.0)
     fig = plt.figure(figsize=(S.width_in, H))
     _title_and_caption(fig, C, T.title, T.caption)
     mean_in = sum(hs) / 5
@@ -658,9 +656,6 @@ def latent_figure(wav, sr=16000, quality=None, quality_hop=0.02, quality_classes
     return fig
 
 
-# ----------------------------------------------------------------------------- granular aud-cam figures
-# Each lane of latent_figure on its own, for when one view has to be read closely or placed alone.
-# They share the text (LatentText), the style, the measured layout and the overlap check.
 
 
 def _layer_lane(wav, sr, M, cmap, vmax, spans, lane_label, title, layer_hop, T, S, out, strict):
@@ -669,7 +664,7 @@ def _layer_lane(wav, sr, M, cmap, vmax, spans, lane_label, title, layer_hop, T, 
     wav = np.asarray(wav, np.float32); dur = len(wav) / sr
     C = _Canvas(S, dur, S.width_in, right=0.93)
     lane_in = 0.16 * M.shape[0] + 0.5
-    fig = plt.figure(figsize=(S.width_in, 1.0))                 # resized once the texts are measured
+    fig = plt.figure(figsize=(S.width_in, 1.0))
     t_in, c_in = _title_and_caption(fig, C, title, T.caption)
     H = t_in + 0.45 + lane_in + c_in + 0.7
     fig.set_size_inches(S.width_in, H)

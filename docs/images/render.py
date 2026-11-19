@@ -10,12 +10,12 @@ from playwright.sync_api import sync_playwright
 
 HERE = Path(__file__).resolve().parent
 SRC = HERE / "src"
-FIGS = {  # name: (width, height, output)
+FIGS = {
     "workflow_method": (1200, 1350, HERE / "workflow_method.png"),
     "workflow_experiments": (1200, 1330, HERE / "workflow_experiments.png"),
     "workflow_reproducibility": (1200, 770, HERE / "workflow_reproducibility.png"),
-    "detector_backbones": (1200, 830, HERE.parents[1] / "figures/detector_backbones.png"),   # built by src/make_detector_figure.py
-    "demand_tracking": (1200, 830, HERE.parents[1] / "figures/demand_tracking.png"),         # built by src/make_demand_figure.py
+    "detector_backbones": (1200, 830, HERE.parents[1] / "figures/detector_backbones.png"),
+    "demand_tracking": (1200, 830, HERE.parents[1] / "figures/demand_tracking.png"),
 }
 SCALE = 3
 
@@ -28,6 +28,8 @@ def shot(page, name, w, h, out, step=None):
     fonts, over = page.evaluate("[document.body.dataset.fonts, document.body.dataset.overflow]")
     page.screenshot(path=str(out), full_page=False)
     print(f"rendered {out.name}  fonts={fonts}  overflow={over or 'none'}")
+    if "MISSING" in str(fonts) or over:
+        sys.exit(f"{name}: fonts={fonts} overflow={over}. The render is not usable.")
     return fonts, over
 
 

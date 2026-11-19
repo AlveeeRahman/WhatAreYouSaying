@@ -17,11 +17,13 @@ RES = HERE / "results"
 FIG = HERE.parent / "figures"
 MODELS = ["whisper-tiny", "whisper-base", "moonshine-base"]
 DETS = {"v3": 0.02, "v3-lite": 0.02, "v2": 1.0}
-INFORMATIVE = (0.05, 0.95)   # a clip counts as informative for the noise-focus ratio when this share of it is flagged
+INFORMATIVE = (0.05, 0.95)
 sample = pd.read_csv(HERE / "sample100.csv")
 clips = {m: pd.read_csv(RES / m / "clips.csv").set_index("clip").loc[sample.file].reset_index() for m in MODELS}
 tokens = {m: pd.read_csv(RES / m / "tokens.csv") for m in MODELS}
 edges = band_edges_hz(8)
+_ff = clips[MODELS[0]].frac_flagged
+informative = (_ff >= INFORMATIVE[0]) & (_ff <= INFORMATIVE[1])
 
 
 def focus_under(det: str, m: str) -> np.ndarray:
@@ -33,7 +35,7 @@ def focus_under(det: str, m: str) -> np.ndarray:
         att = Attribution.load(RES / m / "npz" / f"{clip}.npz")
         P = np.load(RES / "aadd" / det / f"{clip}.npy")
         if det == "v2":
-            P = P[:, :-1]                      # drop 'None'
+            P = P[:, :-1]
         flag = (P >= 0.5).any(1).astype(np.float32)
         per = att.patch_s / res_s
         f = np.zeros(att.n_t, np.float32)
@@ -43,9 +45,9 @@ def focus_under(det: str, m: str) -> np.ndarray:
             f[t] = seg.mean() if len(seg) else 0.0
         fbar = f.mean()
         if not (INFORMATIVE[0] <= fbar <= INFORMATIVE[1]):
-            out.append(np.nan); continue      # ratio says nothing when almost nothing or almost everything is flagged
+            out.append(np.nan); continue
         mass = token_mass(att)
-        prof = np.nansum(mass, axis=1)        # [K, T]
+        prof = np.nansum(mass, axis=1)
         ok = ~np.isnan(mass).any((1, 2))
         if not ok.any():
             out.append(np.nan); continue
@@ -76,9 +78,8 @@ for m in MODELS:
         S["models"][m]["within_0p3"] = bootstrap_ci(c.within_0p3)
 for a, b in [("whisper-base", "moonshine-base"), ("whisper-tiny", "whisper-base"), ("whisper-tiny", "moonshine-base")]:
     S["paired"][f"{a} - {b}"] = dict(wer=paired_bootstrap(clips[a].wer, clips[b].wer),
-                                     focus_ratio=paired_bootstrap(clips[a].focus_ratio_mean, clips[b].focus_ratio_mean),
+                                     focus_ratio=paired_bootstrap(clips[a].focus_ratio_mean[informative], clips[b].focus_ratio_mean[informative]),
                                      top_share=paired_bootstrap(clips[a].top_share_median, clips[b].top_share_median))
-# the same question under three detectors
 for det in DETS:
     S["detectors"][det] = {}
     for m in MODELS:

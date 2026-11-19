@@ -49,7 +49,6 @@ BITSTREAMS = {"clean_testset_wav.zip": "dec213d3-bf57-4777-9663-c24bdce92d5e", "
 API = "https://datashare.ed.ac.uk/server/api/core/bitstreams/{}/content"
 
 
-# ----------------------------------------------------------------------------- prepare
 def _pattern(rng, n):
     """Random clean/noisy bits with at least two noisy runs and two clean runs (so the noise comes and goes)."""
     while True:
@@ -74,7 +73,7 @@ def _alternate(clean, noisy, segs):
             mask[int(a * SR):int(b * SR)] = 1.0
     k = int(XFADE_S * SR)
     if k > 1:
-        w = np.hanning(2 * k)[:k]            # 0 -> 1
+        w = np.hanning(2 * k)[:k]
         m = mask.copy()
         d = np.diff(mask, prepend=mask[0])
         for i in np.flatnonzero(d != 0):
@@ -132,7 +131,6 @@ def prepare():
     sel.to_csv(OUT / "manifest.csv", index=False)
     print(sel[["noise", "snr_db"]].value_counts().sort_index().to_string())
     print(f"{len(sel)} clips, duration {sel.duration.min():.1f} to {sel.duration.max():.1f} s, segments {sel.n_segments.min()} to {sel.n_segments.max()}, noisy share {sel.noisy_share.mean():.2f}")
-    # AADD v3 on all three conditions
     from ways.quality import Quality
     q = Quality("v3")
     det = []
@@ -162,9 +160,8 @@ def prepare():
     print(d.groupby("snr_db")[["flagged_noisy", "alt_flagged_in_noisy", "alt_flagged_in_clean"]].mean().round(2).to_string())
 
 
-# ----------------------------------------------------------------------------- run
 def run(name, kind, model_id, max_minutes=30.0):
-    from common import REVISIONS
+    from common import REVISIONS, resume_rows
 
     from ways import explain, load_backend
     from ways.metrics import wer
@@ -172,7 +169,7 @@ def run(name, kind, model_id, max_minutes=30.0):
     man = pd.read_csv(OUT / "manifest.csv")
     d = OUT / name; (d / "npz").mkdir(parents=True, exist_ok=True)
     rows_f = d / "rows.jsonl"
-    done = {(json.loads(l)["id"], json.loads(l)["cond"]) for l in open(rows_f)} if rows_f.exists() else set()
+    done = {(r["id"], r["cond"]) for r in resume_rows(rows_f, lambda r: (d / "npz" / f"{r['id']}_{r['cond']}.npz").exists())}
     be = load_backend(kind, model_id, revision=REVISIONS.get(model_id))
     t_run = time.time(); n_new = 0
     for r in man.itertuples():
@@ -182,7 +179,7 @@ def run(name, kind, model_id, max_minutes=30.0):
             if (time.time() - t_run) / 60 > max_minutes:
                 print(f"{name}: time cap of {max_minutes:g} min reached after {n_new} new clip-conditions", flush=True)
                 (d / "time_cap.json").write_text(json.dumps(dict(max_minutes=max_minutes, done=len(done) + n_new, total=3 * len(man))))
-                return
+                sys.exit(f"{name}: stopped at the time cap with clip-conditions left. Run again to continue, or raise the cap.")
             t0 = time.time()
             wav, _ = sf.read(CACHE / f"{r.id}_{cond}.wav", dtype="float32")
             att = explain(be, wav, batch=64)
@@ -194,7 +191,7 @@ def run(name, kind, model_id, max_minutes=30.0):
                 f.write(json.dumps(row) + "\n")
             n_new += 1
             print(f"{name} {r.id} {cond} WER {w['wer']:.2f} {row['seconds']:.1f}s", flush=True)
-    if n_new or not (d / "time_cap.json").exists():       # keep the timing of the run that did the work
+    if n_new or not (d / "time_cap.json").exists():
         (d / "time_cap.json").write_text(json.dumps(dict(max_minutes=max_minutes, done=len(done) + n_new, total=3 * len(man), minutes=(time.time() - t_run) / 60)))
     from ways.provenance import write as write_manifest
     write_manifest(d / "provenance.json", inputs={**{f: str(CACHE / "dl" / f) for f in FILES}, "manifest.csv": str(OUT / "manifest.csv")},
@@ -203,7 +200,6 @@ def run(name, kind, model_id, max_minutes=30.0):
                               max_minutes=max_minutes, new_this_run=n_new))
 
 
-# ----------------------------------------------------------------------------- summarise
 def _norm_words(words):
     from ways.metrics import normalize_text
     return [normalize_text(w) for w in words]
@@ -212,11 +208,11 @@ def _norm_words(words):
 def _word_profiles(att):
     """Per word: the mass profile over time [T] of its tokens, normalised to sum 1, and the word strings."""
     from ways.metrics import token_mass
-    m = np.nan_to_num(token_mass(att)).sum(1)          # [K, T]
+    m = np.nan_to_num(token_mass(att)).sum(1)
     words = att.words if att.words else [dict(word=p.strip(), toks=[k]) for k, p in enumerate(att.pieces)]
     prof = np.stack([m[w["toks"]].sum(0) for w in words]) if words else np.zeros((0, att.n_t))
     tot = prof.sum(1, keepdims=True)
-    prof = np.where(tot > 0, prof / np.maximum(tot, 1e-12), 0.0)          # one unit of evidence per word
+    prof = np.where(tot > 0, prof / np.maximum(tot, 1e-12), 0.0)
     return words, prof
 
 
@@ -242,7 +238,6 @@ def summarise():
                        by_snr=aadd.groupby("snr_db")[["flagged_noisy", "alt_flagged_in_noisy", "alt_flagged_in_clean"]].mean().round(3).to_dict("index"),
                        spans_true=float(aadd.alt_n_spans_true.mean()), spans_aadd=float(aadd.alt_n_spans_aadd.mean())),
              models={})
-    # truth: whisper-base clean words with times
     truth = {}
     for cid in man.index:
         p = OUT / TRUTH_MODEL / "npz" / f"{cid}_clean.npz"
@@ -250,6 +245,9 @@ def summarise():
             a = Attribution.load(p)
             if a.words and "t0" in a.words[0]:
                 truth[cid] = [(w["word"], 0.5 * (w["t0"] + w["t1"])) for w in a.words]
+    if not truth:
+        sys.exit(f"no saved maps of {TRUTH_MODEL} on the clean recordings under {OUT / TRUTH_MODEL / 'npz'}: "
+                 "run the models first (experiments/run_demand.sh). Nothing was written.")
     word_rows, clip_rows = [], []
     for name in MODELS:
         d = OUT / name
@@ -301,7 +299,7 @@ def summarise():
             for k in ("agree", "chance_agree", "same_segment", "chance_same_segment", "recall_noisy", "spec_clean",
                       "mass_noisy_when_spoken_noisy", "mass_noisy_when_spoken_clean", "mass_own_segment", "dist_median"):
                 M[k] = bootstrap_ci(C[k])
-            M["n_words_scored"] = int(C.n_scored.sum()); M["n_clips_scored"] = int(len(C))
+            M["n_words_scored"] = int(C.n_scored.sum()); M["n_clips_scored"] = int((C.n_scored > 0).sum())
         S["models"][name] = M
     pd.DataFrame(word_rows).to_csv(OUT / "words.csv", index=False); pd.DataFrame(clip_rows).to_csv(OUT / "clips.csv", index=False)
     (OUT / "summary.json").write_text(json.dumps(S, indent=1, default=float))

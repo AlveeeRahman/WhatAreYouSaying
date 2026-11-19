@@ -81,7 +81,7 @@ def test_erased_patch_drops_below_the_signal_background_in_log_mel():
     rng = np.random.default_rng(3)
     n = 16000 * 2
     t = np.arange(n) / 16000
-    f0 = 140 * (1 + 0.15 * np.sin(2 * np.pi * 2.5 * t))               # a gliding voice-like fundamental
+    f0 = 140 * (1 + 0.15 * np.sin(2 * np.pi * 2.5 * t))
     phase = 2 * np.pi * np.cumsum(f0) / 16000
     x = sum(np.sin(h * phase) / h for h in range(1, 25)) * (0.5 + 0.5 * np.sin(2 * np.pi * 4 * t)) ** 2
     x = (0.2 * x + 0.003 * rng.standard_normal(n)).astype(np.float32)
@@ -99,7 +99,7 @@ def test_erased_patch_drops_below_the_signal_background_in_log_mel():
         a, c = g.frame_range(tt)
         before = 10 * (L0[b * 10:(b + 1) * 10, a:c].mean() - floor).item()
         after = 10 * (LE[j][b * 10:(b + 1) * 10, a:c].mean() - floor).item()
-        if before > bg + 6:                       # only patches that held real signal
+        if before > bg + 6:
             assert after < bg, (b, tt, before, after, bg)
             assert before - after >= 15, (b, tt, before, after)
 

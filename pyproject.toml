@@ -4,13 +4,14 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ways"
-version = "0.3.0"
+version = "0.3.1"
 description = "WhatAreYouSaying: representation-erasure attribution from speech-to-text tokens back to the audio, with AADD degradation context"
 readme = "README.md"
 requires-python = ">=3.12"  # the pinned set in requirements.txt (numpy 2.5, scipy 1.18) needs 3.12; tested on 3.12.3
 license = "MIT"  # SPDX string; the table form is deprecated and stops building after 2027-02-18
 dependencies = [
   "numpy>=2.0",
+  "scipy>=1.10",
   "torch>=2.4",
   "transformers>=4.48",
   "huggingface_hub>=0.26",
@@ -27,7 +28,6 @@ keywords = ["speech recognition", "explainability", "representation erasure", "w
 classifiers = [
   "Development Status :: 4 - Beta",
   "Intended Audience :: Science/Research",
-  "License :: OSI Approved :: MIT License",
   "Programming Language :: Python :: 3.12",
   "Topic :: Multimedia :: Sound/Audio :: Speech",
   "Topic :: Scientific/Engineering :: Artificial Intelligence",

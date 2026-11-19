@@ -12,6 +12,7 @@ STFT grid, x\\P is the waveform with P erased (ways.erasure.erase).
 
 A black-box backend has no S_k, so it is scored at word level by re-decoding x\\P and aligning the
 new transcript to y with jiwer: changed_w(P) = 1 if word w is not inside an "equal" alignment chunk.
+A word that is only punctuation has no normalised form, is not aligned, and is never marked changed.
 """
 from __future__ import annotations
 
@@ -28,20 +29,28 @@ from .backends import Backend, Transcript
 
 @dataclass
 class Attribution:
+    """The erasure scores of one clip under one model.
+
+    mode is "surprisal" (white box) or "selection" (black box). pieces are the scored units: tokens
+    in surprisal mode, words in selection mode. times are seconds per unit when the backend gives
+    timestamps. With K units, B bands and T patches in time: surprisal0 is [K] S_k(x) (zeros in
+    selection mode), delta is [K, B, T] delta_k(P) (or the 0/1 word change), rel is [K, B, T]
+    rel_k(P) (nan in selection mode) and flip is [K, B, T] bool.
+    """
     model: str
     backend: str
-    mode: str                      # "surprisal" (white box) or "selection" (black box)
+    mode: str
     duration: float
     patch_s: float
     n_bands: int
     band_edges_hz: list[float]
-    pieces: list[str]              # scored units: tokens (surprisal) or words (selection)
+    pieces: list[str]
     token_ids: list[int]
-    times: list[float] | None      # per unit, seconds, if the backend gives timestamps
-    surprisal0: np.ndarray         # [K] S_k(x); zeros in selection mode
-    delta: np.ndarray              # [K, B, T] delta_k(P) (surprisal) or changed_w(P) in {0,1} (selection)
-    rel: np.ndarray                # [K, B, T] rel_k(P); nan in selection mode
-    flip: np.ndarray               # [K, B, T] bool
+    times: list[float] | None
+    surprisal0: np.ndarray
+    delta: np.ndarray
+    rel: np.ndarray
+    flip: np.ndarray
     text: str
     words: list[dict] = field(default_factory=list)
     seconds: float = 0.0
@@ -69,6 +78,7 @@ def explain(backend: Backend, wav: np.ndarray, patch_s: float = 0.1, n_bands: in
     t_start = time.time()
     wav = np.asarray(wav, np.float32)
     dev = device or getattr(backend, "device", None) or ("cuda" if torch.cuda.is_available() else "cpu")
+    _check_length(backend, wav)
     grid = erasure.PatchGrid(len(wav), patch_s, n_bands)
     tr = transcript or backend.transcribe(wav)
     x = torch.as_tensor(wav, device=dev)
@@ -102,7 +112,9 @@ def explain(backend: Backend, wav: np.ndarray, patch_s: float = 0.1, n_bands: in
         K = len(words)
         S0 = np.zeros(K, np.float32)
         delta = np.zeros((K, n_bands, grid.n_t), np.float32)
-        ref = " ".join(_norm(w) for w in words)
+        normed = [_norm(w) for w in words]
+        scored = np.array([i for i, w in enumerate(normed) if w], dtype=np.int64)
+        ref = " ".join(normed[i] for i in scored)
         n_fwd = 1
         for i in range(0, len(patches), batch):
             chunk = patches[i:i + batch]
@@ -110,13 +122,14 @@ def explain(backend: Backend, wav: np.ndarray, patch_s: float = 0.1, n_bands: in
             hyps = backend.transcribe_batch(xe)
             n_fwd += len(chunk)
             for j, (b, t) in enumerate(chunk):
-                changed = np.ones(K, bool)
-                hyp = " ".join(_norm(w["word"]) for w in hyps[j].group_words())
-                if ref.strip() and hyp.strip():
+                changed = np.zeros(K, bool)
+                changed[scored] = True
+                hyp = " ".join(n for n in (_norm(w["word"]) for w in hyps[j].group_words()) if n)
+                if ref and hyp:
                     o = jiwer.process_words(ref, hyp)
                     for ch in o.alignments[0]:
                         if ch.type == "equal":
-                            changed[ch.ref_start_idx:ch.ref_end_idx] = False
+                            changed[scored[ch.ref_start_idx:ch.ref_end_idx]] = False
                 delta[:, b, t] = changed
             if log:
                 log(f"  {backend.model_id}: {min(i + batch, len(patches))}/{len(patches)} patches")
@@ -128,6 +141,14 @@ def explain(backend: Backend, wav: np.ndarray, patch_s: float = 0.1, n_bands: in
                       token_ids=ids, times=times, surprisal0=np.asarray(S0, np.float32), delta=delta, rel=rel,
                       flip=flip, text=tr.text, words=tr.group_words(), seconds=time.time() - t_start, n_forward=n_fwd)
     return att
+
+
+def _check_length(backend, wav) -> None:
+    """Refuse a clip longer than the model's input window, which the model would silently truncate."""
+    limit = getattr(backend, "max_seconds", None)
+    if limit is not None and len(wav) > limit * erasure.SR:
+        raise ValueError(f"{backend.model_id} reads at most {limit:g} s of audio and this clip is "
+                         f"{len(wav) / erasure.SR:.1f} s. Cut it into shorter clips first.")
 
 
 def _norm(s: str) -> str:

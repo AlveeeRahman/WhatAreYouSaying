@@ -13,6 +13,7 @@ matplotlib==3.11.2
 aadd @ git+https://github.com/gertelrina/aadd@c6a2debc706b55d940426dffcc4ac31c85e875be   # 3.1.0; not on PyPI
 openai==2.29.0
 pytest==8.4.2
+ruff==0.17.5
 # figures only: Pillow for experiments/gif_erase_sweep.py, Playwright for docs/images/render.py
 # (which also needs its browser once: python -m playwright install chromium)
 pillow==12.2.0
