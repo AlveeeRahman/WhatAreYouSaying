@@ -336,8 +336,17 @@ survive the degradation unchanged. On clean LibriSpeech all three models sit at 
   <br><sub>LibriSpeech 2094-142345-0024 with pink noise at 0 dB inserted at 0.6 to 2.6 s (dashed). The clean twin is <code>figures/controlled_noise_clean__2094-142345-0024.png</code>.</sub>
 </p>
 
-Why the word error rate moved on this clip, and why for whisper-base it did not: the clean and the
-degraded transcript of each model aligned to the gold, every word placed where its erasure evidence
+## One ambiguous clip, read in depth
+
+The clip above is the ambiguous case. Inside the noise whisper-base writes "fire and sprite told",
+moonshine-base "lions, fight cold", and the gold is "my iron's twite told". The sound-token figure
+says those words sit on the noisy stretch and stops there. This section reads the same tokens two
+ways, the erasure test and `aud-cam` with `tokens=True` (one backward pass per token through the
+encoder, a gradient map per layer next to each token's erasure map), on the degraded recording and
+on its clean twin, for both models (`experiments/ambiguous_case.py`).
+
+First, why the word error rate moved on this clip, and why for whisper-base it did not: the clean and
+the degraded transcript of each model aligned to the gold, every word placed where its erasure evidence
 ranks first, the words both transcripts share joined (`experiments/ambiguous_wer.py`, from the saved
 attributions).
 
@@ -361,13 +370,6 @@ attributions).
   in the noise. The number did not move because one kind of error replaced another, and only the
   placement shows that.
 
-The noisy two seconds on their own, with the clean recording above the degraded one:
-
-<p align="center">
-  <img src="figures/controlled_noise_wer_zoom__2094-142345-0024.png" width="860" alt="The window from 0.4 to 2.9 s: the clean and the degraded spectrogram, then for each model its clean and degraded words placed where their erasure evidence ranks first">
-  <br><sub>Under the noise the harmonics of "my iron's twite" are gone and so are the words. "told" survives in both Whisper models because its evidence sits at 2.45 to 2.65 s, where the noise ends and the last syllable comes through; moonshine hears "cold" on the same patch.</sub>
-</p>
-
 <details>
 <summary><b>Stats for nerds</b> (the clean-to-degraded change per model)</summary>
 
@@ -384,19 +386,38 @@ mass inside the window.
 
 </details>
 
-## One ambiguous clip, read in depth
-
-The clip above is the ambiguous case. Inside the noise whisper-base writes "fire and sprite told",
-moonshine-base "lions, fight cold", and the gold is "my iron's twite told". The sound-token figure
-says those words sit on the noisy stretch and stops there. `aud-cam` with `tokens=True` reads the
-same tokens a second way, one backward pass per token through the encoder, so each token gets a
-gradient map per layer next to its erasure map. `experiments/ambiguous_case.py` runs both readings on
-the degraded recording and on its clean twin, for both models.
+Then the same tokens through `aud-cam`:
 
 <p align="center">
   <img src="figures/ambiguous__2094-142345-0024__whisper-base__deg__aud-cam-tokens.png" width="860" alt="whisper-base on the noisy clip: one lane per token with its gradient saliency in grey and the erasure test's first patch as a coloured tick, and below it the share of each token's saliency on the noisy stretch per encoder layer">
   <br><sub>whisper-base on the degraded recording. Grey = gradient times activation per frame at the top encoder layer, tick = the patch the erasure test ranked first. Below, how much of each token's saliency falls on the noisy 0.6 to 2.6 s, layer by layer. The moonshine-base twin is <code>figures/ambiguous__2094-142345-0024__moonshine-base__deg__aud-cam-tokens.png</code>, the clean recordings end in <code>__clean__aud-cam-tokens.png</code>.</sub>
 </p>
+
+**Why the five window words end at 45 % for whisper-base and 55 % for moonshine-base.** Both models
+lose the words whose evidence lies wholly inside the noise. The difference is the last word of the
+window and how wide each model's evidence is.
+
+* **whisper-base, "Money, fire and sprite told": one of five right.** "fire", "and", "sprite" carry
+  93 to 95 % of their erasure mass and 86 to 90 % of their gradient mass on the noise, in maps 0.6
+  to 0.8 s wide, and their first-ranked patches sit in the lowest bands (0 and 1 of 8) where the
+  pink noise is loudest, on the very patches that "my" and "iron's" use on the clean recording
+  (1.35 to 1.65 s). The two readings agree: those words are made of noise. "told" is the one
+  window word whose evidence reaches out of the noise, 30 % of its gradient mass lies past 2.63 s
+  on the clean tail of the syllable, and it is the one word that is right. "Money" is wrong on
+  both recordings: it is the dialect word "munny", and its gradient map is diffuse (1.05 s wide),
+  a word the decoder writes from the start of the sentence.
+* **moonshine-base, "Money, lions, fight cold": none of four right.** Its gradient maps are 1.2 to
+  1.6 s wide for every window token, twice whisper's, so its evidence for each word is spread over
+  the whole noisy stretch, and that is already true on the clean recording (0.9 to 1.6 s, "my
+  earns, Trite", one of four right). The erasure test still places each token ("l" 1.95 s, "ions"
+  1.85 s, "fight" 2.15 s) with 87 to 94 % of its mass in the noise. For the last word the two
+  readings disagree: erasure puts "cold" on the same edge patch as whisper's "told" (2.65 s, 59 %
+  in the noise), the gradient map stays inside the noise (2.09 s, 63 %). Moonshine wrote that word
+  from the noise, not from the surviving syllable, and got "cold" for "told".
+* **So the WER gap is one word and one habit.** Where the evidence of a word reaches the clean
+  audio, the word comes out right in whisper and not in moonshine; where it does not, both models
+  invent, and they invent different words because they weight the noise differently (whisper's
+  patches in the lowest bands, moonshine's "ions" and the full stop in bands 4 and 5).
 
 * **Outside the noise the two methods agree token by token.** "Please put it down to warm" sit on
   their own syllables, grey mass and tick a few hundred milliseconds apart, and the tokens that
