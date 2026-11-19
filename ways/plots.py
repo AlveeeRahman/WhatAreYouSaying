@@ -245,30 +245,12 @@ def _tokens_on_mel(axm, att, rows, dur, axis_in=8.1):
 
 
 def clip_figure(att: Attribution, probs, wav, path, title="", window=None):
-    """AADD max-p strip, spectrogram with each token's most important patch boxed and labelled, and the
-    transcript as one sentence in reading order with the same colours and numbers."""
-    L = logmel(wav); dur = att.duration
-    rows = token_rows(att, probs)
-    axis_in = 10 * (0.97 - 0.16)
-    nl = len(_sentence_lines(att, rows, axis_in))
-    strip_h = 0.3 * nl + 0.25
-    fig = plt.figure(figsize=(10, min(7.4 + strip_h * 0.8, 10.5)))
-    gs = fig.add_gridspec(3, 1, height_ratios=[0.55, 2.8, strip_h], hspace=0.45, left=0.16, right=0.97, top=0.86, bottom=0.09)
-    axq, axm, axt = [fig.add_subplot(gs[i]) for i in range(3)]
-    _strip(axq, probs, dur); _tidy(axq, dur); _label(axq, "AADD degradation score per 20 ms; above the dashed 0.5 line it counts as degraded")
-    _mel(axm, L); _bands(axm, probs); _tokens_on_mel(axm, att, rows, dur, axis_in); _tidy(axm, dur, bottom=True)
-    _label(axm, f"Spectrogram with each word's top patch; {degraded_summary(rows, probs, dur)}")
-    _sentence_strip(axt, att, rows, axis_in)
-    _label(axt, "The transcript, token by token, in the colours and numbers used above")
-    axt.set_ylim(-0.15, len(_sentence_lines(att, rows, axis_in)) + 0.15)
-    if window is not None:
-        for ax in (axq, axm):
-            ax.axvspan(window[0], window[1], color="#0d366b", alpha=0.10, lw=0, zorder=1)
-            ax.axvline(window[0], color="#0d366b", lw=1.2, ls="--", zorder=5); ax.axvline(window[1], color="#0d366b", lw=1.2, ls="--", zorder=5)
-    fig.suptitle(title, x=0.16, ha="left", fontsize=13, fontweight="bold", color=TXT, y=0.975)
-    fig.text(0.16, 0.012, f"Same colour and number = same token; colours repeat every {len(CAT)} tokens. Orange = loud, pale = quiet (sound energy, not damage). "
-             "Blue bands = audio AADD flags as degraded; a dashed box and an underlined word mean the word's evidence sits there.", fontsize=10, color=TXT2, va="bottom", wrap=True)
-    fig.savefig(path, dpi=DPI); fig.savefig(str(path).rsplit(".", 1)[0] + ".svg"); plt.close(fig)
+    """One model on one clip, through the universal figure (ways.figure.ways_figure)."""
+    from .figure import from_attribution, ways_figure
+
+    fig = ways_figure(wav, 16000, quality=probs, quality_hop=SEG_S, quality_classes=CLASSES,
+                      models=[from_attribution(att, att.model)], window=window, title=title, out=path, width_in=10.0)
+    plt.close(fig)
 
 
 def method_figure(att: Attribution, probs, wav, path, k: int | None = None, title=""):
@@ -340,41 +322,13 @@ def method_figure(att: Attribution, probs, wav, path, k: int | None = None, titl
 
 
 def three_models_figure(atts: dict[str, Attribution], probs, wav, path, title="", wers: dict | None = None, window=None):
-    """Same clip, one row per model: spectrogram with each token's top patch boxed and labelled, then the
-    model's transcript as one sentence in the same colours and numbers."""
-    import textwrap
+    """Same clip, one row per model, through the universal figure (ways.figure.ways_figure)."""
+    from .figure import from_attribution, ways_figure
 
-    L = logmel(wav); dur = next(iter(atts.values())).duration
-    names = list(atts)
-    axis_in = 12 * (0.97 - 0.12)
-    prepared = [(token_rows(atts[n], probs), None) for n in names]
-    hs = [0.55]
-    for rows, _ in prepared:
-        nl = len(_sentence_lines(atts[names[0]], rows, axis_in))
-        hs += [2.6, 0.42 * nl + 0.1]
-    fig = plt.figure(figsize=(12, min(1.4 + sum(hs) * 0.62, 14.5)))
-    gs = fig.add_gridspec(len(hs), 1, height_ratios=hs, hspace=0.3, left=0.12, right=0.97, top=0.89, bottom=0.065)
-    axq = fig.add_subplot(gs[0]); _strip(axq, probs, dur); _tidy(axq, dur)
-    _label(axq, "AADD degradation score per 20 ms; above the dashed 0.5 line the audio counts as degraded (blue bands)")
-    if window is not None:
-        axq.axvspan(window[0], window[1], color="#0d366b", alpha=0.10, lw=0, zorder=1)
-    for i, n in enumerate(names):
-        rows, _ = prepared[i]
-        axm = fig.add_subplot(gs[1 + 2 * i]); axt = fig.add_subplot(gs[2 + 2 * i])
-        _mel(axm, L); _bands(axm, probs); _tokens_on_mel(axm, atts[n], rows, dur, axis_in); _tidy(axm, dur, bottom=True)
-        if i < len(names) - 1:
-            axm.set_xlabel("")
-        _sentence_strip(axt, atts[n], rows, axis_in)
-        if window is not None:
-            axm.axvspan(window[0], window[1], color="#0d366b", alpha=0.10, lw=0, zorder=1)
-            axm.axvline(window[0], color="#0d366b", lw=1.2, ls="--", zorder=5); axm.axvline(window[1], color="#0d366b", lw=1.2, ls="--", zorder=5)
-        w = f"  ·  WER {wers[n]:.0%}" if wers and n in wers and np.isfinite(wers[n]) else ""
-        _label(axm, f"{n}{w}  ·  {degraded_summary(rows, probs, dur)}")
-    title = "\n".join(textwrap.fill(line, 95) for line in title.split("\n"))
-    fig.suptitle(title, x=0.12, ha="left", fontsize=13, fontweight="bold", color=TXT, y=0.985, va="top")
-    fig.text(0.12, 0.006, "Orange = loud, pale = quiet (sound energy, not damage). Blue bands = audio AADD flags as degraded.\n"
-             "Dashed box and underlined word = that word's evidence sits on degraded audio.", fontsize=10, color=TXT2, va="bottom")
-    fig.savefig(path, dpi=DPI); fig.savefig(str(path).rsplit(".", 1)[0] + ".svg"); plt.close(fig)
+    models = [from_attribution(a, n, (wers or {}).get(n)) for n, a in atts.items()]
+    fig = ways_figure(wav, 16000, quality=probs, quality_hop=SEG_S, quality_classes=CLASSES, models=models,
+                      window=window, title=title, out=path)
+    plt.close(fig)
 
 
 def comparison_figure(clips: dict, tokens: dict, path, title="", band_edges=None):

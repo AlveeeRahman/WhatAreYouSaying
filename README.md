@@ -12,7 +12,7 @@
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a>
   <img src="https://img.shields.io/badge/python-3.12-blue.svg" alt="Python 3.12">
-  <img src="https://img.shields.io/badge/tests-14%20passed-brightgreen.svg" alt="tests: 14 passed">
+  <img src="https://img.shields.io/badge/tests-19%20passed-brightgreen.svg" alt="tests: 19 passed">
   <img src="https://img.shields.io/badge/CI-not%20set%20up%20yet-lightgrey.svg" alt="CI: not set up yet">
 </p>
 
@@ -33,7 +33,7 @@ the pipeline repository,
 rewritten so that it does not depend on that pipeline and so that the same erasure operator serves
 every model.
 
-**Contents:** [What it answers](#what-it-answers) · [How it works](#how-it-works) · [What I verified](#what-i-verified) · [Results on 100 random test clips](#results-on-100-random-test-clips) · [Does the detector's backbone matter](#does-the-detectors-backbone-matter) · [Controlled degradation](#controlled-degradation-on-librispeech) · [Install and use](#install-and-use) · [Backends](#backends-local-weights-vllm-llamacpp) · [Reproducibility](#reproducibility) · [Limitations and future work](#limitations-and-future-work) · [Status](#status) · [References](#references) · [Repository layout](#repository-layout) · [Credits and licence](#credits-and-licence)
+**Contents:** [What it answers](#what-it-answers) · [How it works](#how-it-works) · [What I verified](#what-i-verified) · [Results on 100 random test clips](#results-on-100-random-test-clips) · [Does the detector's backbone matter](#does-the-detectors-backbone-matter) · [Controlled degradation](#controlled-degradation-on-librispeech) · [Install and use](#install-and-use) · [The figure](#the-figure-plug-and-play) · [Backends](#backends-local-weights-vllm-llamacpp) · [Reproducibility](#reproducibility) · [Limitations and future work](#limitations-and-future-work) · [Status](#status) · [References](#references) · [Repository layout](#repository-layout) · [Credits and licence](#credits-and-licence)
 
 <details><summary>Stats for nerds</summary>
 
@@ -46,7 +46,7 @@ every model.
 | sample | 100 clips, simple random sample with seed 8001 from the saved 1 500-clip test slice (sha256 `dfb0451d…`), total 862 s of audio |
 | controlled set | 60 LibriSpeech test-clean utterances, one 2 s degradation each from AADD's synthesiser, clean and degraded twins, three models |
 | detectors | AADD v3.1 (whisper-small backbone, 88.6 M parameters); AADD's head on whisper-base and on moonshine-base encoders (21 M each, AADD recipe on LibriSpeech dev-clean); plus AADD v3-lite (CRNN, 1.3 M) and v2 (EfficientNet-B0, 4.0 M) |
-| tests | 12 CPU checks of the operator and the formulas, 2 end-to-end HTTP checks against a mock OpenAI-compatible server |
+| tests | 17 CPU checks of the operator, the formulas and the figure, 2 end-to-end HTTP checks against a mock OpenAI-compatible server |
 
 </details>
 
@@ -238,7 +238,7 @@ What this says, in order of how sure I am:
 
 <p align="center">
   <img src="figures/vox_mixed__id10274_89UnsytX6Y8_00006.png" width="860" alt="A VoxCeleb clip that AADD rates degraded from 1.5 to 3.8 s, through whisper-tiny, whisper-base and moonshine-base: the degraded stretch is a blue band over the spectrogram, words whose evidence sits in it have dashed boxes and underlines, and each row counts them against chance">
-  <br><sub>How to read the clip figures. Orange is loud and pale is quiet: sound energy, not damage. The blue band is the audio AADD flags as degraded (here noise from 1.5 to 3.8 s, 43% of the clip). A dashed box and an underlined word mean that word's evidence sits on degraded audio; the row title counts those words against what chance would give. Here all three models lean slightly on the noisy stretch (12 of 23 with 10 expected, 12 of 25 with 11, 15 of 32 with 14).</sub>
+  <br><sub>How to read the clip figures. Orange is loud and pale is quiet: sound energy, not damage. The blue band is the audio AADD flags as degraded (here noise from 1.5 to 3.8 s, 43% of the clip). A dashed box and an underlined word mean that word's evidence sits on degraded audio; the row title counts those words against what chance would give. Here all three models sit at or just above chance on the noisy stretch (11 of 23 with 10 expected, 11 of 25 with 11, 15 of 32 with 14).</sub>
 </p>
 <p align="center">
   <img src="figures/vox_clean__id10271_gO805KoL2RM_00006.png" width="860" alt="A VoxCeleb clip that AADD rates clean, through the same three models">
@@ -405,6 +405,35 @@ print(clip_summary(att, rows, probs))
 `att.save(path)` / `Attribution.load(path)` keep the arrays as a compressed npz with the
 transcript and grid in a JSON field.
 
+## The figure, plug and play
+
+Every clip figure in this repository comes from one function in one self-contained file,
+`ways/figure.py` (numpy and matplotlib only, no other import from WAYS). Copy that file into any
+Python project and call it with your own audio, your own degradation detector and your own
+attribution method; the structure is always the same four lanes on one time axis: the damage per
+frame (one row per kind, dark blue = sure), the spectrogram with the degraded spans painted on it
+and one box per word, the transcript in the box colours with words on degraded audio underlined,
+and the count against chance in each model's row title.
+
+```python
+from ways.figure import ways_figure          # or copy ways/figure.py next to your code
+
+ways_figure(
+    wav, 16000,                               # mono waveform, any length
+    quality=probs, quality_hop=0.02,          # any detector: [frames, classes] probabilities, seconds per frame
+    quality_classes=["noise", "music", "reverb"],   # row names; a one-column array works too
+    threshold=0.5,
+    models=[{"name": "my-asr", "tokens": ["hello", "world"],
+             "top": [(2, 14), (3, 20)],       # per word: (band, time index) of the audio patch it used most
+             "patch_s": 0.1, "n_bands": 8, "wer": 0.1}],
+    window=None,                              # or (start_s, end_s) of a known damaged span
+    title="my clip", out="my_clip.png")       # PNG at 300 dpi plus an SVG twin
+```
+
+`ways.figure.from_attribution(att)` turns a WAYS attribution into the `models` entry, and the
+tests in `tests/test_figure.py` draw the figure from synthetic arrays with no model and no
+detector, so the file is checked on its own.
+
 ## Backends: local weights, vLLM, llama.cpp
 
 | backend | reached how | score | what it was tested against |
@@ -512,7 +541,8 @@ then tested on real hardware. The full checklist is [docs/reproducibility.md](do
 | `ways/backends/` | `hf_whisper.py`, `hf_moonshine.py`, `openai_compat.py` (vLLM, llama.cpp) |
 | `ways/quality.py` | AADD wrapper, flagged mask, degraded intervals |
 | `ways/metrics.py` | token and clip summaries, noise-focus ratio, WER, bootstrap |
-| `ways/plots.py` | the figures, in AADD's inspector style |
+| `ways/figure.py` | the universal clip figure, self-contained: copy it into any project |
+| `ways/plots.py` | the method, comparison and controlled-summary figures; the clip figures call `ways/figure.py` |
 | `ways/provenance.py` | the provenance manifest (claimed and runtime dependencies, hashes, model commits) |
 | `ways/cli.py` | `ways explain`, `ways quality` |
 | `tests/` | operator and formula checks; mock OpenAI-compatible server and the HTTP test |
