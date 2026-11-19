@@ -364,9 +364,10 @@ def latent_figure(wav, sr=16000, quality=None, quality_hop=0.02, quality_classes
         q = np.asarray(quality, np.float32); q = q[:, None] if q.ndim == 1 else q
         n_dmg_rows = max(1, sum(int(q[:, j].max() >= threshold) for j in range(q.shape[1])) + (1 if q.shape[1] > 1 else 0))
     layers = cam.shape[0] if cam is not None else (shift.shape[0] if shift is not None else 1)
-    hs = [0.22 * n_dmg_rows + 0.15, 2.2, 0.16 * layers + 0.3, 0.16 * layers + 0.3, 1.5]
-    fig = plt.figure(figsize=(width_in, min(1.6 + sum(hs) * 0.62, 15)))
-    gs = fig.add_gridspec(5, 1, height_ratios=hs, hspace=0.42, left=0.12, right=0.97, top=0.9, bottom=0.07)
+    hs = [0.22 * n_dmg_rows + 0.15, 2.2, 0.16 * layers + 0.3, 0.16 * layers + 0.3, 1.7]
+    fig = plt.figure(figsize=(width_in, min(2.4 + sum(hs) * 1.05, 15)))
+    gs = fig.add_gridspec(5, 1, height_ratios=hs, hspace=0.55, left=0.12, right=0.93, top=0.9, bottom=0.1)
+    gs.set_height_ratios(hs)
     axq, axm, axc, axs, axb = [fig.add_subplot(gs[i]) for i in range(5)]
     if quality is not None:
         _damage_lane(axq, quality, quality_hop, quality_classes, threshold, dur, spans)
@@ -377,7 +378,7 @@ def latent_figure(wav, sr=16000, quality=None, quality_hop=0.02, quality_classes
     _mel(axm, L, dur); _bands(axm, spans); _tidy(axm, dur)
     if loudness_db is not None:
         ax2 = axm.twinx(); t = np.arange(len(loudness_db)) * layer_hop
-        ax2.plot(t, loudness_db, color=TXT, lw=0.9, alpha=0.8); ax2.set_ylabel("loudness (dB)", fontsize=10); ax2.tick_params(labelsize=9, colors=TXT2)
+        ax2.plot(t, loudness_db, color=TXT, lw=0.7, alpha=0.55); ax2.set_ylabel("loudness (dB)", fontsize=10); ax2.tick_params(labelsize=9, colors=TXT2)
         for s in ax2.spines.values():
             s.set_color(BORDER)
     _label(axm, f"{model_name}: spectrogram (orange = loud), degraded bands in blue, loudness per frame as the black line")
@@ -392,6 +393,8 @@ def latent_figure(wav, sr=16000, quality=None, quality_hop=0.02, quality_classes
         for a, b in spans:
             ax.add_patch(Rectangle((a, 0), b - a, M.shape[0], fill=False, edgecolor=DEG, lw=1.2, zorder=3))
         _tidy(ax, dur, bottom=(ax is axs)); _label(ax, name)
+        if ax is axs:
+            ax.set_xlabel("time (s)", labelpad=2)
     # per-layer summary: spill-over outside vs inside, CAM focus
     if summary:
         ls = [r["layer"] for r in summary]; w = 0.38
@@ -401,14 +404,15 @@ def latent_figure(wav, sr=16000, quality=None, quality_hop=0.02, quality_classes
         ax3 = axb.twinx(); ax3.plot(ls, [r["cam_focus"] for r in summary], color=CAT[1], marker="o", lw=1.6, label="CAM mass on degraded / share")
         ax3.axhline(1, color=CAT[1], lw=0.8, ls="--"); ax3.set_ylabel("CAM focus", color=CAT[1], fontsize=10); ax3.tick_params(labelsize=9, colors=CAT[1])
         h1, l1 = axb.get_legend_handles_labels(); h2, l2 = ax3.get_legend_handles_labels()
-        axb.legend(h1 + h2, l1 + l2, frameon=False, fontsize=10, loc="upper left")
+        axb.legend(h1 + h2, l1 + l2, frameon=False, fontsize=9, loc="upper center", bbox_to_anchor=(0.5, 1.0), ncol=3)
+        axb.set_ylim(0, max(max(r["shift_in"] for r in summary), 1e-3) * 1.45)
         for s in list(axb.spines.values()) + list(ax3.spines.values()):
             s.set_color(BORDER)
-        _label(axb, "Per layer: spill-over grows with depth when noise leaks into the representation of clean speech")
+        axb.set_title("Per layer: spill-over outside the degraded stretch grows with depth when noise leaks into clean speech", loc="left", fontsize=12, color=TXT2, pad=6)
     title = "\n".join(textwrap.fill(line, 95) for line in str(title).split("\n")) if title else ""
     if title:
         fig.suptitle(title, x=0.12, ha="left", fontsize=13, fontweight="bold", color=TXT, y=0.985, va="top")
-    fig.text(0.12, 0.006, "Spill-over is an erasure test (the same operator as the attribution). Grad-CAM is a gradient saliency, shown per layer as in AADD's\n"
+    fig.text(0.12, 0.008, "Spill-over is an erasure test (the same operator as the attribution). Grad-CAM is a gradient saliency, shown per layer as in AADD's\n"
              "all-layers reading, and should be read as a hint, not a measurement.", fontsize=10, color=TXT2, va="bottom")
     if out is not None:
         out = Path(out); fig.savefig(out, dpi=dpi)
