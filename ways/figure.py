@@ -344,3 +344,74 @@ def from_attribution(att, name=None, wer=None):
         else:
             top.append(tuple(int(v) for v in np.unravel_index(int(m[k].argmax()), m[k].shape)))
     return dict(name=name or att.model, tokens=list(att.pieces), top=top, patch_s=att.patch_s, n_bands=att.n_bands, wer=wer)
+
+
+# ----------------------------------------------------------------------------- the latent-space figure
+def latent_figure(wav, sr=16000, quality=None, quality_hop=0.02, quality_classes=None, threshold=0.5,
+                  cam=None, shift=None, degraded=None, loudness_db=None, summary=None, layer_hop=0.02,
+                  model_name="", title="", out=None, dpi=DPI, width_in=12.0):
+    """Same lanes as ways_figure on top (damage rows, spectrogram with degraded bands), then two heat maps
+    with one row per encoder layer: Grad-CAM over time, and the relative shift of each layer's
+    representation when the degraded stretch is erased (spill-over), and a per-layer summary strip.
+    cam and shift are [layers, frames] arrays at layer_hop seconds per frame; degraded is a bool [frames]."""
+    import textwrap
+
+    wav = np.asarray(wav, np.float32); dur = len(wav) / sr
+    L = logmel(wav, sr)
+    spans = degraded_spans(quality, quality_hop, threshold)
+    n_dmg_rows = 1
+    if quality is not None:
+        q = np.asarray(quality, np.float32); q = q[:, None] if q.ndim == 1 else q
+        n_dmg_rows = max(1, sum(int(q[:, j].max() >= threshold) for j in range(q.shape[1])) + (1 if q.shape[1] > 1 else 0))
+    layers = cam.shape[0] if cam is not None else (shift.shape[0] if shift is not None else 1)
+    hs = [0.22 * n_dmg_rows + 0.15, 2.2, 0.16 * layers + 0.3, 0.16 * layers + 0.3, 1.5]
+    fig = plt.figure(figsize=(width_in, min(1.6 + sum(hs) * 0.62, 15)))
+    gs = fig.add_gridspec(5, 1, height_ratios=hs, hspace=0.42, left=0.12, right=0.97, top=0.9, bottom=0.07)
+    axq, axm, axc, axs, axb = [fig.add_subplot(gs[i]) for i in range(5)]
+    if quality is not None:
+        _damage_lane(axq, quality, quality_hop, quality_classes, threshold, dur, spans)
+        _label(axq, f"Damage per {quality_hop * 1000:.0f} ms frame (dark blue = sure); boxed stretches reach {threshold:g} and count as degraded")
+    else:
+        axq.set_yticks([]); _label(axq, "Damage: none measured")
+    _tidy(axq, dur)
+    _mel(axm, L, dur); _bands(axm, spans); _tidy(axm, dur)
+    if loudness_db is not None:
+        ax2 = axm.twinx(); t = np.arange(len(loudness_db)) * layer_hop
+        ax2.plot(t, loudness_db, color=TXT, lw=0.9, alpha=0.8); ax2.set_ylabel("loudness (dB)", fontsize=10); ax2.tick_params(labelsize=9, colors=TXT2)
+        for s in ax2.spines.values():
+            s.set_color(BORDER)
+    _label(axm, f"{model_name}: spectrogram (orange = loud), degraded bands in blue, loudness per frame as the black line")
+    for ax, M, name in ((axc, cam, "Grad-CAM per encoder layer (row 0 = input embedding, last row = top layer), each row scaled to its own maximum"),
+                        (axs, shift, "Spill-over: how much each layer's representation moves when the degraded stretch is erased (relative)")):
+        if M is None:
+            ax.set_yticks([]); _label(ax, name + ": not computed"); _tidy(ax, dur); continue
+        Mn = M / np.maximum(M.max(1, keepdims=True), 1e-12) if ax is axc else M
+        ax.imshow(Mn, aspect="auto", cmap="Greys" if ax is axc else BLUE, extent=[0, M.shape[1] * layer_hop, M.shape[0], 0], interpolation="nearest",
+                  vmin=0, vmax=1 if ax is axc else max(float(np.percentile(M, 98)), 1e-6))
+        ax.set_yticks(np.arange(M.shape[0]) + 0.5); ax.set_yticklabels([str(i) for i in range(M.shape[0])], fontsize=9); ax.set_ylabel("layer", fontsize=10)
+        for a, b in spans:
+            ax.add_patch(Rectangle((a, 0), b - a, M.shape[0], fill=False, edgecolor=DEG, lw=1.2, zorder=3))
+        _tidy(ax, dur, bottom=(ax is axs)); _label(ax, name)
+    # per-layer summary: spill-over outside vs inside, CAM focus
+    if summary:
+        ls = [r["layer"] for r in summary]; w = 0.38
+        axb.bar(np.array(ls) - w / 2, [r["shift_out"] for r in summary], width=w, color=DEG, alpha=0.85, label="spill-over outside the degraded stretch")
+        axb.bar(np.array(ls) + w / 2, [r["shift_in"] for r in summary], width=w, color=SEQ[2], label="shift inside it")
+        axb.set_xticks(ls); axb.set_xlabel("encoder layer"); axb.set_ylabel("relative shift")
+        ax3 = axb.twinx(); ax3.plot(ls, [r["cam_focus"] for r in summary], color=CAT[1], marker="o", lw=1.6, label="CAM mass on degraded / share")
+        ax3.axhline(1, color=CAT[1], lw=0.8, ls="--"); ax3.set_ylabel("CAM focus", color=CAT[1], fontsize=10); ax3.tick_params(labelsize=9, colors=CAT[1])
+        h1, l1 = axb.get_legend_handles_labels(); h2, l2 = ax3.get_legend_handles_labels()
+        axb.legend(h1 + h2, l1 + l2, frameon=False, fontsize=10, loc="upper left")
+        for s in list(axb.spines.values()) + list(ax3.spines.values()):
+            s.set_color(BORDER)
+        _label(axb, "Per layer: spill-over grows with depth when noise leaks into the representation of clean speech")
+    title = "\n".join(textwrap.fill(line, 95) for line in str(title).split("\n")) if title else ""
+    if title:
+        fig.suptitle(title, x=0.12, ha="left", fontsize=13, fontweight="bold", color=TXT, y=0.985, va="top")
+    fig.text(0.12, 0.006, "Spill-over is an erasure test (the same operator as the attribution). Grad-CAM is a gradient saliency, shown per layer as in AADD's\n"
+             "all-layers reading, and should be read as a hint, not a measurement.", fontsize=10, color=TXT2, va="bottom")
+    if out is not None:
+        out = Path(out); fig.savefig(out, dpi=dpi)
+        if out.suffix.lower() == ".png":
+            fig.savefig(out.with_suffix(".svg"))
+    return fig
