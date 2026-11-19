@@ -61,10 +61,6 @@ and [CONTRIBUTING.md](CONTRIBUTING.md) covers setup and tests.
 
 ## What it answers
 
-<p align="center">
-  <img src="docs/images/workflow_method_steps.gif" width="720" alt="The six steps of the method appear one by one: grid, erase, ask the model, score, sum up, quality context">
-</p>
-
 A speech model turns a waveform into tokens. When it gets a word wrong, or right against the odds,
 I want to know which part of the sound it was listening to, and whether that part was speech or
 noise. Attention maps and gradients answer this loosely: in an earlier study of mine, gradient x
