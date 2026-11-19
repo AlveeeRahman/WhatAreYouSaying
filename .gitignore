@@ -7,3 +7,8 @@ experiments/cache/
 .pytest_cache/
 experiments/results/detectors/*.pt
 experiments/results/demand_run.log
+# never publish assistant or editor context
+.claude/
+.claude*
+CLAUDE.md
+claude.md
