@@ -2,7 +2,6 @@
 # results in this repository were produced with. provenance/*.json records the runtime set (D_r).
 numpy==2.5.2
 torch==2.11.0
-torchaudio==2.11.0
 transformers==5.5.4
 huggingface_hub==1.27.0
 soundfile==0.13.1
@@ -14,3 +13,7 @@ matplotlib==3.11.2
 aadd @ git+https://github.com/gertelrina/aadd@c6a2debc706b55d940426dffcc4ac31c85e875be   # 3.1.0; not on PyPI
 openai==2.29.0
 pytest==8.4.2
+# figures only: Pillow for experiments/gif_erase_sweep.py, Playwright for docs/images/render.py
+# (which also needs its browser once: python -m playwright install chromium)
+pillow==12.2.0
+playwright==1.65.2

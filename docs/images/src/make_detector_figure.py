@@ -111,8 +111,12 @@ body = f'''
 
 standalone = f'''<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><title>Three detector backbones</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@700&family=IBM+Plex+Sans:wght@400;600&family=IBM+Plex+Mono:wght@400;600&display=swap">
-<style>html, body {{ margin: 0; background: {PAGE}; }}</style></head>
+<style>
+@font-face {{ font-family: 'Space Grotesk'; font-weight: 300 700; src: url('../fonts/SpaceGrotesk[wght].ttf'); }}
+@font-face {{ font-family: 'IBM Plex Sans'; font-weight: 100 700; src: url('../fonts/IBMPlexSans[wdth,wght].ttf'); }}
+@font-face {{ font-family: 'IBM Plex Mono'; font-weight: 400; src: url('../fonts/IBMPlexMono-Regular.ttf'); }}
+@font-face {{ font-family: 'IBM Plex Mono'; font-weight: 600; src: url('../fonts/IBMPlexMono-SemiBold.ttf'); }}
+html, body {{ margin: 0; background: {PAGE}; }}</style></head>
 <body>{body}
 <script>
 const want = ["700 30px 'Space Grotesk'", "400 15px 'IBM Plex Sans'", "400 13px 'IBM Plex Mono'"];

@@ -12,12 +12,13 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
+from common import pipeline_repo
 from ways.provenance import sha256
 
 SEED = 8001
 N = 100
 HERE = Path(__file__).resolve().parent
-PIPE = Path(sys.argv[1] if len(sys.argv) > 1 else HERE.parents[1] / "pipeline")
+PIPE = pipeline_repo(sys.argv[1] if len(sys.argv) > 1 else None)
 PE = PIPE / "."
 
 test = pd.read_csv(PE / "test.csv", usecols=["file", "label", "original_index", "duration"])

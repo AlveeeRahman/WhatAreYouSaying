@@ -34,6 +34,8 @@ def cmd_explain(a):
     kw = {}
     if a.backend == "openai-compat":
         kw = dict(base_url=a.base_url, route=a.route)
+    elif a.revision:
+        kw = dict(revision=a.revision)
     be = load_backend(a.backend, a.model, **kw)
     att = explain(be, wav, patch_s=a.patch, n_bands=a.bands, batch=a.batch, log=print if a.verbose else None)
     probs = None
@@ -80,6 +82,7 @@ def main(argv=None):
     e.add_argument("audio")
     e.add_argument("--backend", default="hf-whisper", choices=["hf-whisper", "hf-moonshine", "openai-compat"])
     e.add_argument("--model", default=None)
+    e.add_argument("--revision", default=None, help="Hugging Face commit of the model (hf-* backends); default: latest")
     e.add_argument("--base-url", default="http://localhost:8000/v1")
     e.add_argument("--route", default="transcriptions", choices=["transcriptions", "chat"])
     e.add_argument("--patch", type=float, default=0.1, help="patch length in seconds (multiple of 0.01)")

@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
 # The three small speech-to-text models over the 100-clip sample, one after another on one GPU.
-set -u
+set -euo pipefail
 cd "$(dirname "$0")/.."
-PY=${PY:-python}
-export HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1
+PY=${PY:-python}                       # the interpreter of the venv from the README
+# offline by default, so the cached pinned snapshots are used; on a new machine run once with
+# HF_HUB_OFFLINE=0 TRANSFORMERS_OFFLINE=0 to download them. The pipeline repository: WAYS_PIPELINE.
+export HF_HUB_OFFLINE=${HF_HUB_OFFLINE:-1} TRANSFORMERS_OFFLINE=${TRANSFORMERS_OFFLINE:-1}
 mkdir -p experiments/results
 for spec in "moonshine-base hf-moonshine UsefulSensors/moonshine-base" \
             "whisper-base hf-whisper openai/whisper-base" \

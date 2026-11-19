@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
-# Wait for LibriSpeech dev-clean, then train the two extra detectors one after another.
-set -u
+# Train the two extra detectors one after another on LibriSpeech dev-clean.
+set -euo pipefail
 cd "$(dirname "$0")/.."
-PY=${PY:-python}
-export HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 PYTHONUNBUFFERED=1
-until grep -q DONE experiments/cache/librispeech/download_dev.log 2>/dev/null; do sleep 20; done
+PY=${PY:-python}                       # the interpreter of the venv from the README
+export HF_HUB_OFFLINE=${HF_HUB_OFFLINE:-1} TRANSFORMERS_OFFLINE=${TRANSFORMERS_OFFLINE:-1} PYTHONUNBUFFERED=1
+LS=experiments/cache/librispeech/LibriSpeech/dev-clean
+[ -d "$LS" ] || { echo "LibriSpeech dev-clean not found at $LS: download https://www.openslr.org/resources/12/dev-clean.tar.gz and extract it into experiments/cache/librispeech/" >&2; exit 1; }
 echo "=== dev-clean ready $(date -u +%H:%M:%S)"
 for n in whisper-base moonshine-base; do
   echo "=== train $n $(date -u +%H:%M:%S)"

@@ -19,10 +19,11 @@ from ways import explain, load_backend
 from ways.metrics import clip_summary, token_summary, wer
 from ways.provenance import write as write_manifest
 from ways.quality import load_scan_csv
+from common import REVISIONS, pipeline_repo
 
 name, kind, model_id = sys.argv[1:4]
 HERE = Path(__file__).resolve().parent
-PIPE = Path(sys.argv[4] if len(sys.argv) > 4 else HERE.parents[1] / "pipeline")
+PIPE = pipeline_repo(sys.argv[4] if len(sys.argv) > 4 else None, need=("audio", "results"))
 AUDIO = PIPE / "audio"
 GOLD = PIPE / "transcripts.tsv"
 AADD_CSV = PIPE / "aadd_frames_20ms.csv"
@@ -42,7 +43,7 @@ gold = pd.read_csv(GOLD, sep="\t", usecols=["id", "normalized_text"], keep_defau
 gold = dict(zip(gold.id, gold.normalized_text))
 say("loading AADD frame probabilities from", AADD_CSV.name)
 aadd = load_scan_csv(AADD_CSV)
-be = load_backend(kind, model_id)
+be = load_backend(kind, model_id, revision=REVISIONS.get(model_id))
 say("backend", json.dumps(be.describe()))
 rows_f = OUT / "rows.jsonl"
 done = {json.loads(l)["clip"] for l in open(rows_f)} if rows_f.exists() else set()
@@ -79,6 +80,6 @@ toks = pd.concat([pd.read_csv(p) for p in sorted((OUT / "npz").glob("*_tokens.cs
 toks.to_csv(OUT / "tokens.csv", index=False)
 write_manifest(OUT / "provenance.json", inputs={"sample100.csv": str(HERE / "sample100.csv"), "gold_tsv": str(GOLD),
                                                  "aadd_seg20ms_csv": str(AADD_CSV)},
-               seeds={"sample": 8001, "bootstrap": 8001}, models=[model_id],
+               seeds={"sample": 8001, "bootstrap": 8001}, models={model_id: REVISIONS.get(model_id)},
                extra=dict(backend=be.describe(), patch_s=0.1, n_bands=8, n_clips=int(len(df))))
 say("done", name, "clips", len(df), "tokens", len(toks))

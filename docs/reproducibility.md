@@ -5,9 +5,10 @@ Sciunits (Ton That, Fils, Yuan and Malik, 2017), which package code, data and th
 execution so someone else can re-run them, and the three-layer dependency view in Vangala,
 Adibifar, Gehani and Malik (2026), which separates what a project claims it needs, what it needs to
 run, and what actually loads at runtime. The study in that paper found that only 68.3 % of
-AI-generated projects ran out of the box in a clean environment, and that the main causes were
-unlisted dependencies and a 13.5x gap between declared and runtime packages. The steps below exist
-to close those gaps for this repository.
+AI-generated projects ran out of the box in a clean environment. Missing dependencies (ImportError)
+explained only 10.5 % of the failures. Most came from code errors such as malformed syntax,
+incorrect file paths and uninitialized variables. Declared dependencies also understated what
+actually loaded by 13.5x on average. The steps below exist to close those gaps for this repository.
 
 ## 1. Fixed, hashed inputs
 
@@ -27,8 +28,14 @@ to close those gaps for this repository.
 * `requirements.txt` pins every claimed dependency to the exact version used. AADD is not on PyPI,
   so it is pinned to a git commit (`c6a2debc`). That line was wrong in the first draft
   (`aadd==3.1.0`), and the clean-environment run below caught it, which is the point of the run.
-* Model weights are identified by their Hugging Face snapshot commit in each `provenance.json`
-  (`models` field), read from the local cache at run time.
+* Model weights are pinned by Hugging Face snapshot commit. The commits recorded in each
+  `provenance.json` (`models` field) are in `experiments/common.py` (`REVISIONS`) and every
+  experiment passes them as `revision=`: whisper-tiny `169d4a43`, whisper-base `e37978b9`,
+  moonshine-base `7a73d8d5`. `ways explain --revision <commit>` does the same from the command line.
+  Two weights are not pinned this way: AADD downloads its checkpoints from the `main` branch of
+  `gertelrina/aadd` (sha256 of the files used here: v3.1 `2c16784e…`, v3-lite `571c0508…`,
+  v2 `6afd98fb…`), and `train_detectors.py` builds the whisper-base detector through AADD's
+  `WhisperFrameModel`, which takes no revision.
 * Seeds: sample 8001, bootstrap 8001. Greedy decoding and teacher forcing are deterministic; the
   surprisal of a clip scored twice differs by 0.0 (checked in the smoke run, see README).
 
@@ -38,15 +45,21 @@ to close those gaps for this repository.
 repository, Python, torch and CUDA versions, the GPU, the input hashes, the model snapshots, the
 claimed dependency list, and the runtime dependency list (every distribution behind a module that
 was imported during the run, which is Vangala et al.'s D_r). It also writes the difference
-`runtime_not_claimed` and the multiplier `|D_r| / |D_c|`. See `provenance/*.json`.
+`runtime_not_claimed` and the multiplier `|D_r| / |D_c|`. See `provenance/*.json`. The three
+100-clip runs were made before the first commit of this repository, so their `code_commit` is null.
+Their runtime sets were measured in the development environment, which holds more packages than
+`requirements.txt` installs, so they are an upper bound on what a clean install loads.
 
 ## 4. Clean-environment execution test
 
 `scripts/reproduce_clean_env.sh` creates a fresh virtual environment with no system site packages,
-installs only `requirements.txt` (CPU torch, so it needs no GPU), installs this package, runs the
-CPU test suite (`pytest -m "not gpu and not slow"`) and writes the runtime set it observed to
-`provenance/clean_env_run.json`. That is the "executable reliability" check of Vangala et al.
-applied to this repository. The log of the run on this machine is `provenance/clean_env_run.log`.
+installs only `requirements.txt` (CPU torch, so it needs no GPU), installs this package, runs
+`pip check`, runs the CPU test suite (`pytest -m "not gpu and not slow"`), runs `ways explain
+--help`, imports every third-party module the package, the experiments and the figure scripts use,
+and writes the runtime set it observed to `provenance/clean_env_run.json`. That is the "executable
+reliability" check of Vangala et al. applied to this repository, short of the GPU runs. The script
+writes its own log to `provenance/clean_env_run.log`. The audit of this repository against that
+paper is [reproducibility_audit.md](reproducibility_audit.md).
 
 ## 5. Tested on real hardware
 
@@ -57,21 +70,37 @@ what a workflow would run.
 
 ## Re-running
 
+What a full re-run needs besides this repository: Python 3.12, a CUDA GPU for the model runs (the
+tests need none), internet on the first run for the Hugging Face weights and the AADD checkpoints,
+the pipeline repository with its VoxCeleb audio, LibriSpeech test-clean and dev-clean for the
+controlled set and the detectors, and Playwright's Chromium for the two hand-drawn figures. The
+pipeline repository is the one path the scripts need: pass it as the argument where shown, or set
+`WAYS_PIPELINE`, otherwise they look next to this repository and stop with a message if it is not
+there. The `.sh` scripts use `$PY` (default `python`, so activate the venv first) and run offline
+by default.
+
 ```bash
 python -m venv .venv && . .venv/bin/activate
 pip install --extra-index-url https://download.pytorch.org/whl/cu128 -r requirements.txt
 pip install --no-deps -e .
 pytest tests -q                                   # math and operator checks, CPU, about a second
-python experiments/sample_test100.py <pipeline repo>
-experiments/run_all.sh                            # three models, 100 clips, about 40 minutes on the GPU above
+export WAYS_PIPELINE=/path/to/pipeline
+python experiments/sample_test100.py "$WAYS_PIPELINE"
+HF_HUB_OFFLINE=0 TRANSFORMERS_OFFLINE=0 experiments/run_all.sh   # three models, 100 clips, about 40 minutes on the GPU above
 python experiments/run_aadd_variants.py <pipeline repo>
 python experiments/compare.py
 python experiments/example_clip.py <pipeline repo>
 python experiments/vox_mixed_figures.py <pipeline repo>
+python experiments/gif_erase_sweep.py <pipeline repo>
 # controlled set: LibriSpeech test-clean into experiments/cache/librispeech/, then
+mkdir -p experiments/cache/librispeech
+curl -L https://www.openslr.org/resources/12/test-clean.tar.gz | tar xz -C experiments/cache/librispeech
 python experiments/controlled.py prepare && experiments/run_controlled.sh && python experiments/controlled_figures.py
 # detector backbones: LibriSpeech dev-clean into experiments/cache/librispeech/, then
+curl -L https://www.openslr.org/resources/12/dev-clean.tar.gz | tar xz -C experiments/cache/librispeech
 experiments/run_backbones.sh                      # trains two detectors (about 5 minutes) and runs the comparison
+# the hand-drawn workflow figures and the detector figure (fonts are in docs/images/fonts, no internet needed)
+python -m playwright install chromium && python docs/images/render.py
 ```
 
 The pipeline repository is the pipeline repository (the earlier study); the

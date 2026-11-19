@@ -135,12 +135,13 @@ def prepare():
 def run(name, kind, model_id):
     from ways import explain, load_backend
     from ways.metrics import wer
+    from common import REVISIONS
 
     man = pd.read_csv(CACHE / "manifest.csv")
     d = OUT / name; (d / "npz").mkdir(parents=True, exist_ok=True)
     rows_f = d / "rows.jsonl"
     done = {(json.loads(l)["id"], json.loads(l)["cond"]) for l in open(rows_f)} if rows_f.exists() else set()
-    be = load_backend(kind, model_id)
+    be = load_backend(kind, model_id, revision=REVISIONS.get(model_id))
     for r in man.itertuples():
         for cond in ("clean", "deg"):
             if (r.id, cond) in done:

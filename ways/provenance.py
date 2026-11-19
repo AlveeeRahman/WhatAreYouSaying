@@ -76,10 +76,12 @@ def hf_snapshot(model_id: str) -> str | None:
     return None
 
 
-def manifest(inputs: dict[str, str] | None = None, seeds: dict | None = None, models: list[str] | None = None,
-             extra: dict | None = None) -> dict:
+def manifest(inputs: dict[str, str] | None = None, seeds: dict | None = None,
+             models: list[str] | dict[str, str | None] | None = None, extra: dict | None = None) -> dict:
+    """`models` is a list of Hub ids (the newest cached snapshot is recorded) or {id: pinned revision}."""
     import torch
 
+    models = models if isinstance(models, dict) else {mid: None for mid in (models or [])}
     m = dict(
         code_commit=git_commit(),
         python=sys.version.split()[0],
@@ -90,7 +92,7 @@ def manifest(inputs: dict[str, str] | None = None, seeds: dict | None = None, mo
         seeds=seeds or {},
         inputs={k: sha256(v) for k, v in (inputs or {}).items()},
         input_paths=dict(inputs or {}),
-        models={mid: hf_snapshot(mid) for mid in (models or [])},
+        models={mid: rev or hf_snapshot(mid) for mid, rev in models.items()},
         claimed_dependencies=claimed_dependencies(),
         runtime_dependencies=runtime_dependencies(),
     )

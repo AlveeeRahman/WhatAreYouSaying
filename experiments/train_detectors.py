@@ -26,6 +26,7 @@ import torch.nn.functional as F
 from torch.utils.data import DataLoader, Dataset
 
 from aadd.v3.synth import CLASSES_V3, Assets, Synthesizer
+from common import REVISIONS
 
 HERE = Path(__file__).resolve().parent
 LS = HERE / "cache/librispeech/LibriSpeech/dev-clean"
@@ -86,7 +87,7 @@ class MoonshineFrameModel(nn.Module):
         super().__init__()
         from transformers import MoonshineForConditionalGeneration
 
-        self.encoder = MoonshineForConditionalGeneration.from_pretrained(backbone).model.encoder
+        self.encoder = MoonshineForConditionalGeneration.from_pretrained(backbone, revision=REVISIONS.get(backbone)).model.encoder
         self.backbone = backbone
         d = self.encoder.config.hidden_size
         L = self.encoder.config.encoder_num_hidden_layers + 1

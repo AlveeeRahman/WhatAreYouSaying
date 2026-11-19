@@ -11,9 +11,10 @@ import soundfile as sf
 from ways.attribution import Attribution
 from ways.plots import three_models_figure
 from ways.quality import load_scan_csv
+from common import pipeline_repo
 
 HERE = Path(__file__).resolve().parent
-PIPE = Path(sys.argv[1] if len(sys.argv) > 1 else HERE.parents[1] / "pipeline")
+PIPE = pipeline_repo(sys.argv[1] if len(sys.argv) > 1 else None, need=("audio", "results"))
 AUDIO = PIPE / "audio"
 AADD_CSV = PIPE / "aadd_frames_20ms.csv"
 FIG = HERE.parent / "figures"

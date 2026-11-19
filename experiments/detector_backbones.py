@@ -18,11 +18,12 @@ import torch
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 from train_detectors import frame_probs, load_detector  # noqa: E402
+from common import pipeline_repo  # noqa: E402
 
 from ways.metrics import bootstrap_ci, paired_bootstrap  # noqa: E402
 from ways.quality import CLASSES as AADD_CLASSES  # noqa: E402
 
-PIPE = Path(sys.argv[1] if len(sys.argv) > 1 else HERE.parents[1] / "pipeline")
+PIPE = pipeline_repo(sys.argv[1] if len(sys.argv) > 1 else None, need=("audio",))
 AUDIO = PIPE / "audio"
 CACHE = HERE / "cache/controlled"
 RES = HERE / "results"

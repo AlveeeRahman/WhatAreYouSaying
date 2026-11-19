@@ -13,10 +13,11 @@ from ways.attribution import Attribution
 from ways.metrics import clip_summary, token_summary, wer
 from ways.plots import clip_figure, method_figure, three_models_figure
 from ways.quality import load_scan_csv
+from common import REVISIONS, pipeline_repo
 
 CLIP = "id10288_FIxC_PNJNkc_00003"
 HERE = Path(__file__).resolve().parent
-PIPE = Path(sys.argv[1] if len(sys.argv) > 1 else HERE.parents[1] / "pipeline")
+PIPE = pipeline_repo(sys.argv[1] if len(sys.argv) > 1 else None, need=("audio", "results"))
 AUDIO = PIPE / "audio"
 GOLD = PIPE / "transcripts.tsv"
 AADD_CSV = PIPE / "aadd_frames_20ms.csv"
@@ -35,7 +36,7 @@ for name, kind, mid in MODELS:
     if f.exists():
         att = Attribution.load(f)
     else:
-        att = explain(load_backend(kind, mid), wav, batch=64)
+        att = explain(load_backend(kind, mid, revision=REVISIONS.get(mid)), wav, batch=64)
         att.save(f)
     atts[name] = att
     w = wer(gold[CLIP], att.text); wers[name] = w["wer"]

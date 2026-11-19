@@ -370,6 +370,12 @@ pip install --no-deps -e .
 pytest tests -q
 ```
 
+Python 3.12. A GPU is optional for one clip (the backends fall back to the CPU). The first call
+downloads the model from the Hugging Face Hub and, with `--aadd` or `ways quality`, the AADD
+checkpoint (about 180 MB for v3), so it needs internet once. Add `--revision <commit>` to pin
+the model snapshot. Re-running the experiments needs more (the pipeline repository, LibriSpeech, a
+GPU). The list is in [docs/reproducibility.md](docs/reproducibility.md#re-running).
+
 One clip, local weights, with the AADD context and the figure:
 
 ```bash
@@ -435,15 +441,20 @@ then tested on real hardware. The full checklist is [docs/reproducibility.md](do
 * **Pinned claimed dependencies.** `requirements.txt` pins every version. AADD is not on PyPI; it is
   pinned to git commit `c6a2debc`. My first draft said `aadd==3.1.0`, and the clean-environment run
   below failed on it. That is exactly the claimed-versus-working gap the paper measures, caught
-  by the test the paper recommends.
+  by the test the paper recommends. Model weights are pinned too: every experiment loads
+  whisper-tiny, whisper-base and moonshine-base at the snapshot commits its `provenance.json`
+  recorded (`experiments/common.py`).
 * **Runtime provenance written by the code.** Each run writes `provenance.json` with the git commit,
   Python, torch and CUDA versions, the GPU, input hashes, model snapshot commits, seeds, the claimed
   dependency list and the runtime dependency list (every distribution behind an imported module),
   plus the difference between the two.
 * **Clean-environment execution test.** `scripts/reproduce_clean_env.sh` builds a fresh venv with no
   system packages, installs only `requirements.txt` (CPU torch), installs the package, runs the CPU
-  tests, and records what loaded. Result on this machine: passed; 14 claimed packages, 16
-  distributions imported by the tests, 11 of them transitive (`provenance/clean_env_run.json`).
+  tests, imports every third-party module the code uses, and records what loaded. Result on this
+  machine: passed; 15 claimed packages, 60 distributions loaded, 45 of them transitive, all 83 resolved
+  versions written to `provenance/requirements-lock.txt`
+  (`provenance/clean_env_run.json`). The audit against the paper is
+  [docs/reproducibility_audit.md](docs/reproducibility_audit.md).
 * **Real hardware.** Everything in `experiments/results/` ran on one NVIDIA RTX 4000 Ada (20 GB),
   Ubuntu, Python 3.12.3, torch 2.11.0+cu128, transformers 5.5.4. Continuous integration is not set
   up yet; the command a workflow would run is `pytest tests -q -m "not gpu and not slow"`.
@@ -502,7 +513,7 @@ then tested on real hardware. The full checklist is [docs/reproducibility.md](do
 | `ways/provenance.py` | the provenance manifest (claimed and runtime dependencies, hashes, model commits) |
 | `ways/cli.py` | `ways explain`, `ways quality` |
 | `tests/` | operator and formula checks; mock OpenAI-compatible server and the HTTP test |
-| `experiments/` | sample selection, the three-model runs, the detector runs (`run_aadd_variants.py`, `train_detectors.py`, `detector_backbones.py`), comparison tables, the example clip, the controlled LibriSpeech set (`controlled.py`) |
+| `experiments/` | sample selection, the three-model runs, the detector runs (`run_aadd_variants.py`, `train_detectors.py`, `detector_backbones.py`), comparison tables, the example clip, the controlled LibriSpeech set (`controlled.py`); `common.py` holds the pipeline path and the pinned model revisions |
 | `experiments/results/` | per-clip rows, per-token tables, `comparison.json`, `comparison.md`, provenance (npz maps are not committed) |
 | `figures/` | the method figure, per-model clip figures, the three-model figures (VoxCeleb clean and degraded, LibriSpeech clean and degraded), the comparison figures |
 | `docs/` | backends, reproducibility checklist; `docs/images/`: the icon and its drawing script, the two hand-drawn workflow figures (sources in `src/`, rendered by `render.py`), the two GIFs |
