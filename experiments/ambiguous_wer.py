@@ -3,7 +3,8 @@ model aligned to the gold, every word placed on the audio where its erasure evid
 both transcripts share linked. Reads the controlled experiment's saved attributions (no model run).
 
 Usage: python experiments/ambiguous_wer.py
-Writes figures/controlled_noise_wer__<clip>.png (+ svg) and experiments/results/ambiguous/wer_words.csv, wer_summary.md
+Writes figures/controlled_noise_wer__<clip>.png (+ svg), its zoom on the noisy window
+figures/controlled_noise_wer_zoom__<clip>.png, and experiments/results/ambiguous/wer_words.csv, wer_summary.md
 """
 import json
 from pathlib import Path
@@ -62,30 +63,35 @@ def align(gold: str, words):
     return [status.get(j, "ins") for j in range(len(words))], dels, o
 
 
-def main():
+def draw(zoom: bool):
     man = pd.read_csv(CTRL / "manifest.csv").set_index("id")
     a, b = float(man.loc[CLIP, "win_start"]), float(man.loc[CLIP, "win_end"]); gold = man.loc[CLIP, "text"]
     import soundfile as sf
     wav, sr = sf.read(HERE / "cache/controlled" / f"{CLIP}_deg.wav", dtype="float32"); dur = len(wav) / sr
-    L = logmel(wav, sr)
+    wav_c, _ = sf.read(HERE / "cache/controlled" / f"{CLIP}_clean.wav", dtype="float32")
+    x0, x1 = (a - 0.25, b + 0.25) if zoom else (0.0, dur)
+    specs = [("clean", wav_c), ("deg", wav)] if zoom else [("deg", wav)]
     rows, summ = [], []
     _rc(S)
-    fig_h = 1.0 + 1.6 + len(MODELS) * 2.1 + 1.1
+    fig_h = 1.0 + 1.6 * len(specs) + len(MODELS) * 2.1 + 1.1
     fig = plt.figure(figsize=(S.width_in, fig_h))
     left, right = 0.085, 0.985
-    axis_pt = (right - left) * S.width_in * 72; per_pt = dur / axis_pt
-    gs = fig.add_gridspec(1 + len(MODELS), 1, height_ratios=[1.6] + [2.1] * len(MODELS), hspace=0.5, left=left, right=right,
+    axis_pt = (right - left) * S.width_in * 72; per_pt = (x1 - x0) / axis_pt
+    gs = fig.add_gridspec(len(specs) + len(MODELS), 1, height_ratios=[1.6] * len(specs) + [2.1] * len(MODELS), hspace=0.5, left=left, right=right,
                           top=1 - 1.0 / fig_h, bottom=1.1 / fig_h)
-    axm = fig.add_subplot(gs[0])
-    axm.imshow(L, origin="lower", aspect="auto", cmap=S.mel_cmap, extent=[0, L.shape[1] * 0.01, 0, 80], interpolation="nearest",
-               vmin=np.percentile(L, 3), vmax=np.percentile(L, 99.7))
-    axm.axvspan(a, b, color=S.degraded, alpha=S.band_alpha, lw=0); axm.set_xlim(0, dur); axm.set_yticks([0, 40, 80]); axm.set_yticklabels(["0", "1.9 k", "8 k"])
-    axm.set_ylabel("Hz (mel)"); axm.tick_params(labelbottom=False, colors=S.text_soft)
-    axm.set_title(f"the degraded recording: pink noise at 0 dB over {a:.1f}-{b:.1f} s (blue)", loc="left", fontsize=S.font_size, color=S.text_soft, pad=4)
-    for sp in axm.spines.values():
-        sp.set_color(S.border)
+    for j, (cond, w_) in enumerate(specs):
+        L = logmel(w_, sr)
+        axm = fig.add_subplot(gs[j])
+        axm.imshow(L, origin="lower", aspect="auto", cmap=S.mel_cmap, extent=[0, L.shape[1] * 0.01, 0, 80], interpolation="nearest",
+                   vmin=np.percentile(L, 3), vmax=np.percentile(L, 99.7))
+        axm.axvspan(a, b, color=S.degraded, alpha=S.band_alpha, lw=0); axm.set_xlim(x0, x1); axm.set_yticks([0, 40, 80]); axm.set_yticklabels(["0", "1.9 k", "8 k"])
+        axm.set_ylabel("Hz (mel)"); axm.tick_params(labelbottom=False, colors=S.text_soft)
+        axm.set_title("the clean recording" if cond == "clean" else f"the degraded recording: pink noise at 0 dB over {a:.1f}-{b:.1f} s (blue)",
+                      loc="left", fontsize=S.font_size, color=S.text_soft, pad=4)
+        for sp in axm.spines.values():
+            sp.set_color(S.border)
     for i, model in enumerate(MODELS):
-        ax = fig.add_subplot(gs[1 + i])
+        ax = fig.add_subplot(gs[len(specs) + i])
         per = {}
         for cond in ("clean", "deg"):
             att = Attribution.load(CTRL / model / "npz" / f"{CLIP}_{cond}.npz")
@@ -107,20 +113,24 @@ def main():
             p = per[cond]
             rows_end = [-1.0, -1.0, -1.0]                       # right edge of the last label in each label row
             for w, st in sorted(zip(p["words"], p["status"], strict=True), key=lambda r: r[0]["t"]):
-                if not np.isfinite(w["t"]):
+                if not np.isfinite(w["t"]) or not (x0 <= w["t"] <= x1):
                     continue
                 col = OK if st == "hit" else BAD
                 ax.add_patch(Rectangle((w["t"] - 0.05, y - 0.075), 0.1, 0.15, facecolor=col if st == "hit" else "white", edgecolor=col, lw=1.4, zorder=3))
-                wd = (text_width_pt(w["text"], S.label_size - 1, "bold", S.font) + 6) * per_pt
-                x0 = min(max(w["t"] - wd / 2, 0.0), dur - wd)
-                row = next((r for r, e in enumerate(rows_end) if x0 > e), 2)
-                rows_end[row] = x0 + wd
+                fs = S.label_size + (1 if zoom else -1)
+                wd = (text_width_pt(w["text"], fs, "bold", S.font) + 6) * per_pt
+                lx = min(max(w["t"] - wd / 2, x0), x1 - wd)
+                row = next((r for r, e in enumerate(rows_end) if lx > e), 2)
+                rows_end[row] = lx + wd
                 ly = y + sign * (0.13 + 0.2 * row)
-                ax.text(w["t"] if 0 <= w["t"] - wd / 2 and w["t"] + wd / 2 <= dur else x0 + wd / 2, ly, w["text"], ha="center",
-                        va="bottom" if sign > 0 else "top", fontsize=S.label_size - 1, color=col, fontweight="bold", zorder=4,
+                ax.text(w["t"] if x0 <= w["t"] - wd / 2 and w["t"] + wd / 2 <= x1 else lx + wd / 2, ly, w["text"], ha="center",
+                        va="bottom" if sign > 0 else "top", fontsize=fs, color=col, fontweight="bold", zorder=4,
                         bbox=dict(boxstyle="round,pad=0.12", facecolor=S.background, edgecolor="none", alpha=0.85))
         ax.axvspan(a, b, color=S.degraded, alpha=S.band_alpha, lw=0, zorder=0)
-        ax.set_xlim(0, dur); ax.set_ylim(-0.8, 1.8); ax.set_yticks([0.0, 1.0]); ax.set_yticklabels(["degraded", "clean"], fontsize=S.label_size)
+        ax.set_xlim(x0, x1); ax.set_ylim(-0.8, 1.8); ax.set_yticks([0.0, 1.0]); ax.set_yticklabels(["degraded", "clean"], fontsize=S.label_size)
+        if zoom:
+            for xx in (a, b):
+                ax.axvline(xx, color=S.degraded, lw=1.0, ls=(0, (4, 3)), zorder=2)
         ax.tick_params(labelbottom=(i == len(MODELS) - 1), colors=S.text_soft)
         if i == len(MODELS) - 1:
             ax.set_xlabel("time (s), each word at the patch its erasure evidence ranks first", labelpad=2)
@@ -142,13 +152,18 @@ def main():
                f"{hit_in['clean']} of {n_in['clean']} right on the clean recording, {hit_in['deg']} of {n_in['deg']} on the degraded one; "
                f"outside it {hit_out['clean']} of {n_out['clean']} and {hit_out['deg']} of {n_out['deg']}.")
         ax.set_title(wrap_to_width(ttl, axis_pt, S.font_size), loc="left", fontsize=S.font_size, color=S.text_soft, pad=4)
-    fig.suptitle(wrap_to_width(f"The same clip clean and degraded through three models, each word aligned to the gold\ngold: '{gold}'",
+    head = ("The noisy two seconds only: which words each model wrote there from the clean and from the degraded recording"
+            if zoom else "The same clip clean and degraded through three models, each word aligned to the gold")
+    fig.suptitle(wrap_to_width(f"{head}\ngold: '{gold}'",
                                axis_pt, S.font_size + 1, "bold", S.font), x=left, ha="left", fontsize=S.font_size + 1, fontweight="bold", color=S.text, y=0.995, va="top")
     fig.text(left, 0.008, wrap_to_width("Green filled = the word matches the gold at its place in the sentence, red outline = a substitution or an "
              "insertion. Grey lines join words both transcripts share. Blue band = the noisy two seconds.", axis_pt, S.label_size, font=S.font),
              fontsize=S.label_size, color=S.text_soft, va="bottom")
-    out = FIG / f"controlled_noise_wer__{CLIP}.png"
+    out = FIG / (f"controlled_noise_wer_zoom__{CLIP}.png" if zoom else f"controlled_noise_wer__{CLIP}.png")
     fig.savefig(out, dpi=S.dpi, facecolor=S.background); fig.savefig(out.with_suffix(".svg"), facecolor=S.background); plt.close(fig)
+    print(out)
+    if zoom:
+        return
     OUT.mkdir(parents=True, exist_ok=True)
     pd.DataFrame(rows).to_csv(OUT / "wer_words.csv", index=False)
     lines = ["| model | WER clean -> degraded | words on the noisy stretch | right on it | right outside it | shared words | evidence in the noise, window words | evidence in the noise, outside words |",
@@ -158,7 +173,12 @@ def main():
                      f"{s_['shared_words']} | {s_['mass_in_window_of_window_words']} | {s_['mass_in_window_of_outside_words']} |")
     (OUT / "wer_summary.md").write_text("\n".join(lines) + "\n")
     (OUT / "wer_summary.json").write_text(json.dumps(summ, indent=1))
-    print("\n".join(lines)); print(out)
+    print("\n".join(lines))
+
+
+def main():
+    draw(zoom=False)
+    draw(zoom=True)
 
 
 if __name__ == "__main__":
