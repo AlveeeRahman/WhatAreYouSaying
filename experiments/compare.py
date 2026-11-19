@@ -89,7 +89,7 @@ info = json.loads((RES / "aadd" / "info.json").read_text())
 S["detector_info"] = {k: dict(classes=v["classes"], resolution_s=v["resolution_s"], n_params=v["n_params"]) for k, v in info.items() if k in DETS}
 S["detector_info"]["v3_vs_pipeline_csv"] = info["v3_vs_pipeline_csv"]
 (RES / "comparison.json").write_text(json.dumps(S, indent=1, default=float))
-comparison_figure(clips, tokens, FIG / "comparison_100clips.png", title="100 random test clips (seed 8001), three small models", band_edges=edges)
+comparison_figure(clips, tokens, FIG / "comparison_100clips.png", title="100 random VoxCeleb interview clips (seed 8001), three speech-to-text models", band_edges=edges)
 
 
 def ci(d, f="{:.2f}"):

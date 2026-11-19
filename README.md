@@ -44,12 +44,17 @@ every model.
 | scores per token and patch | surprisal change in nats, Li et al.'s relative change, argmax flip; black-box servers get a 0/1 word-change map |
 | cost | one teacher-forced forward pass per patch, batched 64 at a time; 4.3 s per clip for moonshine-base, about 15 s for whisper-base on an RTX 4000 Ada (20 GB) |
 | sample | 100 clips, simple random sample with seed 8001 from the saved 1 500-clip test slice (sha256 `dfb0451d…`), total 862 s of audio |
+| controlled set | 60 LibriSpeech test-clean utterances, one 2 s degradation each from AADD's synthesiser, clean and degraded twins, three models |
 | detectors | AADD v3.1 (Whisper-small backbone, 88.6 M parameters, 20 ms), v3-lite (CRNN, 1.3 M, 20 ms), v2 (EfficientNet-B0, 4.0 M, 1 s) |
 | tests | 12 CPU checks of the operator and the formulas, 2 end-to-end HTTP checks against a mock OpenAI-compatible server |
 
 </details>
 
 ## What it answers
+
+<p align="center">
+  <img src="docs/images/workflow_method_steps.gif" width="720" alt="The six steps of the method appear one by one: grid, erase, ask the model, score, sum up, quality context">
+</p>
 
 A speech model turns a waveform into tokens. When it gets a word wrong, or right against the odds,
 I want to know which part of the sound it was listening to, and whether that part was speech or
@@ -72,6 +77,15 @@ WAYS gives three things per clip:
 </p>
 
 ## How it works
+
+<p align="center">
+  <img src="docs/images/workflow_method.png" width="900" alt="Hand-drawn workflow for one clip, six numbered cards: the audio and its patch grid; erase one patch; ask the model again, with local weights or a server; score each word for each patch; sum it up per word and draw it; AADD rates the same audio">
+</p>
+
+<p align="center">
+  <img src="docs/images/erase_sweep.gif" width="720" alt="Animation: a patch sweeps along one pitch band of the example clip's spectrogram; for each position the bars show how much less sure whisper-base became of every word, and the map of the word that reacts most builds up underneath">
+  <br><sub>The method on real audio: one band of whisper-base's input, one patch at a time. The word "Ron" reacts to one patch and to almost nothing else.</sub>
+</p>
 
 ### Erasing a patch
 
@@ -253,7 +267,66 @@ mix), but the conclusion is the same under all three.
 
 ## Controlled degradation on LibriSpeech
 
-<!-- CONTROLLED -->
+The VoxCeleb flags cover too much of every clip to say whether a model leans on damaged audio. So
+the second dataset has ground truth instead of a detector's opinion: 60 LibriSpeech test-clean
+utterances (5 to 10 s, seed 8001), each with one degradation inserted into one 2 s window at a
+random position, synthesised with AADD's own v3 generator (`aadd.v3.synth.Synthesizer`
+[[2]](#ref-2)), ten clips per class: pink noise at 0 dB SNR, reverberation (synthetic room impulse
+responses, RT60 0.6 to 1.0 s), clipping, low-pass, mains hum, clicks. The audio outside the
+window is bit-identical to the clean twin, so every difference between the clean and the degraded
+run of a clip comes from that window. Each clip was scored clean and degraded by each model, and
+tokens were matched between the two transcripts (88 to 94 % of tokens survive the degradation
+unchanged). "In-window tokens" are the matched tokens that drew at least half their evidence from
+the window when the audio was clean.
+
+<p align="center">
+  <img src="figures/controlled_summary.png" width="860" alt="Three panels per degradation class and model: the rise in word error rate from clean to degraded, the change in the share of an in-window token's evidence that sits inside the window, and the rise in surprisal of in-window tokens">
+</p>
+
+| model | WER clean | WER degraded | paired rise | tokens kept | in-window tokens: mass in window, clean -> degraded | paired change | surprisal rise in / out |
+|---|---|---|---|---|---|---|---|
+| whisper-tiny | 0.08 [0.06, 0.11] | 0.15 [0.11, 0.20] | +0.066 [+0.029, +0.109] | 0.88 [0.84, 0.92] | 0.76 [0.74, 0.78] -> 0.83 [0.81, 0.85] | +0.066 [+0.045, +0.087] | 0.13 [0.08, 0.18] / 0.03 [0.02, 0.05] |
+| whisper-base | 0.06 [0.04, 0.08] | 0.09 [0.06, 0.11] | +0.029 [+0.014, +0.046] | 0.93 [0.91, 0.95] | 0.73 [0.72, 0.75] -> 0.82 [0.80, 0.84] | +0.088 [+0.067, +0.110] | 0.10 [0.06, 0.14] / 0.02 [0.01, 0.03] |
+| moonshine-base | 0.05 [0.03, 0.07] | 0.09 [0.06, 0.12] | +0.037 [+0.016, +0.061] | 0.94 [0.92, 0.97] | 0.76 [0.74, 0.78] -> 0.84 [0.81, 0.86] | +0.072 [+0.047, +0.099] | 0.09 [0.05, 0.13] / 0.01 [-0.00, 0.02] |
+
+| degradation | AADD flags inside | outside | right class inside | whisper-tiny: WER clean -> deg, mass-in clean -> deg | whisper-base: WER clean -> deg, mass-in clean -> deg | moonshine-base: WER clean -> deg, mass-in clean -> deg |
+|---|---|---|---|---|---|---|
+| noise | 1.00 | 0.03 | 1.00 | 0.09 -> 0.24, 0.73 -> 0.90 | 0.08 -> 0.16, 0.72 -> 0.89 | 0.07 -> 0.19, 0.73 -> 0.92 |
+| reverb | 1.00 | 0.20 | 1.00 | 0.15 -> 0.37, 0.76 -> 0.84 | 0.07 -> 0.14, 0.75 -> 0.90 | 0.06 -> 0.16, 0.76 -> 0.88 |
+| clipping | 0.90 | 0.15 | 0.89 | 0.06 -> 0.08, 0.75 -> 0.82 | 0.05 -> 0.07, 0.73 -> 0.81 | 0.07 -> 0.06, 0.77 -> 0.84 |
+| lowpass | 1.00 | 0.05 | 1.00 | 0.04 -> 0.07, 0.77 -> 0.84 | 0.04 -> 0.03, 0.73 -> 0.83 | 0.02 -> 0.04, 0.76 -> 0.84 |
+| hum | 0.92 | 0.23 | 0.91 | 0.11 -> 0.08, 0.79 -> 0.79 | 0.07 -> 0.07, 0.75 -> 0.75 | 0.05 -> 0.05, 0.77 -> 0.76 |
+| clicks | 0.70 | 0.10 | 0.68 | 0.06 -> 0.07, 0.77 -> 0.77 | 0.04 -> 0.04, 0.71 -> 0.75 | 0.04 -> 0.04, 0.79 -> 0.79 |
+
+What the controlled set shows:
+
+* **AADD finds the inserted damage.** It flags 100% of frames inside a noise or reverb window and
+  3% to 20% outside, with the right class; clicks are the hardest (70% inside). That is the
+  detector working on its own kind of data, as its paper claims, and it is why the VoxCeleb flags
+  should be read as "this real recording looks unlike clean read speech" rather than as a map of
+  where the damage is.
+* **Degradation pulls evidence into the damaged window, it does not push it away.** For tokens
+  spoken inside the window, the share of evidence inside it rises from 0.73 to 0.82 for
+  whisper-base (paired {:+.3f} [{:+.3f}, {:+.3f}]), 0.76 to 0.83 for whisper-tiny and
+  0.76 to 0.84 for moonshine-base. Tokens spoken outside the window also lean on it more
+  than before (paired {:+.3f} [{:+.3f}, {:+.3f}] for whisper-base). Erasing a patch of damaged audio costs the
+  model more than erasing the same patch when it was clean: the damaged stretch is where the
+  transcript is fragile, so that is where the evidence concentrates. This is the signature the
+  tool is built to show, and it is visible per clip (figure below).
+* **The surprisal says the same.** In-window tokens become 0.10 nats more surprising to
+  whisper-base, out-of-window tokens 0.02; the other two models order the same way.
+* **Noise and reverberation cost words, the other four barely do.** whisper-tiny goes from 0.09 to
+  0.24 WER under noise and 0.15 to 0.37 under reverb; whisper-base loses about half as much and
+  moonshine-base sits between the two. Hum and clicks move WER by at most 0.03 and the evidence
+  shares by at most 0.04 for any model, which is the control the method needs: a degradation the
+  model barely notices barely moves the maps.
+* **Whisper-base and Moonshine-base are close**; whisper-tiny is the one that suffers. On clean
+  LibriSpeech all three are at 0.05 to 0.08 WER.
+
+<p align="center">
+  <img src="figures/controlled_noise_deg__2094-142345-0024.png" width="860" alt="A LibriSpeech clip with pink noise inserted at 0.6 to 2.6 s, through the three models: the boxes of the tokens spoken in that window sit inside it">
+  <br><sub>LibriSpeech 2094-142345-0024 with pink noise at 0 dB inserted at 0.6 to 2.6 s (dashed). The clean twin is <code>figures/controlled_noise_clean__2094-142345-0024.png</code>; a reverb pair is in the same folder.</sub>
+</p>
 
 ## Install and use
 
@@ -316,6 +389,10 @@ chat-route prompt are in [docs/backends.md](docs/backends.md).
 
 ## Reproducibility
 
+<p align="center">
+  <img src="docs/images/workflow_experiments.png" width="900" alt="Hand-drawn workflow of the experiments, six numbered cards: 100 VoxCeleb clips from the hashed test slice; 60 LibriSpeech clips with known damage; three models over every patch; every run writes provenance.json; statistics; the clean-room test, with the dependency gap it caught in red">
+</p>
+
 I followed the steps Dr Malik's group teaches for re-executable research [[5]](#ref-5) and the
 three-layer dependency view of her 2026 paper with Vangala, Adibifar and Gehani [[6]](#ref-6),
 then tested on real hardware. The full checklist is [docs/reproducibility.md](docs/reproducibility.md).
@@ -355,13 +432,14 @@ then tested on real hardware. The full checklist is [docs/reproducibility.md](do
 * **Neighbouring patches share an edge.** A patch's two time neighbours lose up to about 10 % of
   its effect; maps are smooth across those edges by construction.
 * **No live vLLM or llama.cpp run yet**, only the mock server. Running one is the next test.
-* **100 clips, three small models.** Enough for paired comparisons with bootstrap intervals, not
-  for claims about large models or other languages.
+* **100 real clips and 60 controlled clips, three small models.** Enough for paired comparisons with
+  bootstrap intervals, not for claims about large models or other languages.
 
 ## Status
 
 * Done: operator, three backends, scores, summaries, AADD context, CLI, figures, tests, 100-clip
-  runs for three models, three-detector check, clean-environment run, provenance.
+  runs for three models, three-detector check, the controlled LibriSpeech set, clean-environment
+  run, provenance.
 * Next: CI workflow once Actions minutes are available (the test command is fixed); a live vLLM
   transcription run; the same 100 clips on Modal if a larger model is wanted.
 
@@ -392,10 +470,10 @@ then tested on real hardware. The full checklist is [docs/reproducibility.md](do
 | `ways/provenance.py` | the provenance manifest (claimed and runtime dependencies, hashes, model commits) |
 | `ways/cli.py` | `ways explain`, `ways quality` |
 | `tests/` | operator and formula checks; mock OpenAI-compatible server and the HTTP test |
-| `experiments/` | sample selection, the three-model runs, the three-detector run, comparison tables, the example clip |
+| `experiments/` | sample selection, the three-model runs, the three-detector run, comparison tables, the example clip, the controlled LibriSpeech set (`controlled.py`) |
 | `experiments/results/` | per-clip rows, per-token tables, `comparison.json`, `comparison.md`, provenance (npz maps are not committed) |
-| `figures/` | the method figure, per-model clip figures, the three-model figure, the comparison figure |
-| `docs/` | backends, reproducibility checklist, the icon and its drawing script |
+| `figures/` | the method figure, per-model clip figures, the three-model figures (VoxCeleb clean and degraded, LibriSpeech clean and degraded), the comparison figures |
+| `docs/` | backends, reproducibility checklist; `docs/images/`: the icon and its drawing script, the two hand-drawn workflow figures (sources in `src/`, rendered by `render.py`), the two GIFs |
 | `provenance/` | clean-environment run log and runtime dependency set |
 | `scripts/reproduce_clean_env.sh` | the clean-environment execution test |
 

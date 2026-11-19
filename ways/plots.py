@@ -322,8 +322,8 @@ def comparison_figure(clips: dict, tokens: dict, path, title="", band_edges=None
         w = clips[n]["wer"].dropna().clip(upper=1.5)
         ax.boxplot(w, positions=[i], widths=0.55, patch_artist=True, boxprops=dict(facecolor=col(i), alpha=0.35, edgecolor=col(i)),
                    medianprops=dict(color=col(i), lw=2), whiskerprops=dict(color=col(i)), capprops=dict(color=col(i)), flierprops=dict(marker=".", markeredgecolor=col(i), alpha=0.5))
-    ax.set_xticks(range(len(names))); ax.set_xticklabels(names, rotation=15); ax.set_ylabel("WER per clip (capped at 1.5)")
-    _label(ax, "(a) Word error rate, 100 clips")
+    ax.set_xticks(range(len(names))); ax.set_xticklabels(names, rotation=15); ax.set_ylabel("word error rate per clip (capped at 1.5)")
+    _label(ax, "(a) How many words each model gets wrong")
     # focus ratio
     ax = axes[1]
     for i, n in enumerate(names):
@@ -332,8 +332,8 @@ def comparison_figure(clips: dict, tokens: dict, path, title="", band_edges=None
         ax.boxplot(f, positions=[i], widths=0.55, patch_artist=True, boxprops=dict(facecolor=col(i), alpha=0.35, edgecolor=col(i)),
                    medianprops=dict(color=col(i), lw=2), whiskerprops=dict(color=col(i)), capprops=dict(color=col(i)), flierprops=dict(marker=".", markeredgecolor=col(i), alpha=0.5))
     ax.axhline(1, color=TXT2, lw=1, ls="--"); ax.text(len(names) - 0.5, 1.02, "no preference", ha="right", va="bottom", fontsize=10, color=TXT2)
-    ax.set_xticks(range(len(names))); ax.set_xticklabels(names, rotation=15); ax.set_ylabel("noise-focus ratio per clip")
-    _label(ax, f"(b) Noise-focus ratio, {len(f)} informative clips")
+    ax.set_xticks(range(len(names))); ax.set_xticklabels(names, rotation=15); ax.set_ylabel("evidence on degraded audio / share of audio degraded")
+    _label(ax, f"(b) Does a model lean on degraded audio? ({len(f)} clips)")
     # band shares
     ax = axes[2]
     B = 8
@@ -344,10 +344,11 @@ def comparison_figure(clips: dict, tokens: dict, path, title="", band_edges=None
     ax.set_xticks(range(B))
     if band_edges is not None:
         ax.set_xticklabels([f"{band_edges[b] / 1000:.1f}" for b in range(B)]); ax.set_xlabel("band lower edge (kHz)")
-    ax.set_ylabel("mean share of a token's mass"); ax.legend(frameon=False)
-    _label(ax, "(c) Evidence by frequency band")
+    ax.set_ylabel("share of a word's evidence")
+    _label(ax, "(c) Which pitch range the evidence comes from")
     for a in axes:
         for s in a.spines.values():
             s.set_color(BORDER)
-    fig.suptitle(title, x=0.07, ha="left", fontsize=13, fontweight="bold", color=TXT, y=0.97)
+    axes[2].legend(frameon=False, title="speech-to-text model", title_fontsize=11)
+    fig.suptitle(title, x=0.06, ha="left", fontsize=13, fontweight="bold", color=TXT, y=0.97)
     fig.savefig(path, dpi=DPI); fig.savefig(str(path).rsplit(".", 1)[0] + ".svg"); plt.close(fig)

@@ -1,0 +1,108 @@
+<!doctype html>
+<!-- WAYS figure: how the results were produced and how to check them, hand-drawn. Render with docs/images/render.py.
+     Facts from experiments/sample_test100.py, experiments/controlled.py, experiments/run_all.sh, ways/provenance.py,
+     scripts/reproduce_clean_env.sh and provenance/clean_env_run.log. ?step=N draws cards 1..N. -->
+<html lang="en"><head><meta charset="utf-8"><title>How the results were made and checked</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Kalam:wght@400;700&family=Patrick+Hand&display=swap">
+<style>html, body { margin: 0; background: #FBF4E4; } svg { display: block; }</style>
+</head><body>
+<svg id="fig" width="1200" height="1330" viewBox="0 0 1200 1330" xmlns="http://www.w3.org/2000/svg"></svg>
+<script src="rough.js"></script>
+<script>
+const STEP = +(new URLSearchParams(location.search).get('step') || 99);
+
+function bullets(x, y, items, maxW, color, size = 19, lh = 23) {
+  for (const s of items) {
+    text(x + 4, y + 28, '-', { size, color });
+    y = wrap(x + 22, y + 28, s, maxW - 22, lh, { size });
+  }
+  return y;
+}
+
+function draw() {
+  el('rect', { width: W, height: H, fill: C.page });
+
+  star(64, 62, 19, C.amber);
+  const tt = text(96, 76, 'How the results were made, and how to check them', { font: TITLE, weight: 700, size: 40 });
+  const tw = tt.getComputedTextLength();
+  roughLine([[94, 92], [96 + tw * 0.5, 96], [100 + tw, 91]], C.amber, { arrow: false, sw: 3.2, bow: 0.004 });
+  roughLine([[110, 99], [96 + tw * 0.6, 102], [90 + tw, 98]], C.amber, { arrow: false, sw: 2, bow: 0.004 });
+  wrap(60, 140, 'Two datasets, three speech-to-text models, every patch of every clip. Every run writes down what it ' +
+    'used, and a clean-room install checks that the repository runs from its own requirements file, the steps Dr Malik’s group teaches.',
+    1080, 28, { size: 22, color: C.soft });
+
+  text(60, 214, 'Lanes:', { size: 21 });
+  let px = 128;
+  for (const [l, c] of [['Data', C.orange], ['Runs', C.blue], ['Provenance', C.purple], ['Statistics', C.green], ['Clean-room test', C.black]])
+    px = pill(px, 191, l, c) + 14;
+  text(60, 258, 'Paths off the line:', { size: 21 });
+  roughLine([[232, 251], [292, 251]], C.red, { arrow: false, dash: '9 7', sw: 2.6, bow: 0 });
+  text(304, 258, 'red dashed = caught by the check', { size: 19, color: C.red });
+
+  // ---- row 1: data ----
+  const r1 = 300, h1 = 300;
+  if (STEP >= 1) {
+    let y = card(1, 40, r1, 540, h1, C.orange, '100 VoxCeleb interview clips', 'Data');
+    y = bullets(66, y + 6, ['from the saved test slice of the pipeline: 1 500 clips, test.csv sha256 dfb0451d…',
+      'disjoint from the development and load slices (the script asserts it; load-pool audio is never read)',
+      'picked with numpy default_rng(8001), no replacement', 'AADD v3.1 scanned the same files'], 490, C.orange);
+    text(66, r1 + h1 - 18, 'experiments/sample_test100.py', { size: 18, color: C.soft });
+  }
+  if (STEP >= 2) {
+    let y = card(2, 620, r1, 540, h1, C.orange, '60 LibriSpeech clips with known damage', 'Data', { tsize: 24 });
+    y = bullets(646, y + 6, ['clean audiobook speech, 5 to 10 s, seed 8001',
+      'one 2 s degradation each, made with AADD’s own synthesiser: noise, reverb, clipping, low-pass, hum, clicks',
+      'the clean twin is bit-identical outside the window', 'so where the damage is, is known, no detector needed'], 490, C.orange);
+    text(646, r1 + h1 - 18, 'experiments/controlled.py prepare', { size: 18, color: C.soft });
+  }
+
+  // ---- row 2: runs, provenance ----
+  const r2 = 660, h2 = 270;
+  if (STEP >= 3) {
+    roughLine([[310, r1 + h1 + 4], [310, r2 - 6]], C.ink);
+    roughLine([[890, r1 + h1 + 4], [890, 636], [330, 636]], C.ink, { arrow: false });
+    text(560, r1 + h1 + 26, '100 + 60 clean + 60 damaged clips', { size: 18, color: C.soft });
+    let y = card(3, 40, r2, 540, h2, C.blue, 'Three models, every patch', 'Runs');
+    y = bullets(66, y + 6, ['whisper-tiny, whisper-base, moonshine-base',
+      'about 700 patches per clip, one forward pass each, 64 at a time',
+      'run_all.sh and run_controlled.sh, resumable, one line per clip',
+      'one NVIDIA RTX 4000 Ada (20 GB); 4 s a clip for Moonshine, 14 s for whisper-base'], 490, C.blue);
+    text(66, r2 + h2 - 18, 'experiments/run_models.py, controlled.py run', { size: 18, color: C.soft });
+  }
+  if (STEP >= 4) {
+    roughLine([[582, r2 + 120], [616, r2 + 120]], C.ink);
+    let y = card(4, 620, r2, 540, h2, C.purple, 'Every run writes provenance.json', 'Provenance');
+    y = bullets(646, y + 6, ['git commit, Python, torch, CUDA, the GPU, the seeds',
+      'sha256 of every input, the commit of every model snapshot',
+      'the claimed dependencies next to the ones that loaded, and the gap between them (Vangala, Adibifar, Gehani and Malik, 2026)',
+      'the Sciunit idea: code, data and the run, recorded together (Ton That, Fils, Yuan and Malik, 2017)'], 490, C.purple);
+    text(646, r2 + h2 - 18, 'ways/provenance.py', { size: 18, color: C.soft });
+  }
+
+  // ---- row 3: statistics, clean room ----
+  const r3 = 990, h3 = 215;
+  if (STEP >= 5) {
+    roughLine([[310, r2 + h2 + 4], [310, r3 - 6]], C.ink);
+    let y = card(5, 40, r3, 540, h3, C.green, 'Statistics', 'Statistics');
+    y = bullets(66, y + 6, ['10 000-resample bootstrap over clips, differences paired by clip',
+      'the noise-focus question asked under three AADD detectors',
+      'comparison.md and json, the figures, the README tables'], 490, C.green);
+  }
+  if (STEP >= 6) {
+    roughLine([[890, r2 + h2 + 4], [890, r3 - 6]], C.ink);
+    text(902, r2 + h2 + 34, 'same requirements.txt', { size: 18, color: C.soft });
+    let y = card(6, 620, r3, 540, h3, C.black, 'Clean-room test', 'Clean-room test');
+    y = bullets(646, y + 6, ['a fresh venv with no system packages',
+      'pip install -r requirements.txt, then the 12 CPU checks',
+      'writes what loaded next to what was claimed'], 490, C.black);
+    text(646, r3 + h3 - 18, 'scripts/reproduce_clean_env.sh', { size: 18, color: C.soft });
+    const ry = 1230, rh = 84;
+    roughLine([[890, r3 + h3 + 4], [890, ry - 4]], C.red, { dash: '9 7' });
+    roughRect(620, ry, 540, rh, 14, C.red, { dash: '10 7', sw: 2.4 });
+    text(646, ry + 34, 'Caught on the first run: aadd==3.1.0 is not on PyPI', { font: TITLE, weight: 700, size: 21, color: C.red });
+    wrap(646, ry + 62, 'Pinned to its git commit c6a2debc instead; the second run passed.', 500, 22, { size: 18, color: C.soft });
+  }
+}
+whenFonts(draw);
+</script>
+</body></html>

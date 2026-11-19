@@ -67,6 +67,9 @@ experiments/run_all.sh                            # three models, 100 clips, abo
 python experiments/run_aadd_variants.py <pipeline repo>
 python experiments/compare.py
 python experiments/example_clip.py <pipeline repo>
+python experiments/vox_mixed_figures.py <pipeline repo>
+# controlled set: LibriSpeech test-clean into experiments/cache/librispeech/, then
+python experiments/controlled.py prepare && experiments/run_controlled.sh && python experiments/controlled_figures.py
 ```
 
 The pipeline repository is the pipeline repository (the earlier study); the

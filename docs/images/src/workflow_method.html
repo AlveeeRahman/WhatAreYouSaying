@@ -1,0 +1,126 @@
+<!doctype html>
+<!-- WAYS figure: how one clip is explained, hand-drawn. Render with docs/images/render.py (Playwright Chromium).
+     Facts from ways/erasure.py (grid, projections), ways/attribution.py (scores), ways/metrics.py (summaries),
+     ways/quality.py (AADD flags) and tests/test_erasure.py (the measured suppression). ?step=N draws cards 1..N. -->
+<html lang="en"><head><meta charset="utf-8"><title>How WAYS explains one clip</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Kalam:wght@400;700&family=Patrick+Hand&display=swap">
+<style>html, body { margin: 0; background: #FBF4E4; } svg { display: block; }</style>
+</head><body>
+<svg id="fig" width="1200" height="1350" viewBox="0 0 1200 1350" xmlns="http://www.w3.org/2000/svg"></svg>
+<script src="rough.js"></script>
+<script>
+const STEP = +(new URLSearchParams(location.search).get('step') || 99);
+
+function miniGrid(x, y, w, h, cols, rows, fillCell) {
+  roughRect(x, y, w, h, 4, C.orange, { sw: 1.6, amp: 0.5, fill: '#FFF7EA' });
+  for (let i = 1; i < cols; i++) roughLine([[x + i * w / cols, y], [x + i * w / cols, y + h]], C.orange, { arrow: false, sw: 1.1, bow: 0 });
+  for (let j = 1; j < rows; j++) roughLine([[x, y + j * h / rows], [x + w, y + j * h / rows]], C.orange, { arrow: false, sw: 1.1, bow: 0 });
+  if (fillCell) {
+    const [ci, rj] = fillCell;
+    el('rect', { x: x + ci * w / cols + 2, y: y + rj * h / rows + 2, width: w / cols - 4, height: h / rows - 4, fill: C.purple, opacity: 0.85 });
+  }
+}
+
+function draw() {
+  el('rect', { width: W, height: H, fill: C.page });
+
+  star(64, 62, 19, C.amber);
+  const tt = text(96, 76, 'How WAYS explains one clip', { font: TITLE, weight: 700, size: 44 });
+  const tw = tt.getComputedTextLength();
+  roughLine([[94, 92], [96 + tw * 0.5, 96], [100 + tw, 91]], C.amber, { arrow: false, sw: 3.2, bow: 0.004 });
+  roughLine([[110, 99], [96 + tw * 0.6, 102], [90 + tw, 98]], C.amber, { arrow: false, sw: 2, bow: 0.004 });
+  wrap(60, 140, 'Erase one small patch of the audio, ask the speech-to-text model again how sure it is of each word it ' +
+    'wrote, and keep the drop. Do that for every patch, and each word ends up with a map of the audio it leaned on.',
+    1080, 28, { size: 22, color: C.soft });
+
+  text(60, 214, 'Lanes:', { size: 21 });
+  let px = 128;
+  for (const [l, c] of [['Audio', C.orange], ['Erasure', C.purple], ['The model', C.blue], ['Scores', C.green], ['Quality context', C.black]])
+    px = pill(px, 191, l, c) + 14;
+  text(60, 258, 'Paths off the line:', { size: 21 });
+  roughLine([[232, 251], [292, 251]], C.red, { arrow: false, dash: '9 7', sw: 2.6, bow: 0 });
+  text(304, 258, 'red dashed = a server that returns text only, no probabilities', { size: 19, color: C.red });
+
+  // ---- 1 audio and grid ----
+  const r1 = 300, h1 = 330;
+  if (STEP >= 1) {
+    let y = card(1, 40, r1, 350, h1, C.orange, 'The audio and its grid', 'Audio');
+    for (const s of ['16 kHz mono, any length', 'STFT: 25 ms window, 10 ms hop (the same as Whisper)',
+                     'patches of 100 ms x 8 pitch bands', 'about 700 patches per clip']) {
+      text(70, y + 30, '-', { size: 20, color: C.orange });
+      y = wrap(88, y + 30, s, 286, 24, { size: 20 });
+    }
+    miniGrid(70, y + 22, 290, 54, 10, 3, [4, 2]);
+    text(66, r1 + h1 - 18, 'ways/erasure.py: PatchGrid', { size: 18, color: C.soft });
+  }
+  if (STEP >= 2) roughLine([[392, r1 + 165], [446, r1 + 165]], C.ink);
+
+  // ---- 2 erase ----
+  if (STEP >= 2) {
+    let y = card(2, 450, r1, 710, h1, C.purple, 'Erase one patch, P', 'Erasure');
+    y = wrap(476, y + 36, 'Set the STFT to zero inside P and turn it back into a waveform. Do that three times, so the ' +
+      'patch stays erased after the window overlap.', 650, 26, { size: 20 });
+    y = wrap(476, y + 34, 'Measured in Whisper’s own input, the patch falls 33 to 36 dB (worst case 17 dB), below the ' +
+      'recording’s own background. Everything outside P is untouched.', 650, 26, { size: 20 });
+    y = wrap(476, y + 34, 'The erased audio goes to the model through its own front end, so one operator serves Whisper ' +
+      '(log-mel), Moonshine (raw waveform) and a server (a WAV file).', 650, 26, { size: 20 });
+    text(476, r1 + h1 - 18, 'ways/erasure.py: erase(), checked in tests/test_erasure.py', { size: 18, color: C.soft });
+  }
+
+  // ---- 3 the model ----
+  const r2 = 690, h2 = 340;
+  if (STEP >= 3) {
+    roughLine([[805, r1 + h1 + 4], [805, 660], [320, 660], [320, r2 - 6]], C.ink);
+    text(818, r1 + h1 + 34, 'x \\ P, one per patch, 64 at a time', { size: 18, color: C.soft });
+    let y = card(3, 40, r2, 560, h2, C.blue, 'Ask the model again', 'The model');
+    const bx = 66, bw = 508;
+    roughRect(bx, y + 18, bw, 92, 12, C.blue, { sw: 1.6, amp: 0.8, fill: '#F3F6FE' });
+    text(bx + 14, y + 46, 'Local weights: Whisper, Moonshine', { font: TITLE, weight: 700, size: 21, color: C.blue });
+    wrap(bx + 14, y + 72, 'Hold the transcript fixed and read the surprisal S of each word, the model’s own measure of how unsure it is.', bw - 28, 22, { size: 18 });
+    roughRect(bx, y + 126, bw, 92, 12, C.red, { sw: 1.6, amp: 0.8, dash: '9 7' });
+    text(bx + 14, y + 154, 'A server: vLLM, llama.cpp', { font: TITLE, weight: 700, size: 21, color: C.red });
+    wrap(bx + 14, y + 180, 'Send the erased WAV over HTTP, read the new transcript back. No probabilities, so the score is: did the word change?', bw - 28, 22, { size: 18 });
+    text(66, r2 + h2 - 18, 'ways/backends/: hf_whisper.py, hf_moonshine.py, openai_compat.py', { size: 18, color: C.soft });
+  }
+  if (STEP >= 4) roughLine([[602, r2 + 155], [636, r2 + 155]], C.ink);
+
+  // ---- 4 scores ----
+  if (STEP >= 4) {
+    let y = card(4, 640, r2, 520, h2, C.green, 'Score each word for each patch', 'Scores');
+    const rows = [
+      ['Δ = S(x \\ P) − S(x)', 'nats: how much less sure the model got'],
+      ['r = Δ / S(x)', 'the relative change of Li, Monroe and Jurafsky (2016), eq. 1'],
+      ['flip', 'did the model’s pick for that word change?'],
+      ['word changed, 0 or 1', 'the server version, from the re-decoded text'],
+    ];
+    for (const [k, v] of rows) {
+      text(666, y + 34, k, { font: TITLE, weight: 700, size: 20, color: C.green });
+      y = wrap(666, y + 56, v, 470, 22, { size: 18 }) - 22;
+      y += 8;
+    }
+    text(666, r2 + h2 - 18, 'arrays [words x bands x patches] in ways/attribution.py', { size: 18, color: C.soft });
+  }
+
+  // ---- 5 summaries, 6 AADD ----
+  const r3 = 1090, h3 = 232;
+  if (STEP >= 5) {
+    roughLine([[900, r2 + h2 + 4], [900, 1060], [390, 1060], [390, r3 - 6]], C.ink);
+    text(912, r2 + h2 + 34, 'per word', { size: 18, color: C.soft });
+    let y = card(5, 40, r3, 700, h3, C.green, 'Sum it up per word, then draw it', 'Scores');
+    y = wrap(66, y + 34, 'Keep the positive Δ and normalise it: the top patch, the share per pitch band, the distance to ' +
+      'the word’s own timestamp, and the noise-focus ratio: evidence on degraded frames divided by the share of the clip that is degraded.',
+      650, 25, { size: 19 });
+    wrap(66, y + 30, 'Out: boxes on the spectrogram with the word on each, the transcript strip, npz + json, bootstrap intervals over clips.',
+      650, 25, { size: 19, color: C.soft });
+  }
+  if (STEP >= 6) {
+    let y = card(6, 780, r3, 380, h3, C.black, 'AADD rates the same audio', 'Quality context');
+    y = wrap(806, y + 34, '12 kinds of damage, a probability every 20 ms; a frame is flagged at p ≥ 0.5.', 330, 25, { size: 19 });
+    wrap(806, y + 30, 'The flags give f(t), the share of each patch that is degraded.', 330, 25, { size: 19, color: C.soft });
+    roughLine([[778, r3 + 150], [744, r3 + 150]], C.ink);
+    text(752, r3 + 174, 'f(t)', { size: 17, color: C.soft });
+  }
+}
+whenFonts(draw);
+</script>
+</body></html>

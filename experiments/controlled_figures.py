@@ -40,7 +40,7 @@ def example(cls="noise"):
 
 def summary():
     S = json.load(open(OUT / "summary.json"))
-    fig, axes = plt.subplots(1, 3, figsize=(13, 5.0), gridspec_kw=dict(left=0.06, right=0.98, top=0.8, bottom=0.2, wspace=0.34))
+    fig, axes = plt.subplots(1, 3, figsize=(13, 5.4), gridspec_kw=dict(left=0.06, right=0.98, top=0.78, bottom=0.2, wspace=0.38))
     w = 0.8 / len(MODELS)
     x = np.arange(len(DEG))
     for i, m in enumerate(MODELS):
@@ -51,14 +51,15 @@ def summary():
         ax.bar(x + (i - 1) * w, [bc[c]["mass_in_deg"] - bc[c]["mass_in_clean"] for c in DEG], width=w, color=CAT[i])
         ax = axes[2]
         ax.bar(x + (i - 1) * w, [bc[c]["ds_in"] for c in DEG], width=w, color=CAT[i])
-    for ax, lab, ttl in zip(axes, ["WER rise, degraded minus clean", "change in mass inside the window", "surprisal rise (nats), in-window tokens"],
-                            ["(a) Words lost to the degradation", "(b) Do in-window tokens still use the window", "(c) How much more surprised the model is"]):
+    for ax, lab, ttl in zip(axes, ["word error rate, damaged minus clean", "share of the word's evidence inside the damaged 2 s, damaged minus clean", "how much less sure the model is of those words (nats)"],
+                            ["(a) Words lost to the damage", "(b) Words spoken in the damaged 2 s lean on it more", "(c) ... and the model is less sure of them"]):
         ax.axhline(0, color=TXT2, lw=0.8)
         ax.set_xticks(x); ax.set_xticklabels(DEG, rotation=20); ax.set_ylabel(lab); _label(ax, ttl)
         for s in ax.spines.values():
             s.set_color(BORDER)
-    axes[0].legend(frameon=False)
-    fig.suptitle("60 LibriSpeech clips, one 2 s degradation each, clean versus degraded, per model", x=0.06, ha="left", fontsize=13, fontweight="bold", color=TXT, y=0.97)
+    axes[0].legend(frameon=False, title="speech-to-text model", title_fontsize=11)
+    fig.suptitle("Clean audiobook speech (LibriSpeech), 60 clips, one kind of damage put into one 2 s window of each clip", x=0.06, ha="left", fontsize=13, fontweight="bold", color=TXT, y=0.97)
+    fig.text(0.06, 0.905, "Each clip was explained twice, clean and damaged, by three speech-to-text models. Bars are damaged minus clean, averaged over the 10 clips of each damage kind.", fontsize=11, color=TXT2)
     fig.savefig(FIG / "controlled_summary.png", dpi=DPI); fig.savefig(FIG / "controlled_summary.svg"); plt.close(fig)
 
 
