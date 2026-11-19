@@ -347,12 +347,11 @@ on its clean twin, for both models (`experiments/ambiguous_case.py`).
 
 First, why the word error rate moved on this clip, and why for whisper-base it did not: the clean and
 the degraded transcript of each model aligned to the gold, every word placed where its erasure evidence
-ranks first, the words both transcripts share joined (`experiments/ambiguous_wer.py`, from the saved
-attributions).
+ranks first (`experiments/ambiguous_wer.py`, from the saved attributions).
 
 <p align="center">
-  <img src="figures/controlled_noise_wer__2094-142345-0024.png" width="860" alt="For each of the three models two rows of words, the clean and the degraded transcript, each word placed at the patch its erasure evidence ranks first, green when it matches the gold and red when not, with grey lines joining the words both transcripts share; the noisy two seconds are a blue band">
-  <br><sub>Green filled = right at its place in the sentence, red outline = substitution or insertion. Grey lines join the words both transcripts share.</sub>
+  <img src="figures/controlled_noise_wer__2094-142345-0024.png" width="860" alt="For each of the three models two rows of words, the clean and the degraded transcript, each word placed at the patch its erasure evidence ranks first, green when it matches the gold and red when not; the noisy two seconds are a blue band">
+  <br><sub>Green filled = right at its place in the sentence, red outline = substitution or insertion.</sub>
 </p>
 
 * **The error rate moves only through the noisy two seconds.** After the noise, "put it down to

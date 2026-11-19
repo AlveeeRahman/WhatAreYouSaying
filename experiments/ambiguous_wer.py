@@ -1,6 +1,5 @@
 """Why the word error rate moved on the ambiguous clip: the clean and the degraded transcript of each
-model aligned to the gold, every word placed on the audio where its erasure evidence sits, the words
-both transcripts share linked. Reads the controlled experiment's saved attributions (no model run).
+model aligned to the gold, every word placed on the audio where its erasure evidence sits. Reads the controlled experiment's saved attributions (no model run).
 
 Usage: python experiments/ambiguous_wer.py
 Writes figures/controlled_noise_wer__<clip>.png (+ svg) and experiments/results/ambiguous/wer_words.csv, wer_summary.md
@@ -96,13 +95,12 @@ def main():
                 inwin = a <= w["t"] <= b if np.isfinite(w["t"]) else False
                 mass_in = float(np.nansum(w["prof"][int(a / att.patch_s): int(np.ceil(b / att.patch_s))])) if np.isfinite(w["prof"]).any() else np.nan
                 rows.append(dict(model=model, cond=cond, word=w["text"], norm=w["norm"], status=st, t=w["t"], in_window=inwin, mass_in_window=mass_in))
-        # links between words both transcripts share (same normalised word, nearest in time)
+        # words both transcripts share (same normalised word, nearest in time), counted for the table
         used = set()
         for wc in per["clean"]["words"]:
             cands = [(abs(wd["t"] - wc["t"]), j) for j, wd in enumerate(per["deg"]["words"]) if wd["norm"] == wc["norm"] and j not in used]
             if cands and min(cands)[0] <= 1.0:
-                j = min(cands)[1]; used.add(j); wd = per["deg"]["words"][j]
-                ax.plot([wc["t"], wd["t"]], [0.92, 0.08], color=S.muted, lw=0.9, alpha=0.8, zorder=1)
+                used.add(min(cands)[1])
         for cond, y, sign in (("clean", 1.0, 1), ("deg", 0.0, -1)):
             p = per[cond]
             rows_end = [-1.0, -1.0, -1.0]                       # right edge of the last label in each label row
@@ -145,7 +143,7 @@ def main():
     fig.suptitle(wrap_to_width(f"The same clip clean and degraded through three models, each word aligned to the gold\ngold: '{gold}'",
                                axis_pt, S.font_size + 1, "bold", S.font), x=left, ha="left", fontsize=S.font_size + 1, fontweight="bold", color=S.text, y=0.995, va="top")
     fig.text(left, 0.008, wrap_to_width("Green filled = the word matches the gold at its place in the sentence, red outline = a substitution or an "
-             "insertion. Grey lines join words both transcripts share. Blue band = the noisy two seconds.", axis_pt, S.label_size, font=S.font),
+             "insertion. Blue band = the noisy two seconds.", axis_pt, S.label_size, font=S.font),
              fontsize=S.label_size, color=S.text_soft, va="bottom")
     out = FIG / f"controlled_noise_wer__{CLIP}.png"
     fig.savefig(out, dpi=S.dpi, facecolor=S.background); fig.savefig(out.with_suffix(".svg"), facecolor=S.background); plt.close(fig)
