@@ -1,6 +1,6 @@
-"""The example clip (id10288_FIxC_PNJNkc_00003, the same one used throughout the earlier figures)
+"""The example clip (id10288_FIxC_PNJNkc_00003, the same one used throughout the figures)
 through the three models: saves the attributions and draws the method figure (whisper-base), the
-per-model clip figures and the three-model comparison. Usage: python experiments/example_clip.py [pipeline repo]"""
+per-model clip figures and the three-model comparison. Usage: python experiments/example_clip.py [data folder]"""
 import json
 import sys
 from pathlib import Path
@@ -13,14 +13,14 @@ from ways.attribution import Attribution
 from ways.metrics import clip_summary, token_summary, wer
 from ways.plots import clip_figure, method_figure, three_models_figure
 from ways.quality import load_scan_csv
-from common import REVISIONS, pipeline_repo
+from common import AADD_CSV, AUDIO_DIR, REVISIONS, TRANSCRIPTS_TSV, data_root
 
 CLIP = "id10288_FIxC_PNJNkc_00003"
 HERE = Path(__file__).resolve().parent
-PIPE = pipeline_repo(sys.argv[1] if len(sys.argv) > 1 else None, need=("audio", "results"))
-AUDIO = PIPE / "audio"
-GOLD = PIPE / "transcripts.tsv"
-AADD_CSV = PIPE / "aadd_frames_20ms.csv"
+DATA = data_root(sys.argv[1] if len(sys.argv) > 1 else None, need=(AUDIO_DIR, TRANSCRIPTS_TSV, AADD_CSV))
+AUDIO = DATA / AUDIO_DIR
+GOLD = DATA / TRANSCRIPTS_TSV
+AADD_CSV = DATA / AADD_CSV
 FIG = HERE.parent / "figures"; FIG.mkdir(exist_ok=True)
 OUT = HERE / "results/example"; OUT.mkdir(parents=True, exist_ok=True)
 MODELS = [("whisper-tiny", "hf-whisper", "openai/whisper-tiny"), ("whisper-base", "hf-whisper", "openai/whisper-base"),

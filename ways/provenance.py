@@ -78,13 +78,13 @@ def hf_snapshot(model_id: str) -> str | None:
 
 def public_path(p) -> str:
     """A path as it may appear in a public file: relative to this repository when inside it,
-    `$WAYS_PIPELINE/...` inside the pipeline checkout (wherever WAYS_PIPELINE or the sibling default
-    points), and the file name alone anywhere else. No home directory, user name or machine layout."""
+    `$WAYS_DATA/...` inside the data folder (wherever WAYS_DATA or the sibling default points), and
+    the file name alone anywhere else. No home directory, user name or machine layout."""
     import os
     p = Path(p).expanduser().resolve()
     repo = Path(__file__).resolve().parents[1]
-    pipe = Path(os.environ.get("WAYS_PIPELINE") or repo.parent / "pipeline").expanduser().resolve()
-    for root, tag in ((repo, ""), (pipe, "$WAYS_PIPELINE/")):
+    data = Path(os.environ.get("WAYS_DATA") or repo.parent / "ways-data").expanduser().resolve()
+    for root, tag in ((repo, ""), (data, "$WAYS_DATA/")):
         try:
             return tag + p.relative_to(root).as_posix()
         except ValueError:

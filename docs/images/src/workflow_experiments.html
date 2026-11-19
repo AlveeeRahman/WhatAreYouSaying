@@ -46,8 +46,8 @@ function draw() {
   const r1 = 300, h1 = 300;
   if (STEP >= 1) {
     let y = card(1, 40, r1, 540, h1, C.orange, '100 VoxCeleb interview clips', 'Data');
-    y = bullets(66, y + 6, ['from the saved test slice of the pipeline: 1 500 clips, test.csv sha256 dfb0451d…',
-      'disjoint from the development and load slices (the script asserts it; load-pool audio is never read)',
+    y = bullets(66, y + 6, ['from a fixed VoxCeleb test slice: 1 500 clips, test.csv sha256 dfb0451d…',
+      'disjoint from the development and held-out slices (the script asserts it; held-out audio is never read)',
       'picked with numpy default_rng(8001), no replacement', 'AADD v3.1 scanned the same files'], 490, C.orange);
     text(66, r1 + h1 - 18, 'experiments/sample_test100.py', { size: 18, color: C.soft });
   }

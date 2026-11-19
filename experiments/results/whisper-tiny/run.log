@@ -1,4 +1,4 @@
-20:44:48 loading AADD frame probabilities from aadd_devtest_seg20ms.csv
+20:44:48 loading AADD frame probabilities from aadd_frames_20ms.csv
 20:44:51 backend {"backend": "hf-whisper", "model": "openai/whisper-tiny", "revision": null, "supports_surprisal": true}
 20:45:11 [1/100] id10276_HrA2BLcLApA_00017 K=84 patches=1664 WER=0.06 focus=1.00 19.6s
 20:45:16 [2/100] id10303_R5JGtwc4o1M_00021 K=24 patches=464 WER=0.33 focus=nan 4.8s

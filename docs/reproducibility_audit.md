@@ -66,7 +66,7 @@ dependencies and versions 3. Brief usage instructions. Make it 100% reproducible
 | Missing dependency, ImportError (10.5 %) | exposed, figure scripts only | `experiments/gif_erase_sweep.py:11` imports `PIL` and `docs/images/render.py:9` imports `playwright`. Neither was in `requirements.txt` or `pyproject.toml`. Pillow arrived as a transitive dependency of matplotlib, at 13.0.0 in the clean venv against 12.2.0 in the environment that drew the GIF. Playwright was absent, so `render.py` would fail with ImportError | fixed: `pillow==12.2.0` and `playwright==1.65.2` in `requirements.txt`, a `figures` extra in `pyproject.toml`, the Chromium step documented |
 | Claimed but never imported | present, harmless | `torchaudio` is pinned but imported nowhere, neither by WAYS nor by AADD. `scipy` is never imported by WAYS but is a requirement of AADD. `pytest` is used as a tool | left as is (see section 4) |
 | Direct-URL dependency (AADD not on PyPI) | not exposed | `packaging.requirements.Requirement` parses the `aadd @ git+https://...@c6a2debc...` line. `pip install --dry-run .` resolves it ("Using cached aadd-3.1.0-py3-none-any.whl, Would install ways-0.1.0"). `pip check` in the clean venv: "No broken requirements found" | no change needed |
-| Incorrect file paths | exposed | an absolute path to the author's own venv was the default interpreter in `experiments/run_all.sh:5`, `run_controlled.sh:5`, `run_detectors.sh:5` and `run_backbones.sh:4`. `tests/test_openai_compat.py:17` hard-coded an absolute clip path. The pipeline path was a separate default in six scripts (from `argv[1]` in five, from `argv[4]` in `run_models.py`), and `gif_erase_sweep.py:31` hard-coded it with no override. A missing repository gave a bare pandas FileNotFoundError | fixed: one resolver, `experiments/common.py:pipeline_repo`, with order argument, then `WAYS_PIPELINE`, then `../ways-data`, and a message naming the repository. Scripts use `$PY` (default `python`) and the test reads `WAYS_PIPELINE` |
+| Incorrect file paths | exposed | an absolute path to the author's own venv was the default interpreter in `experiments/run_all.sh:5`, `run_controlled.sh:5`, `run_detectors.sh:5` and `run_backbones.sh:4`. `tests/test_openai_compat.py:17` hard-coded an absolute clip path. The data path was a separate default in six scripts (from `argv[1]` in five, from `argv[4]` in `run_models.py`), and `gif_erase_sweep.py:31` hard-coded it with no override. A missing repository gave a bare pandas FileNotFoundError | fixed: one resolver, `experiments/common.py:data_root`, with order argument, then `WAYS_DATA`, then `../ways-data`, and a message describing the folder layout. Scripts use `$PY` (default `python`) and the test reads `WAYS_DATA` |
 | Script that never terminates | exposed | `run_detectors.sh:7` waited forever for `experiments/cache/librispeech/download_dev.log` to contain DONE. No file in the repository writes that log, so on a fresh clone `run_backbones.sh` hangs | fixed: checks for `LibriSpeech/dev-clean` and exits with the download URL |
 | Failures hidden by the run scripts | exposed | the scripts used `set -u` and piped Python through `grep -v`, so a crashed model run still exited 0 | fixed: `set -euo pipefail` |
 | Malformed syntax | not exposed | `py_compile` on every tracked `.py` file passes. `ast.parse(..., feature_version=(3,10))` and `(3,11)` raise nothing. A tokenizer scan found no 3.12-only f-string nesting. `ruff --select F821,F823` finds no undefined name | none needed |
@@ -81,18 +81,18 @@ dependencies and versions 3. Brief usage instructions. Make it 100% reproducible
 | External services ("Partial", Table 1) | exposed, stated | the `openai-compat` backend needs a live vLLM or llama.cpp server. Only the mock server was tested, and the README says so | none needed |
 | Runtime provenance (D_r, SciUnit role) | partly exposed | the three `provenance.json` files have `code_commit: null` because the runs predate the first commit. Their D_r (89 packages, multiplier 6.3x) was measured in the development environment, which holds more than `requirements.txt` installs | documented in `docs/reproducibility.md`. Data files left untouched |
 | Docs misquoting the paper | exposed | `docs/reproducibility.md:7-9` said the main causes were unlisted dependencies. The paper says ImportErrors were 10.5 % of failures and most were code errors | fixed |
-| Usage instructions (Fig. 1, item 3) | partly exposed | every documented CLI flag exists in `ways/cli.py` and every referenced file exists. Missing were `WAYS_PIPELINE`, offline mode on a first run, the LibriSpeech URLs and the Chromium install | fixed in `docs/reproducibility.md` "Re-running" |
+| Usage instructions (Fig. 1, item 3) | partly exposed | every documented CLI flag exists in `ways/cli.py` and every referenced file exists. Missing were `WAYS_DATA`, offline mode on a first run, the LibriSpeech URLs and the Chromium install | fixed in `docs/reproducibility.md` "Re-running" |
 
 Tests: `.venv/bin/python -m pytest tests -q -m "not gpu and not slow"` gives `12 passed, 2
 deselected` before and after the edits. The 2 deselected tests are the GPU black-box tests, which
-need the pipeline clip and cached whisper-tiny.
+need the example clip from the data folder and cached whisper-tiny.
 
 ## 3. Edits
 
-* `experiments/common.py` (new): `pipeline_repo()` and `REVISIONS`, with a docstring.
+* `experiments/common.py` (new): `data_root()` and `REVISIONS`, with a docstring.
 * `experiments/sample_test100.py`, `run_models.py`, `run_aadd_variants.py`, `example_clip.py`,
-  `vox_mixed_figures.py`, `detector_backbones.py`, `gif_erase_sweep.py`: the pipeline path now comes
-  from `pipeline_repo()`. `gif_erase_sweep.py` takes the path as an argument.
+  `vox_mixed_figures.py`, `detector_backbones.py`, `gif_erase_sweep.py`: the data path now comes
+  from `data_root()`. `gif_erase_sweep.py` takes the path as an argument.
 * `run_models.py`, `example_clip.py`, `controlled.py`: `load_backend(..., revision=REVISIONS.get(id))`.
   `run_models.py` passes the pinned revision to the manifest.
 * `train_detectors.py`: the Moonshine encoder loads at its pinned revision.
@@ -100,7 +100,7 @@ need the pipeline clip and cached whisper-tiny.
   interpreter path, `set -euo pipefail`, offline mode can be overridden. `run_detectors.sh` checks for
   dev-clean instead of waiting on a log file.
 * `ways/cli.py`: `--revision`. `ways/provenance.py`: `manifest(models=...)` accepts `{id: revision}`.
-* `tests/test_openai_compat.py`: the clip path comes from `WAYS_PIPELINE` or the sibling checkout.
+* `tests/test_openai_compat.py`: the clip path comes from `WAYS_DATA` or the sibling folder.
 * `requirements.txt`: `pillow==12.2.0`, `playwright==1.65.2`, with a comment.
 * `pyproject.toml`: `requires-python = ">=3.12"`, SPDX licence string, `setuptools>=77`, `figures` extra.
 * `scripts/reproduce_clean_env.sh`: writes its own log, runs `pip check`, `ways explain --help` and an

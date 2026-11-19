@@ -1,7 +1,7 @@
 """A GIF of the method on real data: a patch sweeps along one pitch band of the example clip's spectrogram,
 and for each position the bars show how much less sure whisper-base became of every word. The map of the
 word that reacts most builds up underneath. Drawn in the hand-drawn figure style (cream ground,
-Kalam and Patrick Hand). Writes docs/images/erase_sweep.gif. Usage: python experiments/gif_erase_sweep.py [pipeline repo]"""
+Kalam and Patrick Hand). Writes docs/images/erase_sweep.gif. Usage: python experiments/gif_erase_sweep.py [data folder]"""
 import io
 import sys
 from pathlib import Path
@@ -18,7 +18,7 @@ from matplotlib.patches import Rectangle
 
 from ways.attribution import Attribution
 from ways.plots import logmel
-from common import pipeline_repo
+from common import AUDIO_DIR, data_root
 
 HERE = Path(__file__).resolve().parent
 IMG = HERE.parent / "docs/images"
@@ -30,7 +30,7 @@ plt.rcParams.update({"font.family": "Patrick Hand", "font.size": 15, "figure.fac
 TITLE = dict(family="Kalam", weight="bold")
 
 CLIP = "id10288_FIxC_PNJNkc_00003"
-AUDIO = pipeline_repo(sys.argv[1] if len(sys.argv) > 1 else None, need=("audio",)) / "audio"
+AUDIO = data_root(sys.argv[1] if len(sys.argv) > 1 else None) / AUDIO_DIR
 att = Attribution.load(HERE / "results/example/whisper-base.npz")
 wav, _ = sf.read(AUDIO / f"{CLIP}.wav", dtype="float32")
 L = logmel(wav)

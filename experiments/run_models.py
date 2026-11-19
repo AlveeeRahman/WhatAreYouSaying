@@ -1,8 +1,8 @@
-"""Run one backend over the 100-clip sample: transcribe, WER against the SLUE human transcript,
+"""Run one backend over the 100-clip sample: transcribe, WER against the human transcript,
 erasure attribution over every 100 ms x band patch, per-token and per-clip summaries with the AADD
 flags as context. Resumable; one line per clip in results/<name>/rows.jsonl.
 
-Usage: python experiments/run_models.py <name> <backend kind> <model id> [pipeline repo path]
+Usage: python experiments/run_models.py <name> <backend kind> <model id> [data folder]
   e.g. python experiments/run_models.py whisper-base hf-whisper openai/whisper-base
        python experiments/run_models.py moonshine-base hf-moonshine UsefulSensors/moonshine-base
 """
@@ -19,14 +19,14 @@ from ways import explain, load_backend
 from ways.metrics import clip_summary, token_summary, wer
 from ways.provenance import write as write_manifest
 from ways.quality import load_scan_csv
-from common import REVISIONS, pipeline_repo
+from common import AADD_CSV, AUDIO_DIR, REVISIONS, TRANSCRIPTS_TSV, data_root
 
 name, kind, model_id = sys.argv[1:4]
 HERE = Path(__file__).resolve().parent
-PIPE = pipeline_repo(sys.argv[4] if len(sys.argv) > 4 else None, need=("audio", "results"))
-AUDIO = PIPE / "audio"
-GOLD = PIPE / "transcripts.tsv"
-AADD_CSV = PIPE / "aadd_frames_20ms.csv"
+DATA = data_root(sys.argv[4] if len(sys.argv) > 4 else None, need=(AUDIO_DIR, TRANSCRIPTS_TSV, AADD_CSV))
+AUDIO = DATA / AUDIO_DIR
+GOLD = DATA / TRANSCRIPTS_TSV
+AADD_CSV = DATA / AADD_CSV
 OUT = HERE / "results" / name
 (OUT / "npz").mkdir(parents=True, exist_ok=True)
 log = open(OUT / "run.log", "a")
@@ -78,8 +78,8 @@ df = pd.DataFrame([json.loads(l) for l in open(rows_f)]).drop_duplicates("clip",
 df.to_csv(OUT / "clips.csv", index=False)
 toks = pd.concat([pd.read_csv(p) for p in sorted((OUT / "npz").glob("*_tokens.csv"))], ignore_index=True)
 toks.to_csv(OUT / "tokens.csv", index=False)
-write_manifest(OUT / "provenance.json", inputs={"sample100.csv": str(HERE / "sample100.csv"), "gold_tsv": str(GOLD),
-                                                 "aadd_seg20ms_csv": str(AADD_CSV)},
+write_manifest(OUT / "provenance.json", inputs={"sample100.csv": str(HERE / "sample100.csv"), "transcripts_tsv": str(GOLD),
+                                                 "aadd_frames_csv": str(AADD_CSV)},
                seeds={"sample": 8001, "bootstrap": 8001}, models={model_id: REVISIONS.get(model_id)},
                extra=dict(backend=be.describe(), patch_s=0.1, n_bands=8, n_clips=int(len(df))))
 say("done", name, "clips", len(df), "tokens", len(toks))

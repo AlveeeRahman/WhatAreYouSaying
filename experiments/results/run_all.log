@@ -1,5 +1,5 @@
 === moonshine-base 02:13:33
-20:13:34 loading AADD frame probabilities from aadd_devtest_seg20ms.csv
+20:13:34 loading AADD frame probabilities from aadd_frames_20ms.csv
 20:13:37 backend {"backend": "hf-moonshine", "model": "UsefulSensors/moonshine-base", "revision": null, "supports_surprisal": true}
 20:13:56 [1/100] id10276_HrA2BLcLApA_00017 K=86 patches=1664 WER=0.06 focus=1.00 18.8s
 20:13:57 [2/100] id10303_R5JGtwc4o1M_00021 K=23 patches=464 WER=0.20 focus=nan 1.3s
@@ -106,7 +106,7 @@ Use '--' to separate paths from revisions, like this:
 'git <command> [<revision>...] -- [<file>...]'
 20:20:52 done moonshine-base clips 100 tokens 4055
 === whisper-base 02:20:53
-20:20:54 loading AADD frame probabilities from aadd_devtest_seg20ms.csv
+20:20:54 loading AADD frame probabilities from aadd_frames_20ms.csv
 20:20:57 backend {"backend": "hf-whisper", "model": "openai/whisper-base", "revision": null, "supports_surprisal": true}
 20:21:33 [1/100] id10276_HrA2BLcLApA_00017 K=83 patches=1664 WER=0.03 focus=1.00 36.0s
 20:21:43 [2/100] id10303_R5JGtwc4o1M_00021 K=21 patches=464 WER=0.27 focus=nan 9.5s
@@ -213,7 +213,7 @@ Use '--' to separate paths from revisions, like this:
 'git <command> [<revision>...] -- [<file>...]'
 20:44:45 done whisper-base clips 100 tokens 3267
 === whisper-tiny 02:44:47
-20:44:48 loading AADD frame probabilities from aadd_devtest_seg20ms.csv
+20:44:48 loading AADD frame probabilities from aadd_frames_20ms.csv
 20:44:51 backend {"backend": "hf-whisper", "model": "openai/whisper-tiny", "revision": null, "supports_surprisal": true}
 20:45:11 [1/100] id10276_HrA2BLcLApA_00017 K=84 patches=1664 WER=0.06 focus=1.00 19.6s
 20:45:16 [2/100] id10303_R5JGtwc4o1M_00021 K=24 patches=464 WER=0.33 focus=nan 4.8s

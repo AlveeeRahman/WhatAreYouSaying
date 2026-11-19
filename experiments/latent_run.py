@@ -3,7 +3,7 @@ window), for the three speech-to-text models. Per clip and layer: spill-over ins
 degraded stretch, CAM focus, correlation of the CAM with loudness. Resumable; writes
 experiments/results/latent/<model>/{vox,controlled}.jsonl, summary.json and summary.md.
 
-Usage: python experiments/latent_run.py <name> <backend kind> <model id> [pipeline repo]
+Usage: python experiments/latent_run.py <name> <backend kind> <model id> [data folder]
 """
 import json
 import sys
@@ -14,16 +14,16 @@ import numpy as np
 import pandas as pd
 import soundfile as sf
 
-from common import REVISIONS, pipeline_repo
+from common import AADD_CSV, AUDIO_DIR, REVISIONS, data_root
 from ways import load_backend
 from ways.latent import latent_view
 from ways.quality import load_scan_csv
 
 name, kind, model_id = sys.argv[1:4]
 HERE = Path(__file__).resolve().parent
-PIPE = pipeline_repo(sys.argv[4] if len(sys.argv) > 4 else None, need=("audio", "results"))
-AUDIO = PIPE / "audio"
-AADD_CSV = PIPE / "aadd_frames_20ms.csv"
+DATA = data_root(sys.argv[4] if len(sys.argv) > 4 else None, need=(AUDIO_DIR, AADD_CSV))
+AUDIO = DATA / AUDIO_DIR
+AADD_CSV = DATA / AADD_CSV
 CACHE = HERE / "cache/controlled"
 OUT = HERE / "results/latent" / name; OUT.mkdir(parents=True, exist_ok=True)
 be = load_backend(kind, model_id, revision=REVISIONS.get(model_id))
@@ -61,7 +61,7 @@ def controlled_items():
 run("vox", vox_items())
 run("controlled", controlled_items())
 from ways.provenance import write as write_manifest
-write_manifest(OUT / "provenance.json", inputs={"sample100.csv": str(HERE / "sample100.csv"), "aadd_seg20ms_csv": str(AADD_CSV),
+write_manifest(OUT / "provenance.json", inputs={"sample100.csv": str(HERE / "sample100.csv"), "aadd_frames_csv": str(AADD_CSV),
                                                 "controlled_manifest.csv": str(HERE / "results/controlled/manifest.csv")},
                seeds={"sample": 8001, "bootstrap": 8001}, models={model_id: REVISIONS.get(model_id)},
                extra=dict(backend=be.describe(), passes=["vox", "controlled"]))

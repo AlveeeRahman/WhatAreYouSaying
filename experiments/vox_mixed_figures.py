@@ -1,6 +1,6 @@
 """Two VoxCeleb clips from the 100-clip sample through the three models: one that AADD rates clean
 (no flagged frame) and one it rates degraded (every frame flagged), drawn from the saved
-attributions. Usage: python experiments/vox_mixed_figures.py [pipeline repo]"""
+attributions. Usage: python experiments/vox_mixed_figures.py [data folder]"""
 import json
 import sys
 from pathlib import Path
@@ -11,12 +11,12 @@ import soundfile as sf
 from ways.attribution import Attribution
 from ways.plots import three_models_figure
 from ways.quality import load_scan_csv
-from common import pipeline_repo
+from common import AADD_CSV, AUDIO_DIR, data_root
 
 HERE = Path(__file__).resolve().parent
-PIPE = pipeline_repo(sys.argv[1] if len(sys.argv) > 1 else None, need=("audio", "results"))
-AUDIO = PIPE / "audio"
-AADD_CSV = PIPE / "aadd_frames_20ms.csv"
+DATA = data_root(sys.argv[1] if len(sys.argv) > 1 else None, need=(AUDIO_DIR, AADD_CSV))
+AUDIO = DATA / AUDIO_DIR
+AADD_CSV = DATA / AADD_CSV
 FIG = HERE.parent / "figures"
 MODELS = ["whisper-tiny", "whisper-base", "moonshine-base"]
 PICK = {"mixed": "id10274_89UnsytX6Y8_00006", "clean": "id10271_gO805KoL2RM_00006", "degraded": "id10295_K1gPy1UKmBE_00007"}

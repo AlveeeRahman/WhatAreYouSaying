@@ -11,12 +11,12 @@
  },
  "inputs": {
   "sample100.csv": "53ab4fcb9d22b77bb6ef6a804f49cc8df2d80058d1892b9147ab0e445afb2b6c",
-  "aadd_seg20ms_csv": "790f4783a55f45b33bf1ecd8fec7ea0c3815bb4c2ee126a6108a1f0f0e9113bc",
+  "aadd_frames_csv": "790f4783a55f45b33bf1ecd8fec7ea0c3815bb4c2ee126a6108a1f0f0e9113bc",
   "controlled_manifest.csv": "d4c47634d228ef8bcd5217584ec7303c5cdf0256c0d7eef9a225fb6661fb0cd8"
  },
  "input_paths": {
   "sample100.csv": "experiments/sample100.csv",
-  "aadd_seg20ms_csv": "$WAYS_DATA/aadd_frames_20ms.csv",
+  "aadd_frames_csv": "$WAYS_DATA/aadd_frames_20ms.csv",
   "controlled_manifest.csv": "experiments/results/controlled/manifest.csv"
  },
  "models": {

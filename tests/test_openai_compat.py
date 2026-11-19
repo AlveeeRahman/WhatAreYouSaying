@@ -14,8 +14,8 @@ import torch
 
 pytestmark = [pytest.mark.gpu, pytest.mark.slow]
 HERE = Path(__file__).resolve().parent
-PIPE = Path(os.environ.get("WAYS_PIPELINE", HERE.parents[1] / "pipeline"))
-CLIP = os.environ.get("WAYS_TEST_CLIP", str(PIPE / "audio/id10288_FIxC_PNJNkc_00003.wav"))
+DATA = Path(os.environ.get("WAYS_DATA", HERE.parents[1] / "ways-data"))
+CLIP = os.environ.get("WAYS_TEST_CLIP", str(DATA / "audio/id10288_FIxC_PNJNkc_00003.wav"))
 
 
 def _free_port():

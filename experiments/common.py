@@ -1,11 +1,19 @@
-"""The two things every experiment script shares: where the pipeline repository is, and which exact
+"""The two things every experiment script shares: where the VoxCeleb data folder is, and which exact
 Hugging Face snapshot of each model the results were produced with.
 
-Pipeline repository (the pipeline repository, the earlier study): it holds the VoxCeleb
-audio, the saved test slice, the SLUE transcripts and the AADD scan. It is found, in this order, from
-the command-line argument a script documents, the WAYS_PIPELINE environment variable, or a checkout
-next to this repository (../ways-data). If none exists the script stops
-with a message saying so.
+Data folder: a plain directory with the VoxCeleb material the 100-clip experiments read. It is not
+part of this repository (the audio is not redistributed). Layout:
+
+    audio/<clip id>.wav       16 kHz mono clips, named by their VoxCeleb id
+    test.csv                  the fixed test slice (columns: file, label, original_index, duration)
+    development.csv           the development slice (column: file), only used to assert disjointness
+    heldout.csv               the held-out slice (column: file), same use; its audio is never read
+    transcripts.tsv           human transcripts (columns: id, normalized_text)
+    aadd_frames_20ms.csv      AADD v3.1 frame probabilities for every clip (the AADD CLI scan output)
+
+It is found, in this order, from the command-line argument a script documents, the WAYS_DATA
+environment variable, or a folder named ways-data next to this repository. If none exists the
+script stops with a message saying so.
 
 Model revisions: the snapshot commits recorded in experiments/results/<model>/provenance.json
 (`models` field). Passing them as `revision=` makes a re-run load the same weights even after the
@@ -16,7 +24,9 @@ import sys
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
-DEFAULT_PIPE = REPO.parent / "pipeline"
+DEFAULT_DATA = REPO.parent / "ways-data"
+AUDIO_DIR, TEST_CSV, DEV_CSV, HELDOUT_CSV, TRANSCRIPTS_TSV, AADD_CSV = (
+    "audio", "test.csv", "development.csv", "heldout.csv", "transcripts.tsv", "aadd_frames_20ms.csv")
 
 REVISIONS = {
     "openai/whisper-tiny": "169d4a4341b33bc18d8881c4b69c2e104e1cc0af",
@@ -25,12 +35,12 @@ REVISIONS = {
 }
 
 
-def pipeline_repo(arg: str | None = None, need: tuple[str, ...] = (".",)) -> Path:
-    """Resolve the pipeline repository and check that the parts a script reads are there."""
-    p = Path(arg or os.environ.get("WAYS_PIPELINE") or DEFAULT_PIPE).expanduser()
+def data_root(arg: str | None = None, need: tuple[str, ...] = (AUDIO_DIR,)) -> Path:
+    """Resolve the data folder and check that the parts a script reads are there."""
+    p = Path(arg or os.environ.get("WAYS_DATA") or DEFAULT_DATA).expanduser()
     missing = [n for n in need if not (p / n).exists()]
     if missing:
-        sys.exit(f"pipeline repository not found or incomplete at {p} (missing: {', '.join(missing)}).\n"
-                 "Prepare the data folder (the earlier study, with its VoxCeleb audio) and pass "
-                 "its path as the argument, or set WAYS_PIPELINE=/path/to/it.")
+        sys.exit(f"data folder not found or incomplete at {p} (missing: {', '.join(missing)}).\n"
+                 "Point WAYS at a folder with the layout described in experiments/common.py: pass its path as the "
+                 "argument, or set WAYS_DATA=/path/to/it.")
     return p
