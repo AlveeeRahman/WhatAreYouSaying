@@ -3,9 +3,8 @@ yellow-to-orange spectrogram, and contrasting categorical colours that link each
 audio it used. Fonts are 12 pt or larger and every figure is about 10 x 8 in at 300 dpi."""
 from __future__ import annotations
 
-import numpy as np
-
 import matplotlib
+import numpy as np
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
@@ -14,7 +13,7 @@ from matplotlib.patches import Rectangle
 
 from .attribution import Attribution
 from .metrics import token_mass
-from .quality import CLASSES, SEG_S, intervals
+from .quality import CLASSES, SEG_S
 
 BG, GRID, BORDER, TXT, TXT2, MUTED = "#fcfcfb", "#ecebe7", "#e4e3df", "#0b0b0b", "#52514e", "#77766f"
 SEQ = ["#f0efec", "#cde2fb", "#9ec5f4", "#6da7ec", "#3987e5", "#256abf", "#184f95", "#0d366b"]
@@ -256,8 +255,9 @@ def clip_figure(att: Attribution, probs, wav, path, title="", window=None):
 def method_figure(att: Attribution, probs, wav, path, k: int | None = None, title=""):
     """The method on one clip and one token: the erasure grid, the erased patch, the surprisal change
     of every token for that patch, and the token's full map over the grid with the AADD flags."""
-    from . import erasure
     import torch
+
+    from . import erasure
 
     L = logmel(wav); dur = att.duration; ps, B = att.patch_s, att.n_bands
     mpb = 80 // B
@@ -340,7 +340,8 @@ def comparison_figure(clips: dict, tokens: dict, path, title="", band_edges=None
     for i, n in enumerate(names):
         w = clips[n]["wer"].dropna().clip(upper=1.5)
         ax.boxplot(w, positions=[i], widths=0.55, patch_artist=True, boxprops=dict(facecolor=col(i), alpha=0.35, edgecolor=col(i)),
-                   medianprops=dict(color=col(i), lw=2), whiskerprops=dict(color=col(i)), capprops=dict(color=col(i)), flierprops=dict(marker=".", markeredgecolor=col(i), alpha=0.5))
+                   medianprops=dict(color=col(i), lw=2), whiskerprops=dict(color=col(i)), capprops=dict(color=col(i)),
+                   flierprops=dict(marker=".", markeredgecolor=col(i), alpha=0.5))
     ax.set_xticks(range(len(names))); ax.set_xticklabels(names, rotation=15); ax.set_ylabel("word error rate per clip (capped at 1.5)")
     _label(ax, "(a) How many words each model gets wrong")
     # focus ratio
@@ -349,7 +350,8 @@ def comparison_figure(clips: dict, tokens: dict, path, title="", band_edges=None
         c = clips[n]
         f = c.loc[(c.frac_flagged >= 0.05) & (c.frac_flagged <= 0.95), "focus_ratio_mean"].dropna()
         ax.boxplot(f, positions=[i], widths=0.55, patch_artist=True, boxprops=dict(facecolor=col(i), alpha=0.35, edgecolor=col(i)),
-                   medianprops=dict(color=col(i), lw=2), whiskerprops=dict(color=col(i)), capprops=dict(color=col(i)), flierprops=dict(marker=".", markeredgecolor=col(i), alpha=0.5))
+                   medianprops=dict(color=col(i), lw=2), whiskerprops=dict(color=col(i)), capprops=dict(color=col(i)),
+                   flierprops=dict(marker=".", markeredgecolor=col(i), alpha=0.5))
     ax.axhline(1, color=TXT2, lw=1, ls="--"); ax.text(len(names) - 0.5, 1.02, "no preference", ha="right", va="bottom", fontsize=10, color=TXT2)
     ax.set_xticks(range(len(names))); ax.set_xticklabels(names, rotation=15); ax.set_ylabel("evidence on degraded audio / share of audio degraded")
     _label(ax, f"(b) Does a model lean on degraded audio? ({len(f)} clips)")

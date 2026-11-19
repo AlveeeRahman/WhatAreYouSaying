@@ -51,7 +51,7 @@ def _synth_rirs(rng, n=3):
 
 
 def prepare():
-    from aadd.v3.synth import ORDER, Assets, Event, Synthesizer, _crossfade_mask, _rms, _active_rms
+    from aadd.v3.synth import ORDER, Assets, Event, Synthesizer, _active_rms, _crossfade_mask, _rms
 
     assert LS.exists(), f"LibriSpeech test-clean not found at {LS}"
     rows = []
@@ -113,7 +113,8 @@ def prepare():
     OUT.mkdir(parents=True, exist_ok=True)
     sel.drop(columns=["path"]).to_csv(OUT / "manifest.csv", index=False)
     # AADD v3 on the degraded clips, against the ground-truth window
-    from ways.quality import CLASSES as AADD_CLASSES, Quality
+    from ways.quality import CLASSES as AADD_CLASSES
+    from ways.quality import Quality
     q = Quality("v3")
     det = []
     for r in sel.itertuples():
@@ -133,9 +134,10 @@ def prepare():
 
 # ----------------------------------------------------------------------------- run
 def run(name, kind, model_id):
+    from common import REVISIONS
+
     from ways import explain, load_backend
     from ways.metrics import wer
-    from common import REVISIONS
 
     man = pd.read_csv(CACHE / "manifest.csv")
     d = OUT / name; (d / "npz").mkdir(parents=True, exist_ok=True)

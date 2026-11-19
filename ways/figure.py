@@ -46,9 +46,8 @@ import warnings
 from dataclasses import dataclass, fields, replace
 from pathlib import Path
 
-import numpy as np
-
 import matplotlib
+import numpy as np
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
@@ -243,7 +242,7 @@ def _settle(fig, gs, strict: bool, rounds: int = 8, step: float = 0.12):
     if ov and strict:
         raise LayoutError("overlapping text after widening the rows: " + "; ".join(f"{a!r} / {b!r}" for a, b in ov[:6]))
     if ov:
-        warnings.warn("figure has overlapping text: " + "; ".join(f"{a!r} / {b!r}" for a, b in ov[:6]))
+        warnings.warn("figure has overlapping text: " + "; ".join(f"{a!r} / {b!r}" for a, b in ov[:6]), stacklevel=2)
 
 
 def _save(fig, out, dpi):
@@ -531,7 +530,7 @@ def ways_figure(wav, sr=16000, quality=None, quality_hop=0.02, quality_classes=N
     if not prepared:
         axm = fig.add_subplot(gs[1]); C.mel(axm, L, T.y_mel, T.mel_ticks); C.bands(axm, spans); C.tidy(axm, True, T.x_time)
         C.label(axm, T.spectrogram_only)
-    for i, (m, on, nl) in enumerate(prepared):
+    for i, (m, on, _nl) in enumerate(prepared):
         ps, B = m.get("patch_s", 0.1), m.get("n_bands", 8); mpb = 80 // B
         axm = fig.add_subplot(gs[1 + 2 * i]); axt = fig.add_subplot(gs[2 + 2 * i])
         C.mel(axm, L, T.y_mel, T.mel_ticks); C.bands(axm, spans)

@@ -14,9 +14,9 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import soundfile as sf
+from common import AADD_CSV, AUDIO_DIR, data_root
 
 from ways.quality import load_scan_csv
-from common import AADD_CSV, AUDIO_DIR, data_root
 
 HERE = Path(__file__).resolve().parent
 DATA = data_root(sys.argv[1] if len(sys.argv) > 1 else None, need=(AUDIO_DIR, AADD_CSV))

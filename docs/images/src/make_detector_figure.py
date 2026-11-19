@@ -63,7 +63,7 @@ for n in names:
     for m in ASR:
         d = S["focus"][n][m]
         lo, hi, mean = d["ci"][0], d["ci"][1], d["mean"]
-        note = "" if lo <= 1 <= hi else f'<span style="color: #c2185b; font-weight: 600;"> below 1</span>'
+        note = "" if lo <= 1 <= hi else '<span style="color: #c2185b; font-weight: 600;"> below 1</span>'
         rows.append(f'''
 <div style="display: grid; grid-template-columns: 118px 1fr 232px; align-items: center; gap: 12px; height: 34px;">
   <div style="font-size: 14px; color: {INK};">{m}</div>

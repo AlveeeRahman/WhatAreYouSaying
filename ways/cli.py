@@ -3,6 +3,7 @@
   ways explain clip.wav --backend hf-whisper --model openai/whisper-base --out out/
   ways explain clip.wav --backend hf-moonshine --model UsefulSensors/moonshine-base --out out/
   ways explain clip.wav --backend openai-compat --base-url http://localhost:8000/v1 --model openai/whisper-large-v3 --out out/
+  ways tools                                 # the registered tools; --schema prints their JSON schemas
   ways sound-token clip.wav --backend hf-whisper=openai/whisper-base --backend hf-moonshine=UsefulSensors/moonshine-base --aadd --out out/clip
   ways aud-cam clip.wav --backend hf-whisper=openai/whisper-base --aadd --granular --out out/clip
   ways quality clip.wav                      # AADD v3 degradation timeline, 20 ms
@@ -10,7 +11,6 @@
 """
 import argparse
 import json
-import sys
 from pathlib import Path
 
 import numpy as np
@@ -92,31 +92,46 @@ def cmd_latent(a):
                       model_name=r.model, title=f"{stem}  ·  {r.model}", out=out / f"{stem}_latent.png")
     print(f"{r.model}: {r.layers} layers, {r.n_frames} frames, degraded share {r.degraded.mean():.0%}")
     for s in r.summary:
-        print(f"  layer {s['layer']:2d}  spill-over outside {s['shift_out']:.3f}  shift inside {s['shift_in']:.3f}  CAM focus {s['cam_focus']:.2f}  rho(loud) {s['rho_loud']:+.2f}")
+        print(f"  layer {s['layer']:2d}  spill-over outside {s['shift_out']:.3f}  shift inside {s['shift_in']:.3f}  "
+              f"CAM focus {s['cam_focus']:.2f}  rho(loud) {s['rho_loud']:+.2f}")
 
 
 def cmd_tool(a):
-    """sound-token and aud-cam through ways.tools."""
-    from .tools import call
+    """Any registered tool: `ways <tool> clip.wav ...` through ways.tools.call."""
+    from .tools import call, get
 
+    tool = get(a.cmd)
     a.backend = a.backend or ["hf-whisper=openai/whisper-base"]
+    specs = [b.split("=", 1) if "=" in b else [b, None] for b in a.backend]
     kw = dict(audio=a.audio, aadd=a.aadd, out=a.out, title=a.title)
     if a.window:
         kw["window"] = a.window
-    if a.cmd == "sound-token":
-        kw["backends"] = [b.split("=", 1) if "=" in b else [b, None] for b in a.backend]
-        if a.reference:
-            kw["wer_reference"] = a.reference
-    else:
-        b = a.backend[0]
-        kw["backend"] = b.split("=", 1) if "=" in b else [b, None]
+    props = tool.parameters.get("properties", {})
+    if "backends" in props:
+        kw["backends"] = specs
+    elif "backend" in props:
+        kw["backend"] = specs[0]
+    if "wer_reference" in props and a.reference:
+        kw["wer_reference"] = a.reference
+    if "granular" in props:
         kw["granular"] = a.granular
-    res = call(a.cmd, **kw)
-    print(json.dumps({k: v for k, v in res.items() if k != "models"}, indent=1, default=float))
+    print(call(a.cmd, **kw).to_json())
+
+
+def cmd_tools(a):
+    """List the registered tools, or print their function-calling schemas."""
+    from .tools import schema_json, tools
+
+    if a.schema:
+        print(schema_json())
+        return
+    for t in tools():
+        box = "white-box backends" if t.needs_white_box else "any backend"
+        print(f"{t.name:14} {box:20} {t.summary}")
 
 
 def cmd_quality(a):
-    from .quality import CLASSES, Quality, intervals
+    from .quality import Quality, intervals
 
     wav = _load(a.audio)
     probs = Quality(a.aadd_model).frames(wav)
@@ -158,18 +173,22 @@ def main(argv=None):
     l.add_argument("--figure", action="store_true")
     l.add_argument("--out", default="ways_out")
     l.set_defaults(fn=cmd_latent)
-    for name, help_ in (("sound-token", "which audio each word used (the per-word figure)"), ("aud-cam", "what degraded audio does to the encoder, layer by layer (the latent figure)")):
-        t = sub.add_parser(name, help=help_)
+    from .tools import tools as registered_tools
+    for tool in registered_tools():                       # one subcommand per registered tool, plug-ins included
+        t = sub.add_parser(tool.name, help=tool.summary.split(". ")[0].rstrip("."))
         t.add_argument("audio")
         t.add_argument("--backend", action="append", default=None, metavar="KIND=MODEL",
-                       help="hf-whisper=openai/whisper-base (repeat for several on sound-token); hf-moonshine=UsefulSensors/moonshine-base")
+                       help="hf-whisper=openai/whisper-base (repeat for several where the tool takes a list); hf-moonshine=UsefulSensors/moonshine-base")
         t.add_argument("--aadd", action="store_true", help="run AADD v3 to find degraded audio")
-        t.add_argument("--window", type=float, nargs=2, metavar=("START_S", "END_S"))
-        t.add_argument("--reference", default=None, help="human transcript, to report WER (sound-token)")
-        t.add_argument("--granular", action="store_true", help="aud-cam: also write each lane as its own figure")
+        t.add_argument("--window", type=float, nargs=2, metavar=("START_S", "END_S"), help="a known damaged span instead of AADD's flags")
+        t.add_argument("--reference", default=None, help="human transcript, to report WER (tools that take wer_reference)")
+        t.add_argument("--granular", action="store_true", help="also write each lane as its own figure (tools that take granular)")
         t.add_argument("--title", default=None)
         t.add_argument("--out", default="ways_out/clip")
         t.set_defaults(fn=cmd_tool)
+    ls = sub.add_parser("tools", help="list the registered tools, or --schema for their function-calling schemas")
+    ls.add_argument("--schema", action="store_true")
+    ls.set_defaults(fn=cmd_tools)
     q = sub.add_parser("quality", help="AADD degradation timeline for one clip")
     q.add_argument("audio")
     q.add_argument("--aadd-model", default="v3")

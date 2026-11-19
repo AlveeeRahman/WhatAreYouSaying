@@ -17,7 +17,7 @@ from __future__ import annotations
 
 import json
 import time
-from dataclasses import dataclass, field, asdict
+from dataclasses import asdict, dataclass, field
 
 import numpy as np
 import torch
@@ -57,7 +57,7 @@ class Attribution:
                             rel=self.rel.astype(np.float32), flip=self.flip.astype(bool), meta=json.dumps(meta))
 
     @classmethod
-    def load(cls, path) -> "Attribution":
+    def load(cls, path) -> Attribution:
         z = np.load(path, allow_pickle=False)
         meta = json.loads(str(z["meta"]))
         return cls(surprisal0=z["surprisal0"], delta=z["delta"], rel=z["rel"], flip=z["flip"], **meta)

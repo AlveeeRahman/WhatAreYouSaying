@@ -1,0 +1,59 @@
+<!doctype html>
+<!-- WAYS figure: the five reproducibility steps the repository follows, hand-drawn. Render with docs/images/render.py.
+     Facts from docs/reproducibility.md, ways/provenance.py, scripts/reproduce_clean_env.sh, experiments/common.py. -->
+<html lang="en"><head><meta charset="utf-8"><title>Five steps to a re-executable result</title>
+<style>
+@font-face { font-family: 'Kalam'; font-weight: 400; src: url('../fonts/Kalam-Regular.ttf'); }
+@font-face { font-family: 'Kalam'; font-weight: 700; src: url('../fonts/Kalam-Bold.ttf'); }
+@font-face { font-family: 'Patrick Hand'; font-weight: 400; src: url('../fonts/PatrickHand-Regular.ttf'); }
+html, body { margin: 0; background: #FBF4E4; } svg { display: block; }</style>
+</head><body>
+<svg id="fig" width="1200" height="770" viewBox="0 0 1200 770" xmlns="http://www.w3.org/2000/svg"></svg>
+<script src="rough.js"></script>
+<script>
+function bullets(x, y, items, maxW, color, size = 18, lh = 22) {
+  for (const s of items) {
+    text(x + 4, y + 26, '-', { size, color });
+    y = wrap(x + 22, y + 26, s, maxW - 22, lh, { size });
+  }
+  return y;
+}
+
+function draw() {
+  el('rect', { width: W, height: H, fill: C.page });
+  star(64, 62, 19, C.amber);
+  const tt = text(96, 76, 'Five steps to a result someone else can re-run', { font: TITLE, weight: 700, size: 40 });
+  const tw = tt.getComputedTextLength();
+  roughLine([[94, 92], [96 + tw * 0.5, 96], [100 + tw, 91]], C.amber, { arrow: false, sw: 3.2, bow: 0.004 });
+  wrap(60, 134, 'The steps come from work on reproducible computation: package the code, the data and the recorded run together ' +
+    '(Sciunits, 2017), and measure what a project claims it needs against what loads when it runs (Vangala, Adibifar, Gehani and Malik, 2026). ' +
+    'Each card says what WAYS does for that step and where.', 1080, 27, { size: 21, color: C.soft });
+
+  // ---- five cards on a line ----
+  const cw = 212, ch = 340, gap = 16, top = 236, x0 = 40;
+  const cards = [
+    [C.orange, 'Fixed, hashed inputs', ['100 clips drawn by seed 8001 from a test slice with a recorded sha256', 'LibriSpeech set and VoiceBank-DEMAND archives hashed the same way', 'held-out audio never read'], 'experiments/sample_test100.py'],
+    [C.blue, 'Pinned claims', ['every dependency at one version; AADD at a git commit', 'model weights at Hub snapshot commits', 'seeds everywhere, no bare random'], 'requirements.txt, common.py'],
+    [C.purple, 'Provenance by the code', ['each model pass writes provenance.json', 'commit, Python, torch, CUDA, GPU, seeds', 'claimed packages next to the ones that loaded'], 'ways/provenance.py'],
+    [C.black, 'Clean-room test', ['fresh venv, only requirements.txt', 'pip check, the tests, every import', 'writes the lock file; caught aadd==3.1.0'], 'scripts/reproduce_clean_env.sh'],
+    [C.green, 'Real hardware', ['every number from one RTX 4000 Ada', 'three datasets, three models, timed', 'figures redrawn from the saved runs'], 'experiments/results/'],
+  ];
+  cards.forEach(([col, title, items, where], i) => {
+    const x = x0 + i * (cw + gap);
+    let y = card(i + 1, x, top, cw, ch, col, title, '', { tsize: 22 });
+    y = bullets(x + 14, y + 4, items, cw - 28, col, 17, 21);
+    text(x + 14, top + ch - 16, where, { size: 15, color: C.soft });
+    if (i < cards.length - 1) roughLine([[x + cw + 2, top + ch / 2], [x + cw + gap - 2, top + ch / 2]], C.ink, { sw: 2 });
+  });
+
+  // ---- the paper's finding, and ours ----
+  const ry = 610, rh = 118;
+  roughRect(40, ry, 1120, rh, 14, C.red, { dash: '10 7', sw: 2.4 });
+  text(66, ry + 34, 'What the paper measured, and what the test caught here', { font: TITLE, weight: 700, size: 21, color: C.red });
+  wrap(66, ry + 62, 'In the 2026 study only 68.3 % of AI-generated projects ran out of the box in a clean environment, and declared dependencies understated ' +
+    'what loaded by 13.5x. The first draft of this repository claimed aadd==3.1.0, which is not on PyPI; the clean-room run failed on it, the pin ' +
+    'became a git commit, and the second run passed with 15 claimed packages, 60 loaded and 83 versions locked.', 1070, 22, { size: 17, color: C.soft });
+}
+whenFonts(draw);
+</script>
+</body></html>

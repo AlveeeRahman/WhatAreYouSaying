@@ -88,6 +88,7 @@ def _alternate(clean, noisy, segs):
 
 def prepare():
     import librosa
+
     from ways.provenance import sha256
 
     dl = CACHE / "dl"; dl.mkdir(parents=True, exist_ok=True)
@@ -119,7 +120,7 @@ def prepare():
         dur = len(c) / SR
         edges = _segments(rng, dur)
         bits = _pattern(rng, len(edges) - 1)
-        segs = [(float(a), float(b), bool(s)) for a, b, s in zip(edges[:-1], edges[1:], bits)]
+        segs = [(float(a), float(b), bool(s)) for a, b, s in zip(edges[:-1], edges[1:], bits, strict=True)]
         alt, mask = _alternate(c, nz, segs)
         sf.write(CACHE / f"{r.id}_clean.wav", c, SR); sf.write(CACHE / f"{r.id}_noisy.wav", nz, SR); sf.write(CACHE / f"{r.id}_alt.wav", alt, SR)
         segs_all[r.id] = segs
@@ -163,9 +164,10 @@ def prepare():
 
 # ----------------------------------------------------------------------------- run
 def run(name, kind, model_id, max_minutes=30.0):
+    from common import REVISIONS
+
     from ways import explain, load_backend
     from ways.metrics import wer
-    from common import REVISIONS
 
     man = pd.read_csv(OUT / "manifest.csv")
     d = OUT / name; (d / "npz").mkdir(parents=True, exist_ok=True)
@@ -219,7 +221,7 @@ def _word_profiles(att):
 
 
 def _seg_index(t, segs):
-    for i, (a, b, s) in enumerate(segs):
+    for i, (a, b, _noisy) in enumerate(segs):
         if a <= t < b:
             return i
     return len(segs) - 1

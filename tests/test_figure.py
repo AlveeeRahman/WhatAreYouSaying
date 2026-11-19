@@ -5,8 +5,19 @@ import hashlib
 import numpy as np
 import pytest
 
-from ways.figure import (FigureStyle, FigureText, LatentText, LayoutError, degraded_spans, from_attribution,
-                         latent_figure, logmel, text_overlaps, verdict, ways_figure, wrap_to_width)
+from ways.figure import (
+    FigureText,
+    LatentText,
+    LayoutError,
+    degraded_spans,
+    from_attribution,
+    latent_figure,
+    logmel,
+    text_overlaps,
+    verdict,
+    ways_figure,
+    wrap_to_width,
+)
 
 
 def _wav(seconds=3, seed=1):
@@ -63,7 +74,7 @@ def test_figure_draws_and_has_no_overlapping_text(tmp_path):
 
 def test_long_title_and_long_row_names_still_do_not_overlap(tmp_path):
     long = "a very long clip title " * 8
-    models = [dict(name="a model with an unusually long name that goes on " * 2, tokens=["w%d" % i for i in range(40)],
+    models = [dict(name="a model with an unusually long name that goes on " * 2, tokens=[f"w{i}" for i in range(40)],
                    top=[(i % 8, (i * 7) % 30) for i in range(40)], patch_s=0.1, n_bands=8, wer=0.5)]
     fig = ways_figure(_wav(), 16000, quality=_quality(), quality_classes=["noise", "reverb", "hum"], models=models, title=long, out=tmp_path / "long.png")
     assert text_overlaps(fig) == []

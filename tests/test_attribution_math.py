@@ -6,7 +6,7 @@ import torch
 from ways import erasure
 from ways.attribution import explain
 from ways.backends.base import Backend, Transcript
-from ways.metrics import bootstrap_ci, clip_summary, paired_bootstrap, token_mass, token_summary, wer
+from ways.metrics import bootstrap_ci, paired_bootstrap, token_mass, token_summary, wer
 from ways.quality import flag_profile
 
 

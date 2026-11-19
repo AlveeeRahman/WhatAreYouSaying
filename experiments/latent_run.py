@@ -10,11 +10,10 @@ import sys
 import time
 from pathlib import Path
 
-import numpy as np
 import pandas as pd
 import soundfile as sf
-
 from common import AADD_CSV, AUDIO_DIR, REVISIONS, data_root
+
 from ways import load_backend
 from ways.latent import latent_view
 from ways.quality import load_scan_csv
@@ -61,6 +60,7 @@ def controlled_items():
 run("vox", vox_items())
 run("controlled", controlled_items())
 from ways.provenance import write as write_manifest
+
 write_manifest(OUT / "provenance.json", inputs={"sample100.csv": str(HERE / "sample100.csv"), "aadd_frames_csv": str(AADD_CSV),
                                                 "controlled_manifest.csv": str(HERE / "results/controlled/manifest.csv")},
                seeds={"sample": 8001, "bootstrap": 8001}, models={model_id: REVISIONS.get(model_id)},
@@ -68,6 +68,7 @@ write_manifest(OUT / "provenance.json", inputs={"sample100.csv": str(HERE / "sam
 
 # summary per layer, bootstrap over clips
 from ways.metrics import bootstrap_ci
+
 S = {}
 for tag in ("vox", "controlled"):
     rows = [json.loads(l) for l in open(OUT / f"{tag}.jsonl")]
@@ -76,7 +77,7 @@ for tag in ("vox", "controlled"):
     L = rows[0]["layers"]
     S[tag] = dict(n_clips=len(rows), layers=[])
     for l in range(L):
-        get = lambda k: [r["summary"][l][k] for r in rows]
+        get = lambda k, l=l, rows=rows: [r["summary"][l][k] for r in rows]   # bound per layer
         S[tag]["layers"].append(dict(layer=l, shift_out=bootstrap_ci(get("shift_out")), shift_in=bootstrap_ci(get("shift_in")),
                                      cam_focus=bootstrap_ci(get("cam_focus")), rho_loud=bootstrap_ci(get("rho_loud"))))
 (OUT / "summary.json").write_text(json.dumps(S, indent=1, default=float))

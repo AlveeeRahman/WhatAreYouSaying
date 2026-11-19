@@ -6,19 +6,19 @@ import io
 import sys
 from pathlib import Path
 
+import matplotlib
 import numpy as np
 import soundfile as sf
 from PIL import Image
-import matplotlib
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+from common import AUDIO_DIR, data_root
 from matplotlib import font_manager
 from matplotlib.patches import Rectangle
 
 from ways.attribution import Attribution
 from ways.plots import logmel
-from common import AUDIO_DIR, data_root
 
 HERE = Path(__file__).resolve().parent
 IMG = HERE.parent / "docs/images"

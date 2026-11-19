@@ -18,7 +18,7 @@ def _speechlike(n=16000 * 2, seed=0):
 def test_bands_are_disjoint_and_cover_all_bins():
     bins = erasure.band_bins(8)
     assert bins[0][0] == 0 and bins[-1][1] == erasure.N_BINS
-    for (a, b), (c, d) in zip(bins[:-1], bins[1:]):
+    for (a, b), (c, _d) in zip(bins[:-1], bins[1:], strict=True):
         assert b == c and b > a
     edges = erasure.band_edges_hz(8)
     assert edges[0] == 0 and edges[-1] == 8000 and np.all(np.diff(edges) > 0)
@@ -30,7 +30,7 @@ def test_grid_geometry():
     assert g.n_t == 31 and g.n_frames == (16000 * 3 + 50) // 160 + 1
     assert g.frame_range(30)[1] == g.n_frames
     with pytest.raises(AssertionError):
-        PatchGrid(16000, 0.015).frames_per_patch
+        _ = PatchGrid(16000, 0.015).frames_per_patch
 
 
 def test_istft_inverts_stft():

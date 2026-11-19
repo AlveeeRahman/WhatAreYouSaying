@@ -6,7 +6,7 @@ import numpy as np
 import pytest
 
 from ways.figure import LatentText, cam_figure, layer_summary_figure, spillover_figure, text_overlaps
-from ways.tools import TOOLS, call, schema, schema_json
+from ways.tools import TOOLS, Tool, ToolResult, call, get, names, register, schema, schema_json, schemas
 
 
 def _wav(seconds=2, seed=3):
@@ -37,6 +37,42 @@ def test_schema_names_match_registry_and_is_json():
 def test_call_rejects_unknown_tool():
     with pytest.raises(KeyError):
         call("not-a-tool", audio="x.wav")
+
+
+def test_registry_lists_the_two_tools_with_their_contract():
+    assert names() == ["sound-token", "aud-cam"] and [t["name"] for t in schemas()] == names()
+    assert get("aud-cam").needs_white_box and not get("sound-token").needs_white_box
+    assert TOOLS["sound-token"] is get("sound-token").run and len(TOOLS) == 2
+    with pytest.raises(KeyError):
+        get("nope")
+
+
+def test_a_registered_tool_runs_by_name_and_serialises(tmp_path):
+    seen = {}
+
+    def run(wav, sr=16000, aadd=False, out=None, **kw):
+        seen.update(n=len(wav), sr=sr, aadd=aadd, kw=kw)
+        return ToolResult(tool="echo", summary={"n": len(wav), "x": np.float32(1.5)}, figure=None, data={"wav": wav})
+
+    tool = register(Tool(name="echo", summary="Echo the clip length.", run=run, parameters={"properties": {"aadd": {"type": "boolean"}}}))
+    assert "echo" in names() and tool.schema()["parameters"]["required"] == ["audio"]
+    import soundfile as sf
+    sf.write(tmp_path / "c.wav", _wav(1), 16000)
+    res = call("echo", audio=str(tmp_path / "c.wav"), aadd=True, window=[0.1, 0.4])
+    assert res.tool == "echo" and seen["n"] == 16000 and seen["aadd"] is True and seen["kw"]["window"] == (0.1, 0.4)
+    d = json.loads(res.to_json())
+    assert d["summary"] == {"n": 16000, "x": 1.5} and "data" not in d
+    with pytest.raises(ValueError):
+        register(Tool(name="echo", summary="dup", run=run, parameters={}))
+
+
+def test_cli_lists_tools_and_schema(capsys):
+    from ways.cli import main
+    main(["tools"])
+    out = capsys.readouterr().out
+    assert "sound-token" in out and "aud-cam" in out and "white-box" in out
+    main(["tools", "--schema"])
+    assert [t["name"] for t in json.loads(capsys.readouterr().out)][:2] == ["sound-token", "aud-cam"]
 
 
 def test_granular_figures_draw_without_overlaps_and_are_editable(tmp_path):

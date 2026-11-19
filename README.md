@@ -9,7 +9,7 @@
   <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/python-3.12%2B-blue.svg" alt="Python 3.12+"></a>
   <a href="requirements.txt"><img src="https://img.shields.io/badge/PyTorch-2.11-EE4C2C.svg" alt="PyTorch 2.11"></a>
   <a href="https://github.com/gertelrina/aadd"><img src="https://img.shields.io/badge/AADD-v3.1-191919.svg" alt="AADD v3.1"></a>
-  <a href="tests/"><img src="https://img.shields.io/badge/tests-37%20passed-brightgreen.svg" alt="tests: 37 passed"></a>
+  <a href="tests/"><img src="https://img.shields.io/badge/tests-40%20passed-brightgreen.svg" alt="tests: 40 passed"></a>
   <a href="provenance/clean_env_run.log"><img src="https://img.shields.io/badge/clean--env%20run-passed-brightgreen.svg" alt="clean-environment run: passed"></a>
   <a href="#reproducibility"><img src="https://img.shields.io/badge/CI-not%20set%20up%20yet-lightgrey.svg" alt="CI: not set up yet"></a>
 </p>
@@ -35,10 +35,11 @@ It builds on two works and nothing else: representation erasure by Li, Monroe an
 [[1]](#ref-1), which measures what a neural network uses by deleting parts of its input and
 watching the likelihood of the right answer, and AADD by Arina Gertel [[2]](#ref-2), which says
 what is wrong with a recording and where, every 20 ms. The speech models are Whisper
-[[3]](#ref-3) and Moonshine [[4]](#ref-4). The reproducibility steps follow Dr Tanu Malik's work
-on re-executable research [[5]](#ref-5) [[6]](#ref-6). MIT licence.
+[[3]](#ref-3) and Moonshine [[4]](#ref-4). The reproducibility steps follow two works on
+re-executable research [[5]](#ref-5) [[6]](#ref-6), drawn in [Reproducibility](#reproducibility).
+MIT licence; changes are in [CHANGELOG.md](CHANGELOG.md).
 
-**Contents:** [What it answers](#what-it-answers) · [How it works](#how-it-works) · [What I verified](#what-i-verified) · [100 VoxCeleb clips](#100-voxceleb-clips-three-models) · [Detector backbones](#does-the-detectors-backbone-matter) · [Controlled damage](#controlled-damage-on-librispeech) · [Noise on and off](#real-noise-that-comes-and-goes-voicebank-demand) · [Latent space](#noise-in-the-latent-space) · [Install and use](#install-and-use) · [Two tools](#two-tools-sound-token-and-aud-cam) · [The figure](#the-figure-plug-and-play) · [Backends](#backends-local-weights-vllm-llamacpp) · [Reproducibility](#reproducibility) · [Limitations](#limitations-and-future-work) · [Status](#status) · [References](#references) · [Layout](#repository-layout) · [Credits and licence](#credits-and-licence)
+**Contents:** [What it answers](#what-it-answers) · [How it works](#how-it-works) · [What I verified](#what-i-verified) · [100 VoxCeleb clips](#100-voxceleb-clips-three-models) · [Detector backbones](#does-the-detectors-backbone-matter) · [Controlled damage](#controlled-damage-on-librispeech) · [Noise on and off](#real-noise-that-comes-and-goes-voicebank-demand) · [Latent space](#noise-in-the-latent-space) · [Install and use](#install-and-use) · [The tool framework](#the-tool-framework-sound-token-and-aud-cam) · [The figure](#the-figure-plug-and-play) · [Backends](#backends-local-weights-vllm-llamacpp) · [Reproducibility](#reproducibility) · [Limitations](#limitations-and-future-work) · [Status](#status) · [References](#references) · [Layout](#repository-layout) · [Credits and licence](#credits-and-licence)
 
 <details>
 <summary><b>Stats for nerds</b> (the grid, the scores, the data, the cost)</summary>
@@ -53,7 +54,7 @@ on re-executable research [[5]](#ref-5) [[6]](#ref-6). MIT licence.
 | controlled set | 60 LibriSpeech test-clean utterances, one 2 s degradation each from AADD's synthesiser, clean and degraded twins, three models |
 | on-and-off set | 100 VoiceBank-DEMAND sentences (CC BY 4.0), real noise at 2.5 to 17.5 dB switched on and off in 4 to 7 segments per sentence, clean and noisy-throughout twins, three models, 30 min cap per model |
 | detectors | AADD v3.1 (whisper-small backbone, 88.6 M parameters); AADD's head on whisper-base and on moonshine-base encoders (21 M each, AADD recipe on LibriSpeech dev-clean); plus AADD v3-lite (CRNN, 1.3 M) and v2 (EfficientNet-B0, 4.0 M) |
-| tests | 35 CPU checks of the operator, the formulas, the figures (overlaps, page edges, repeatability, editable text), the latent view and the two tools, 2 end-to-end HTTP checks against a mock OpenAI-compatible server |
+| tests | 38 CPU checks of the operator, the formulas, the figures (overlaps, page edges, repeatability, editable text), the latent view and the tool framework, 2 end-to-end HTTP checks against a mock OpenAI-compatible server |
 
 </details>
 
@@ -449,40 +450,45 @@ rows = token_summary(att, probs)                         # one dict per token: t
 print(clip_summary(att, rows, probs))                    # att.save(path) / Attribution.load(path) keep the arrays
 ```
 
-## Two tools: sound-token and aud-cam
+## The tool framework: sound-token and aud-cam
 
-The two views have names, so a person, a script or a language model can call them. `sound-token`
+A WAYS tool is one question about one clip, with a name, a one-line summary, a JSON schema and a
+`run(wav, sr, **kwargs)` that returns a `ToolResult`. Two ship with the package. `sound-token`
 answers "which audio did each word use, and was that audio clean or degraded". `aud-cam` answers
-"what does the degraded audio do inside the encoder, layer by layer". Each call returns numbers and
-writes its own figure from the templates in `ways/figure.py`, so the figures of one tool always
-have the same shape and every heading can be changed from the call.
+"what does the degraded audio do inside the encoder, layer by layer". The registry in `ways.tools`
+drives everything else: `ways tools` lists what is registered, every tool is a CLI subcommand,
+`schemas()` hands the tools to a language model, and `call(name, audio=...)` runs one by name. A
+package of your own adds a tool by registering a `Tool` under the `ways.tools` entry-point group
+([docs/tools.md](docs/tools.md), [CONTRIBUTING.md](CONTRIBUTING.md)).
 
 ```bash
+ways tools                       # sound-token  any backend  ...  /  aud-cam  white-box backends  ...
 ways sound-token clip.wav --backend hf-whisper=openai/whisper-base --backend hf-moonshine=UsefulSensors/moonshine-base --aadd --out out/clip
 ways aud-cam     clip.wav --backend hf-whisper=openai/whisper-base --aadd --granular --out out/clip
 ```
 
 `sound-token` writes `out/clip__sound-token.png` and an SVG twin. `aud-cam` writes
 `out/clip__aud-cam.png`, and with `--granular` the Grad-CAM lane, the spill-over lane and the
-per-layer summary as their own figures. Both print a JSON summary.
+per-layer summary as their own figures. Both print the `ToolResult` as JSON.
 
 <p align="center">
   <img src="figures/tool_aud_cam__vox_mixed__whisper-base__spillover.png" width="920" alt="aud-cam granular: spill-over per layer, whisper-base">
 </p>
 
 ```python
-from ways.tools import sound_token, aud_cam, schema, call
+from ways.tools import sound_token, aud_cam, call, schemas
 
-st = sound_token(wav, sr, backends=[("hf-whisper", "openai/whisper-base")], aadd=True, out="out/clip",
-                 text={"title": "my clip", "caption": "my caption"})     # any heading or sentence of the figure
-ac = aud_cam(wav, sr, backend=("hf-whisper", "openai/whisper-base"), aadd=True, out="out/clip", granular=True)
-tools = schema()                                   # the two tools as JSON schemas, OpenAI function shape
-out = call("aud-cam", audio="clip.wav", aadd=True, out="out/clip", granular=True)   # run one by name
+res = sound_token(wav, sr, backends=[("hf-whisper", "openai/whisper-base")], aadd=True, out="out/clip",
+                  text={"title": "my clip", "caption": "my caption"})    # any heading or sentence of the figure
+res.summary["models"][0]["focus_ratio_mean"], res.figure, res.data["attributions"]
+res = aud_cam(wav, sr, backend=("hf-whisper", "openai/whisper-base"), window=(1.5, 3.8), out="out/clip", granular=True)
+res.summary["per_layer"][-1]["shift_out"], res.figures["spillover"]
+tools = schemas()                                  # OpenAI function shape; rename parameters to input_schema for Anthropic
+call("aud-cam", audio="clip.wav", aadd=True, out="out/clip", granular=True).to_json()
 ```
 
-For the Anthropic API rename `parameters` to `input_schema`. Pass `window=[start_s, end_s]` (or a
-list of spans) instead of `aadd` when the damaged audio is known. `aud-cam` needs a white-box
-backend; `sound-token` also works through `openai-compat` with the black-box word-change map.
+`aud-cam` needs a white-box backend because it reads the encoder; `sound-token` also works through
+`openai-compat` with the black-box word-change map.
 
 ## The figure, plug and play
 
@@ -534,31 +540,40 @@ package and the request shapes are the ones both servers document ([docs/backend
 ## Reproducibility
 
 <p align="center">
+  <img src="docs/images/workflow_reproducibility.png" width="900" alt="Hand-drawn figure, five numbered cards in a row: fixed hashed inputs; pinned claims (dependencies, weights, seeds); provenance written by the code; the clean-room test; real hardware. Below them a red dashed box with what the 2026 study measured and what the clean-room test caught in this repository">
+</p>
+
+The five steps come from Sciunits [[5]](#ref-5), which packages code, data and the recorded run
+together, and from the 2026 study of dependency gaps in AI-generated code [[6]](#ref-6), which
+measures what a project claims against what loads when it runs. Each step is a file in this
+repository, named on its card. The full checklist is [docs/reproducibility.md](docs/reproducibility.md)
+and the audit against the paper is [docs/reproducibility_audit.md](docs/reproducibility_audit.md).
+Everything in `experiments/results/` ran on one NVIDIA RTX 4000 Ada (20 GB), Ubuntu, Python
+3.12.3, torch 2.11.0+cu128, transformers 5.5.4. Continuous integration is not set up yet; the
+commands a workflow would run are `make test` and `make lint`.
+
+<details>
+<summary><b>Stats for nerds</b> (how the results were made, step by step)</summary>
+
+<p align="center">
   <img src="docs/images/workflow_experiments.png" width="900" alt="Hand-drawn workflow of the experiments, six numbered cards: 100 VoxCeleb clips from a hashed test slice; 60 LibriSpeech clips with known damage; three models over every patch; every run writes provenance.json; statistics; the clean-room test, with the dependency gap it caught in red">
 </p>
 
-I followed the steps Dr Malik's group teaches for re-executable research [[5]](#ref-5) and the
-three-layer dependency view of her 2026 paper with Vangala, Adibifar and Gehani [[6]](#ref-6),
-then tested on real hardware. The checklist is [docs/reproducibility.md](docs/reproducibility.md);
-the audit against the paper is [docs/reproducibility_audit.md](docs/reproducibility_audit.md).
+* The 100 clips are `default_rng(8001).choice(1500, 100, replace=False)` on a test slice with a
+  recorded sha256, disjoint from the development and held-out slices (the script asserts it). The
+  LibriSpeech set and the VoiceBank-DEMAND archives are hashed the same way.
+* `requirements.txt` pins every version; AADD is pinned to a git commit because it is not on PyPI.
+  My first draft said `aadd==3.1.0`, and the clean-environment run caught it. Model weights are
+  pinned to Hugging Face snapshot commits (`experiments/common.py`).
+* Every model pass writes `provenance.json` with the git commit, Python, torch and CUDA versions,
+  the GPU, input hashes, model commits, seeds, the claimed dependency list and the runtime
+  dependency list, plus the difference between the two.
+* `scripts/reproduce_clean_env.sh` builds a fresh venv, installs only `requirements.txt` (CPU
+  torch), runs the tests, imports every third-party module the code uses, and records what loaded:
+  passed, 15 claimed packages, 60 distributions loaded, 83 resolved versions in
+  `provenance/requirements-lock.txt`.
 
-* **Fixed, hashed inputs.** The 100 clips are `default_rng(8001).choice(1500, 100, replace=False)`
-  on a test slice with a recorded sha256, disjoint from the development and held-out slices (the
-  script asserts it). The LibriSpeech set and the VoiceBank-DEMAND archives are hashed the same way.
-* **Pinned claimed dependencies.** `requirements.txt` pins every version; AADD is pinned to a git
-  commit because it is not on PyPI. My first draft said `aadd==3.1.0`, and the clean-environment
-  run caught it: the claimed-versus-working gap the paper measures, found by the test it
-  recommends. Model weights are pinned to Hugging Face snapshot commits (`experiments/common.py`).
-* **Runtime provenance written by the code.** Every model pass writes `provenance.json` with the
-  git commit, Python, torch and CUDA versions, the GPU, input hashes, model commits, seeds, the
-  claimed dependency list and the runtime dependency list, plus the difference between the two.
-* **Clean-environment execution test.** `scripts/reproduce_clean_env.sh` builds a fresh venv,
-  installs only `requirements.txt` (CPU torch), runs the tests, imports every third-party module the
-  code uses, and records what loaded: passed, 15 claimed packages, 60 distributions loaded, all 83
-  resolved versions in `provenance/requirements-lock.txt`.
-* **Real hardware.** Everything in `experiments/results/` ran on one NVIDIA RTX 4000 Ada (20 GB),
-  Ubuntu, Python 3.12.3, torch 2.11.0+cu128, transformers 5.5.4. Continuous integration is not set
-  up yet; the command a workflow would run is `pytest tests -q -m "not gpu and not slow"`.
+</details>
 
 ## Limitations and future work
 
@@ -575,9 +590,9 @@ the audit against the paper is [docs/reproducibility_audit.md](docs/reproducibil
 
 ## Status
 
-* Done: operator, three backends, scores, summaries, AADD context, CLI, the figure system, the
-  latent view, the two named tools with JSON schemas, tests, the three datasets through three
-  models, the detector-backbone check, clean-environment run, provenance.
+* Done (0.2.0): operator, three backends, scores, summaries, AADD context, the figure system, the
+  latent view, the tool framework with two registered tools and plug-in discovery, tests, the three
+  datasets through three models, the detector-backbone check, clean-environment run, provenance.
 * Next: a CI workflow once Actions minutes are available (the test command is fixed); a live vLLM
   transcription run; a larger model on the same clips.
 
@@ -613,7 +628,7 @@ the audit against the paper is [docs/reproducibility_audit.md](docs/reproducibil
 | `ways/latent.py` | spill-over under erasure and Grad-CAM per encoder layer |
 | `ways/plots.py` | the method, comparison and controlled-summary figures |
 | `ways/provenance.py` | the provenance manifest (claimed and runtime dependencies, hashes, model commits, public paths) |
-| `ways/tools.py` | `sound_token` and `aud_cam`, their JSON schemas and `call(name, ...)` |
+| `ways/tools/` | the tool framework: `base.py` (Tool, ToolResult), `registry.py` (register, get, schemas, entry-point discovery), `sound_token.py`, `aud_cam.py` |
 | `ways/cli.py` | `ways sound-token`, `ways aud-cam`, `ways explain`, `ways latent`, `ways quality` |
 | `tests/` | operator, formula, figure and tool checks; mock OpenAI-compatible server and the HTTP test |
 | `experiments/` | sample selection, the three-model runs, the detector runs, the controlled LibriSpeech set (`controlled.py`), the VoiceBank-DEMAND set (`demand.py`), the latent runs; `common.py` holds the data-folder layout and the pinned model revisions |
@@ -622,6 +637,7 @@ the audit against the paper is [docs/reproducibility_audit.md](docs/reproducibil
 | `docs/` | backends, reproducibility checklist and audit; `docs/images/`: the icon, the hand-drawn workflow figures and the two charts (sources in `src/`, rendered by `render.py`), the GIFs |
 | `provenance/` | clean-environment run log, runtime dependency set, lock file |
 | `scripts/reproduce_clean_env.sh` | the clean-environment execution test |
+| `Makefile`, `CHANGELOG.md`, `CONTRIBUTING.md`, `SECURITY.md`, `CITATION.cff` | day-to-day targets, release notes, how to add a tool, what the code does with the network, how to cite |
 
 </details>
 

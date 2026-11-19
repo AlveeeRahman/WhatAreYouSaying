@@ -56,6 +56,7 @@ ax.add_patch(PathPatch(thumb, facecolor=HAND, edgecolor=LINE, lw=2.2, joinstyle=
 outer = bez([(36, 70), ((36, 84), (48, 92), (58, 88)), ((70, 84), (74, 70), (70, 56)), ((67, 46), (62, 42), (58, 32)),
              ((55, 22), (46, 18), (40, 24)), ((34, 30), (36, 40), (38, 48)), ((38, 56), (36, 62), (36, 70))])
 from matplotlib.transforms import Affine2D
+
 shadow = Affine2D().translate(2.2, -2.2).transform_path(outer)
 ax.add_patch(PathPatch(shadow, facecolor=HAND_DARK, edgecolor="none", alpha=0.6))
 ax.add_patch(PathPatch(outer, facecolor=EAR, edgecolor=LINE, lw=2.6, joinstyle="round"))
@@ -73,6 +74,7 @@ for pth, lw in ((helix, 2.2), (antihelix, 2.2), (tragus, 2.0), (canal, 1.8)):
 # --- sound coming in from the left: tapered crescents, fat in the middle, with a lighter highlight ---
 import numpy as np
 from matplotlib.patches import Polygon
+
 BLUE_DARK, BLUE_LIGHT = "#174f9c", "#8fbdf0"
 cx, cy = 40, 52
 for r, half, span in ((13, 2.6, 0.26), (21, 3.1, 0.28), (29, 3.6, 0.30)):

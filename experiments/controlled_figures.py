@@ -3,13 +3,13 @@ models with the degraded window marked, and the summary bars per degradation cla
 import json
 from pathlib import Path
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import soundfile as sf
-import matplotlib.pyplot as plt
 
 from ways.attribution import Attribution
-from ways.plots import BG, BORDER, TXT, TXT2, CAT, DPI, _label, three_models_figure
+from ways.plots import BORDER, CAT, DPI, TXT, TXT2, _label, three_models_figure
 from ways.quality import CLASSES as AADD_CLASSES
 
 HERE = Path(__file__).resolve().parent
@@ -52,7 +52,7 @@ def summary():
         ax = axes[2]
         ax.bar(x + (i - 1) * w, [bc[c]["ds_in"] for c in DEG], width=w, color=CAT[i])
     for ax, lab, ttl in zip(axes, ["word error rate, damaged minus clean", "share of the word's evidence inside the damaged 2 s, damaged minus clean", "how much less sure the model is of those words (nats)"],
-                            ["(a) Words lost to the damage", "(b) Words spoken in the damaged 2 s lean on it more", "(c) ... and the model is less sure of them"]):
+                            ["(a) Words lost to the damage", "(b) Words spoken in the damaged 2 s lean on it more", "(c) ... and the model is less sure of them"], strict=True):
         ax.axhline(0, color=TXT2, lw=0.8)
         ax.set_xticks(x); ax.set_xticklabels(DEG, rotation=20); ax.set_ylabel(lab); _label(ax, ttl)
         for s in ax.spines.values():

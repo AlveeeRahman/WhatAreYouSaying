@@ -131,7 +131,6 @@ def erase(wav: torch.Tensor, grid: PatchGrid, patches: list[tuple[int, int]], n_
         return wav.new_zeros((0, grid.n_samples))
     X = stft(wav)
     out = X.unsqueeze(0).repeat(len(patches), 1, 1)
-    rows = torch.arange(len(patches), device=wav.device)
     y = None
     for it in range(max(1, n_iter)):
         if it > 0:

@@ -5,15 +5,14 @@ import json
 import sys
 from pathlib import Path
 
-import numpy as np
 import soundfile as sf
+from common import AADD_CSV, AUDIO_DIR, REVISIONS, TRANSCRIPTS_TSV, data_root
 
 from ways import explain, load_backend
 from ways.attribution import Attribution
 from ways.metrics import clip_summary, token_summary, wer
 from ways.plots import clip_figure, method_figure, three_models_figure
 from ways.quality import load_scan_csv
-from common import AADD_CSV, AUDIO_DIR, REVISIONS, TRANSCRIPTS_TSV, data_root
 
 CLIP = "id10288_FIxC_PNJNkc_00003"
 HERE = Path(__file__).resolve().parent
@@ -28,6 +27,7 @@ MODELS = [("whisper-tiny", "hf-whisper", "openai/whisper-tiny"), ("whisper-base"
 
 wav, sr = sf.read(AUDIO / f"{CLIP}.wav", dtype="float32")
 import pandas as pd
+
 gold = dict(pd.read_csv(GOLD, sep="\t", usecols=["id", "normalized_text"], keep_default_na=False).itertuples(index=False))
 probs = load_scan_csv(AADD_CSV)[CLIP]
 atts, wers, summ = {}, {}, {}

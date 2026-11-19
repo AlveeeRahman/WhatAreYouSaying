@@ -10,7 +10,6 @@ from pathlib import Path
 
 import numpy as np
 import pytest
-import torch
 
 pytestmark = [pytest.mark.gpu, pytest.mark.slow]
 HERE = Path(__file__).resolve().parent
@@ -42,6 +41,7 @@ def server():
 @pytest.mark.parametrize("route", ["transcriptions", "chat"])
 def test_black_box_selection_scoring_matches_white_box_flips(server, route):
     import soundfile as sf
+
     from ways import explain
     from ways.backends.hf_whisper import WhisperBackend
     from ways.backends.openai_compat import OpenAICompatBackend

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ways"
-version = "0.1.0"
+version = "0.2.0"
 description = "WhatAreYouSaying: representation-erasure attribution from speech-to-text tokens back to the audio, with AADD degradation context"
 readme = "README.md"
 requires-python = ">=3.12"  # the pinned set in requirements.txt (numpy 2.5, scipy 1.18) needs 3.12; tested on 3.12.3
@@ -23,8 +23,24 @@ dependencies = [
   "openai>=1.50",
 ]
 
+keywords = ["speech recognition", "explainability", "representation erasure", "whisper", "moonshine", "audio degradation"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Science/Research",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Multimedia :: Sound/Audio :: Speech",
+  "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+
+[project.urls]
+Homepage = "https://github.com/AlveeeRahman/WhatAreYouSaying"
+Changelog = "https://github.com/AlveeeRahman/WhatAreYouSaying/blob/main/CHANGELOG.md"
+Issues = "https://github.com/AlveeeRahman/WhatAreYouSaying/issues"
+
 [project.optional-dependencies]
 test = ["pytest>=8"]
+dev = ["pytest>=8", "ruff>=0.8"]
 figures = ["pillow>=10", "playwright>=1.40"]
 
 [project.scripts]
@@ -35,3 +51,16 @@ include = ["ways*"]
 
 [tool.pytest.ini_options]
 markers = ["gpu: needs a CUDA device and the cached Hugging Face weights", "slow: minutes, not seconds"]
+
+[tool.ruff]
+line-length = 170
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP"]
+ignore = ["E702", "E731", "E741"]   # one-line statements with ';' in the figure code, lambdas as short helpers, short names in maths
+
+[tool.ruff.lint.per-file-ignores]
+"experiments/*" = ["E402", "E501"]  # scripts import after sys.path, and their markdown table rows are long by nature
+"docs/images/src/*" = ["E501"]
+"docs/images/ways_icon.py" = ["E402"]     # draws in stages; each stage imports what it needs where the reader sees it

@@ -18,8 +18,8 @@ import torch
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
-from train_detectors import frame_probs, load_detector  # noqa: E402
 from common import AUDIO_DIR, data_root  # noqa: E402
+from train_detectors import frame_probs, load_detector  # noqa: E402
 
 from ways.metrics import bootstrap_ci, paired_bootstrap  # noqa: E402
 from ways.quality import CLASSES as AADD_CLASSES  # noqa: E402
@@ -71,6 +71,7 @@ for name, fn, info in detectors():
 
 # noise-focus ratio of every speech-to-text model under every detector, reusing compare.py's function
 import compare  # noqa: E402  (loads the clips and tokens tables)
+
 compare.DETS.update({f"det_{n.split(' ')[0]}": 0.02 for n in S["detectors"]})
 for name in S["detectors"]:
     det = f"det_{name.split(' ')[0]}"

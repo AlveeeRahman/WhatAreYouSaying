@@ -23,10 +23,9 @@ import soundfile as sf
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.utils.data import DataLoader, Dataset
-
 from aadd.v3.synth import CLASSES_V3, Assets, Synthesizer
 from common import REVISIONS
+from torch.utils.data import DataLoader, Dataset
 
 HERE = Path(__file__).resolve().parent
 LS = HERE / "cache/librispeech/LibriSpeech/dev-clean"
@@ -83,7 +82,7 @@ class MoonshineFrameModel(nn.Module):
     """AADD's v3 head (weighted sum of all encoder layers, LayerNorm, two convs, sigmoid per class) on the
     Moonshine encoder, which reads the raw waveform; its frames (~24 ms) are resampled to the 20 ms grid."""
 
-    def __init__(self, backbone="UsefulSensors/moonshine-base", n_classes=len(CLASSES_V3), head_dim=256):
+    def __init__(self, backbone="UsefulSensors/moonshine-base", n_classes=len(CLASSES_V3), head_dim=256):  # noqa: B008  (a module constant, not a call that varies)
         super().__init__()
         from transformers import MoonshineForConditionalGeneration
 
@@ -186,12 +185,12 @@ def main():
     spk = np.array([f.parts[-3] for f in files])
     speakers = sorted(set(spk)); rng = np.random.default_rng(a.seed)
     val_spk = set(rng.choice(speakers, max(2, len(speakers) // 10), replace=False))
-    tr = [w for w, s in zip(wavs, spk) if s not in val_spk]; va = [w for w, s in zip(wavs, spk) if s in val_spk]
+    tr = [w for w, s in zip(wavs, spk, strict=True) if s not in val_spk]; va = [w for w, s in zip(wavs, spk, strict=True) if s in val_spk]
     print(f"{a.name}: {len(files)} utterances, {len(speakers)} speakers, {len(tr)} train / {len(va)} val utterances", flush=True)
     babble = [w.astype(np.float32) / 32767 for w in rng.choice(np.array(tr, dtype=object), 40, replace=False)]
     ds = SynthWindows(tr, a.seed, a.steps * a.bs, babble)
     vds = SynthWindows(va, a.seed + 1, 160, babble)
-    vX, vY, vIG = zip(*[vds[i] for i in range(len(vds))]); vX, vY, vIG = torch.stack(vX), torch.stack(vY).numpy(), torch.stack(vIG).numpy()
+    vX, vY, vIG = zip(*[vds[i] for i in range(len(vds))], strict=True); vX, vY, vIG = torch.stack(vX), torch.stack(vY).numpy(), torch.stack(vIG).numpy()
     dl = DataLoader(ds, batch_size=a.bs, num_workers=a.workers, pin_memory=True, persistent_workers=True)
     model = build(a.name).to(dev)
     backbone = [p for n_, p in model.named_parameters() if n_.startswith("encoder.") and p.requires_grad]
@@ -214,7 +213,7 @@ def main():
     model.train()
     for step, (x, y, ig) in enumerate(dl, start=1):
         f = step / a.warmup if step < a.warmup else 0.5 * (1 + math.cos(math.pi * (step - a.warmup) / max(1, a.steps - a.warmup)))
-        for g, b in zip(opt.param_groups, base):
+        for g, b in zip(opt.param_groups, base, strict=True):
             g["lr"] = b * f
         x, y, ig = x.to(dev, non_blocking=True), y.to(dev, non_blocking=True), ig.to(dev, non_blocking=True)
         with torch.autocast("cuda", dtype=torch.bfloat16, enabled=dev.type == "cuda"):

@@ -11,15 +11,14 @@ import sys
 import time
 from pathlib import Path
 
-import numpy as np
 import pandas as pd
 import soundfile as sf
+from common import AADD_CSV, AUDIO_DIR, REVISIONS, TRANSCRIPTS_TSV, data_root
 
 from ways import explain, load_backend
 from ways.metrics import clip_summary, token_summary, wer
 from ways.provenance import write as write_manifest
 from ways.quality import load_scan_csv
-from common import AADD_CSV, AUDIO_DIR, REVISIONS, TRANSCRIPTS_TSV, data_root
 
 name, kind, model_id = sys.argv[1:4]
 HERE = Path(__file__).resolve().parent
@@ -40,7 +39,7 @@ def say(*a):
 
 sample = pd.read_csv(HERE / "sample100.csv")
 gold = pd.read_csv(GOLD, sep="\t", usecols=["id", "normalized_text"], keep_default_na=False)
-gold = dict(zip(gold.id, gold.normalized_text))
+gold = dict(zip(gold.id, gold.normalized_text, strict=True))
 say("loading AADD frame probabilities from", AADD_CSV.name)
 aadd = load_scan_csv(AADD_CSV)
 be = load_backend(kind, model_id, revision=REVISIONS.get(model_id))
