@@ -47,3 +47,28 @@ def test_latent_figure_from_arrays(tmp_path):
     latent_figure(wav, 16000, quality=q, quality_classes=["noise", "music", "hum"], cam=cam, shift=shift, degraded=degraded,
                   loudness_db=loudness_db(wav, n), summary=summary, model_name="synthetic", title="t", out=out)
     assert out.exists() and out.with_suffix(".svg").exists()
+
+
+def test_token_cam_summary_and_figure(tmp_path):
+    from ways.figure import token_cam_figure
+    from ways.latent import token_cam_summary
+
+    rng = np.random.default_rng(3)
+    n, K, L = 150, 4, 3
+    degraded = np.zeros(n, bool); degraded[30:80] = True                 # 0.6 to 1.6 s of a 3 s clip
+    tcam = np.zeros((K, L, n), np.float32)
+    tcam[0, :, 40:50] = 1.0                                              # token 0: sharp, inside the stretch
+    tcam[1, :, 100:110] = 1.0                                            # token 1: sharp, outside
+    tcam[2, :, :] = 1.0                                                  # token 2: smeared over the clip
+    tcam /= np.maximum(tcam.sum(2, keepdims=True), 1e-12)                # token 3 stays empty
+    erase = np.zeros((K, 30)); erase[0, 8] = 1; erase[1, 21] = 1; erase[2, 8] = 1; erase[3, 0] = 1
+    rows = token_cam_summary(tcam, degraded, ["a", "b", "c", "d"], erase_profile=erase, erase_hop=0.1)
+    assert rows[0]["reading"] == "degraded" and rows[0]["cam_in"] == 1.0 and abs(rows[0]["cam_t"] - 0.9) < 1e-6
+    assert rows[1]["reading"] == "clean" and rows[1]["cam_in"] == 0.0 and abs(rows[1]["erase_t"] - 2.15) < 1e-6
+    assert rows[2]["reading"] == "diffuse" and abs(rows[2]["cam_width_s"] - 3.0) < 1e-4
+    assert rows[3]["reading"] == "no CAM" and np.isnan(rows[3]["cam_t"])
+    wav = (0.05 * rng.standard_normal(n * 320)).astype(np.float32)
+    out = tmp_path / "tokens.png"
+    token_cam_figure(wav, 16000, tcam, ["a", "b", "c", "d"], degraded, erase_t=[r.get("erase_t") for r in rows], window=(0.6, 1.6),
+                     model_name="synthetic", out=out)
+    assert out.exists() and out.with_suffix(".svg").exists()
