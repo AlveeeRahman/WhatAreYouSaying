@@ -14,7 +14,8 @@ words after the noise should keep their anchor.
 Usage: python experiments/ambiguous_case.py            (needs experiments/cache/controlled from controlled.py)
        python experiments/ambiguous_case.py --summary  (tables and the three-model figure, from the saved results)
 
-Also writes figures/controlled_noise_audcam__<clip>.png: the aud-cam counterpart of the controlled figure
+Also runs the cross-check tool per model on the degraded recording (figures/cross_check__<clip>__<model>.png and
+results/ambiguous/cross_check__<model>.{json,md}), and writes figures/controlled_noise_audcam__<clip>.png: the aud-cam counterpart of the controlled figure
 figures/controlled_noise_deg__<clip>.png, the same three models on the same degraded recording, one lane
 of per-token saliency per model with the erasure test's first patch as a tick.
 """
@@ -27,10 +28,12 @@ import pandas as pd
 import soundfile as sf
 from scipy.stats import spearmanr
 
+from ways.figure import from_attribution
 from ways.latent import token_cam, token_cam_summary
 from ways.metrics import token_mass, token_summary
 from ways.provenance import write as write_manifest
-from ways.tools import aud_cam, sound_token
+from ways.tools import aud_cam, cross_check, sound_token
+from ways.tools.cross_check import table as cross_table
 from ways.tools.sound_token import backend
 
 HERE = Path(__file__).resolve().parent
@@ -75,7 +78,8 @@ def run():
             att = st.data["attributions"][0]
             m = token_mass(att)
             prof = np.where(np.isnan(m).all((1, 2))[:, None], np.nan, m.sum(1))      # [K, patches] erasure profile per token
-            erase_t = np.array([(int(np.nanargmax(p)) + 0.5) * att.patch_s if np.isfinite(p).all() else np.nan for p in prof])
+            top = from_attribution(att)["top"]                      # the same first-ranked patch the sound-token figure draws
+            erase_t = np.array([(tp[1] + 0.5) * att.patch_s if tp is not None else np.nan for tp in top])
             bands = {r["k"]: r.get("top_band") for r in token_summary(att)}
             what = f"pink noise at 0 dB over {a:.1f}-{b:.1f} s" if cond == "deg" else "the clean recording"
             stem = FIG / f"ambiguous__{CLIP}__{name}__{cond}"
@@ -86,6 +90,8 @@ def run():
             np.savez_compressed(OUT / f"token_maps__{name}__{cond}.npz", grad_x_act=tc, grad_cam=tc_pooled, pieces=np.array(tr.pieces),
                                 degraded=ac.data["result"].degraded, erase_t=erase_t)
             per_token = token_cam_summary(tc, ac.data["result"].degraded, tr.pieces, erase_profile=prof, erase_hop=att.patch_s)
+            for r, t in zip(per_token, erase_t, strict=True):
+                r["erase_t"] = float(t)
             c_ga, w_ga = _place(tc); c_gc, w_gc = _place(tc_pooled)
             for method, centre, width in (("erasure", erase_t, np.full(len(erase_t), att.patch_s)), ("grad x act", c_ga, w_ga), ("Grad-CAM", c_gc, w_gc)):
                 methods.append(dict(model=name, cond=cond, method=method, rho_order=_order(centre), median_width_s=float(np.nanmedian(width)),
@@ -145,6 +151,22 @@ def summarise(df=None):
     print("\n".join(L))
 
 
+def cross_checks():
+    """The cross-check tool on the degraded recording for each model: figure, JSON summary and Markdown table."""
+    man = pd.read_csv(HERE / "results/controlled/manifest.csv").set_index("id")
+    a, b = float(man.loc[CLIP, "win_start"]), float(man.loc[CLIP, "win_end"]); gold = man.loc[CLIP, "text"]
+    wav, sr = sf.read(CACHE / f"{CLIP}_deg.wav", dtype="float32")
+    OUT.mkdir(parents=True, exist_ok=True)
+    for name, (kind, mid) in MODELS.items():
+        res = cross_check(wav, sr, backend=(kind, mid), window=(a, b), wer_reference=gold, out=FIG / f"cross_check__{CLIP}__{name}",
+                          title=f"{name} on the degraded recording (pink noise at 0 dB over {a:.1f}-{b:.1f} s): the erasure test and the "
+                                f"encoder's gradient, token by token\ngold: '{gold}'")
+        (OUT / f"cross_check__{name}.json").write_text(res.to_json())
+        (OUT / f"cross_check__{name}.md").write_text(f"**{name}: '{res.summary['text']}'**  \n\n" + cross_table(res) + "\nTokens on the degraded "
+                                                     f"audio: {res.summary['on_degraded']}\n")
+        print(name, res.summary["on_degraded"], res.figure)
+
+
 def three_model_figure():
     """The aud-cam counterpart of the controlled figure: spectrogram of the degraded recording, then for each of
     the three models one lane per token (per-frame gradient saliency at the top encoder layer, erasure tick)."""
@@ -200,5 +222,8 @@ def three_model_figure():
 
 
 if __name__ == "__main__":
-    summarise(None if (len(sys.argv) > 1 and sys.argv[1] == "--summary") else run())
+    summary_only = len(sys.argv) > 1 and sys.argv[1] == "--summary"
+    summarise(None if summary_only else run())
+    if not summary_only:
+        cross_checks()
     three_model_figure()

@@ -5,6 +5,17 @@
 - **docs/help-wanted.md**: the open work for contributors (CI workflow, a live vLLM or llama.cpp run, a
   larger model, other languages, new tools, reproduction reports), linked from the README.
 
+## 0.3.0
+
+- **cross-check**, a third registered tool: one model, one clip, one transcript, and for every token the
+  erasure reading (first-ranked patch, band, share of erasure mass on the degraded audio) next to the
+  encoder reading (gradient centre, width, share on the degraded audio at the top layer and the lowest
+  share over layers), a verdict per token, the counts by each method and by both, one figure
+  (`ways.figure.cross_check_figure`) and a Markdown table (`ways.tools.cross_check.table`). CLI
+  `ways cross-check clip.wav --window a b` or `--aadd`.
+- The ambiguous-clip experiment runs cross-check on the three models; README section comparing the
+  five tokens of the noisy window under both readings.
+
 ## 0.2.2
 
 - **The aud-cam counterpart of the controlled figure**: the same clip and the same three models

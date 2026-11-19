@@ -3,6 +3,7 @@ language model through function calling.
 
   sound-token   which audio each word used, and whether that audio was clean or degraded
   aud-cam       what degraded audio does inside the encoder, layer by layer
+  cross-check   the tokens on degraded audio under both readings, token by token, and whether they agree
 
     from ways.tools import sound_token, aud_cam, schemas, call, names
     res = sound_token(wav, sr, backends=[("hf-whisper", "openai/whisper-base")], aadd=True, out="out/clip")
@@ -18,10 +19,11 @@ import json
 
 from .aud_cam import aud_cam
 from .base import Tool, ToolResult
+from .cross_check import cross_check
 from .registry import get, names, register, schemas, tools
 from .sound_token import sound_token
 
-__all__ = ["Tool", "ToolResult", "sound_token", "aud_cam", "get", "names", "register", "schemas", "tools",
+__all__ = ["Tool", "ToolResult", "sound_token", "aud_cam", "cross_check", "get", "names", "register", "schemas", "tools",
            "schema", "schema_json", "call", "TOOLS"]
 
 
