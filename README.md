@@ -413,6 +413,39 @@ Then the same tokens through `aud-cam`:
   <br><sub>whisper-base on the degraded recording. Grey = gradient times activation per frame at the top encoder layer, tick = the patch the erasure test ranked first. Below, how much of each token's saliency falls on the noisy 0.6 to 2.6 s, layer by layer. The moonshine-base twin is <code>figures/ambiguous__2094-142345-0024__moonshine-base__deg__aud-cam-tokens.png</code>, the clean recordings end in <code>__clean__aud-cam-tokens.png</code>.</sub>
 </p>
 
+**This figure against the whisper-base row of the controlled figure, token by token.** The row above
+draws seven dashed boxes, 7 of 14 words on degraded audio against 5 expected by chance: "Money",
+the comma, "fire", "and", "sprite", "told" and "it". The erasure placements behind both figures are
+the same (all 14 first-ranked patches agree between the controlled run and this run).
+
+* **Five of the seven are confirmed by the encoder.** The comma, "fire", "and", "sprite" carry 86 to
+  90 % of their gradient mass inside the window at the top layer and "told" 70 %, and their rows in
+  the layer panel stay dark through all seven layers (never below 0.55, "told" dips to 0.39 at layer
+  3). Their erasure patches sit in the lowest bands ("fire" and "told" band 1, "and" band 0) and in
+  the upper ones for the comma and "sprite" (bands 5 and 4). Two independent readings say these
+  tokens were built from the noise.
+* **"it" is the disagreement.** The erasure test puts it at 1.55 s inside the noise (62 % of its
+  mass, the dashed box next to "fire"); the gradient map puts it at 3.33 s, where "it" is spoken,
+  with 11 % on the noise and a light row at every layer (0.36 only at the input embedding). Erasing
+  the patch at 1.55 s changes "fire", and with it the sentence that follows, so "it" moves; that is
+  the decoder reacting to its own context, not the encoder reading the noise for "it". One of the
+  seven boxes is a context effect.
+* **"Money" is half context.** Erasure puts 98 % of it on the noise at 0.75 s, the gradient map 46 %,
+  1.05 s wide, and its row is mid-blue (0.46 to 0.63) at every layer. It is the dialect word "munny"
+  and wrong on both recordings.
+* **The full stops have no sound of their own.** The first one's gradient sits at 2.57 s with 26 % on
+  the noise, falling from 0.51 at layer 0 to 0.26 at the top; the last one's erasure patch lies at
+  0.75 s inside the window (61 %) while its gradient map sits at 4.01 s (12 %). Their erasure
+  evidence is wherever the sentence turns.
+* **The words after the noise come apart from it with depth.** "Please", "put", "down", "to",
+  "warm" have 4 to 44 % of their erasure mass and 8 to 22 % of their gradient mass on the noise,
+  and their rows fade from 0.3 to 0.6 at the input embedding to 0.1 to 0.2 at the top layer
+  ("warm" from 0.59 to 0.22). The encoder separates clean words from the noise as it goes deeper,
+  which is the spill-over result of the latent section seen per token.
+* **So the count reads 7 of 14 in the decoder's view and 5 of 14 in the encoder's.** The gap is "it"
+  and a full stop. On the words that decide the error rate the two views agree: "fire", "and",
+  "sprite" are made of noise and wrong, "told" reaches the clean tail and is right.
+
 **Why the five window words end at 45 % for whisper-base and 55 % for moonshine-base.** Both models
 lose the words whose evidence lies wholly inside the noise. The difference is the last word of the
 window and how wide each model's evidence is.
