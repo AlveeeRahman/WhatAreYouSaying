@@ -120,7 +120,7 @@ def summarise(df=None):
     a, b = info["window"]
     L = [f"**{CLIP}, pink noise at 0 dB SNR over {a:.1f}-{b:.1f} s. Gold: '{info['gold']}'**", ""]
     L += ["Three ways of placing each token in time. The tokens are in spoken order, so rho(order) near 1 means the "
-          "placement follows the speech; width is the median effective width of a token's map at the top layer.", "",
+          "placement follows the speech. Width is the median effective width of a token's map at the top layer.", "",
           "| model | recording | method | rho(order) | median width (s) | tokens placed in the window |", "|---|---|---|---|---|---|"]
     for _, r in me.iterrows():
         L.append(f"| {r.model} | {'degraded' if r.cond == 'deg' else 'clean'} | {r.method} | {r.rho_order:.2f} | {r.median_width_s:.2f} | {r.share_in_window:.0%} |")
