@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- **docs/help-wanted.md**: the open work for contributors (CI workflow, a live vLLM or llama.cpp run, a
+  larger model, other languages, new tools, reproduction reports), linked from the README.
+
 ## 0.2.2
 
 - **The aud-cam counterpart of the controlled figure**: the same clip and the same three models
