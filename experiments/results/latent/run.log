@@ -1,1 +1,562 @@
 === latent whisper-tiny 04:49:52
+whisper-tiny vox id10276_HrA2BLcLApA_00017 layers 5 share 1.00 0.7s
+whisper-tiny vox id10303_R5JGtwc4o1M_00021 layers 5 share 0.00 0.2s
+whisper-tiny vox id10283_vaK4t1-WD4M_00046 layers 5 share 1.00 0.5s
+whisper-tiny vox id10296_f_k09R8r_cA_00005 layers 5 share 1.00 0.2s
+whisper-tiny vox id10290_O-V_sInAw5M_00005 layers 5 share 0.06 0.2s
+whisper-tiny vox id10273_SgBON1gLfbo_00006 layers 5 share 0.08 0.2s
+whisper-tiny vox id10295_S9FeIMntmUE_00004 layers 5 share 1.00 0.2s
+whisper-tiny vox id10276_X1Yr4eI2oRw_00002 layers 5 share 0.40 0.2s
+whisper-tiny vox id10273_8fKRoUIpAJY_00012 layers 5 share 0.04 0.3s
+whisper-tiny vox id10276_S0j29b3KVWQ_00005 layers 5 share 0.75 0.2s
+whisper-tiny vox id10300_VHWZdctr_4s_00004 layers 5 share 1.00 0.2s
+whisper-tiny vox id10279_UwVmHtdkruw_00001 layers 5 share 1.00 0.2s
+whisper-tiny vox id10303_VCEs8oAQAiM_00012 layers 5 share 0.00 0.2s
+whisper-tiny vox id10300_fAe7DXqrZls_00009 layers 5 share 0.00 0.2s
+whisper-tiny vox id10300_fAe7DXqrZls_00019 layers 5 share 0.00 0.2s
+whisper-tiny vox id10288_FIxC_PNJNkc_00008 layers 5 share 1.00 0.2s
+  patches = [(b, t) for t in range(grid.n_t) if frames[t * per:(t + 1) * per].mean() >= 0.5 for b in range(8)]
+  ret = ret.dtype.type(ret / rcount)
+whisper-tiny vox id10300_Fi8lnFPYgII_00012 layers 5 share 1.00 0.2s
+whisper-tiny vox id10273_8cfyJEV7hP8_00028 layers 5 share 0.05 0.2s
+whisper-tiny vox id10300_TMBdUkVfwOg_00002 layers 5 share 0.69 0.4s
+whisper-tiny vox id10304_JQtDfEz08aU_00036 layers 5 share 0.00 0.1s
+whisper-tiny vox id10272_dkN2DIBrXqQ_00008 layers 5 share 0.96 0.4s
+whisper-tiny vox id10281_qBTOwaSOS-M_00002 layers 5 share 0.89 0.2s
+whisper-tiny vox id10300_VHWZdctr_4s_00007 layers 5 share 1.00 0.2s
+whisper-tiny vox id10303_VCEs8oAQAiM_00023 layers 5 share 0.08 0.2s
+whisper-tiny vox id10282_ek_uqADnhPQ_00001 layers 5 share 0.00 0.2s
+whisper-tiny vox id10309_0b1inHMAr6o_00004 layers 5 share 0.99 0.3s
+whisper-tiny vox id10294_VweNonqOdrE_00010 layers 5 share 0.08 0.2s
+whisper-tiny vox id10300_VHWZdctr_4s_00012 layers 5 share 0.88 0.3s
+whisper-tiny vox id10295_nt7dNRvlEHE_00002 layers 5 share 0.55 0.3s
+whisper-tiny vox id10309_XMLMvfrgdzY_00016 layers 5 share 1.00 0.2s
+whisper-tiny vox id10309_rxnN8thYzEQ_00010 layers 5 share 0.00 0.2s
+whisper-tiny vox id10293_l3J1f06Slfo_00001 layers 5 share 1.00 0.2s
+whisper-tiny vox id10273_eLl_yTeuaKo_00015 layers 5 share 1.00 0.4s
+whisper-tiny vox id10284_RNYNkXzY5Hk_00021 layers 5 share 0.00 0.2s
+whisper-tiny vox id10275_LqcUAxrtYOk_00007 layers 5 share 1.00 0.2s
+whisper-tiny vox id10293_MHOCv7pOmG4_00002 layers 5 share 0.01 0.2s
+whisper-tiny vox id10270_GWXujl-xAVM_00018 layers 5 share 0.04 0.2s
+whisper-tiny vox id10309_rxnN8thYzEQ_00005 layers 5 share 0.49 0.2s
+whisper-tiny vox id10281_eso-dEmfC_c_00001 layers 5 share 0.00 0.2s
+whisper-tiny vox id10276_XunbBdgkGwU_00001 layers 5 share 1.00 0.5s
+whisper-tiny vox id10271_PfcJLmkhGbk_00007 layers 5 share 0.00 0.2s
+whisper-tiny vox id10281_ni6gO5jDLJE_00004 layers 5 share 1.00 0.2s
+whisper-tiny vox id10273_8cfyJEV7hP8_00040 layers 5 share 0.00 0.2s
+whisper-tiny vox id10300_8EDKH42GZ1o_00012 layers 5 share 0.11 0.2s
+whisper-tiny vox id10295_NLyQte6Mhj0_00001 layers 5 share 1.00 0.2s
+whisper-tiny vox id10309_GyJHpVQmcvc_00004 layers 5 share 1.00 0.2s
+whisper-tiny vox id10291_TMCTm7GxiDE_00007 layers 5 share 1.00 0.3s
+whisper-tiny vox id10283_h87Y8nir1o0_00005 layers 5 share 1.00 0.2s
+whisper-tiny vox id10301_VIAnMw7J5tI_00007 layers 5 share 1.00 0.2s
+whisper-tiny vox id10294_L812MIi7ruk_00003 layers 5 share 0.52 0.3s
+whisper-tiny vox id10304_0TJ9sdJiDvA_00002 layers 5 share 0.07 0.2s
+whisper-tiny vox id10295_K1gPy1UKmBE_00007 layers 5 share 1.00 0.2s
+whisper-tiny vox id10286_isKyMAYUOgg_00012 layers 5 share 1.00 1.2s
+whisper-tiny vox id10296_2btSCK00syA_00001 layers 5 share 1.00 0.2s
+whisper-tiny vox id10300_8Sz2-IYJ2GA_00010 layers 5 share 0.00 0.1s
+whisper-tiny vox id10303_LKDWhdJQFco_00006 layers 5 share 0.00 0.1s
+whisper-tiny vox id10285_FUqAFZmZJ80_00018 layers 5 share 1.00 0.2s
+whisper-tiny vox id10304_zV7LlMi0eHo_00005 layers 5 share 1.00 0.2s
+whisper-tiny vox id10294_49XYNpeN23I_00011 layers 5 share 1.00 0.2s
+whisper-tiny vox id10291_TMCTm7GxiDE_00009 layers 5 share 1.00 0.2s
+whisper-tiny vox id10281_FL2UicCNcwI_00003 layers 5 share 1.00 0.2s
+whisper-tiny vox id10276_YloBWJxXzMI_00008 layers 5 share 0.41 0.2s
+whisper-tiny vox id10283_uA1E_38TuTw_00001 layers 5 share 0.00 0.2s
+whisper-tiny vox id10284_7yx9A0yzLYk_00016 layers 5 share 0.00 0.1s
+whisper-tiny vox id10285_FUqAFZmZJ80_00008 layers 5 share 1.00 0.2s
+whisper-tiny vox id10303_LKDWhdJQFco_00012 layers 5 share 1.00 0.3s
+whisper-tiny vox id10290_cIi74VD0LF0_00003 layers 5 share 0.01 0.2s
+whisper-tiny vox id10274_89UnsytX6Y8_00006 layers 5 share 0.43 0.2s
+whisper-tiny vox id10276_5YncBThNd5E_00019 layers 5 share 1.00 0.2s
+whisper-tiny vox id10282_ek_uqADnhPQ_00007 layers 5 share 0.78 0.5s
+whisper-tiny vox id10291_oa10caYOOzk_00003 layers 5 share 1.00 0.2s
+whisper-tiny vox id10286_mYc2BIS0zWU_00003 layers 5 share 1.00 0.2s
+whisper-tiny vox id10275_Mdk1SXywHck_00021 layers 5 share 1.00 0.3s
+whisper-tiny vox id10271_gO805KoL2RM_00006 layers 5 share 0.00 0.1s
+whisper-tiny vox id10293_l3J1f06Slfo_00005 layers 5 share 1.00 0.2s
+whisper-tiny vox id10308_We7oIBrKQKg_00003 layers 5 share 1.00 0.2s
+whisper-tiny vox id10280_9AtE4C309P8_00016 layers 5 share 0.00 0.2s
+whisper-tiny vox id10283_gAKHqHbNt2g_00001 layers 5 share 1.00 0.3s
+whisper-tiny vox id10304_jUSC4i_eGHs_00002 layers 5 share 0.03 0.2s
+whisper-tiny vox id10296_SKwsA_nq1P8_00009 layers 5 share 0.86 0.4s
+whisper-tiny vox id10272_olePnztkm6U_00004 layers 5 share 1.00 1.2s
+whisper-tiny vox id10303_LKDWhdJQFco_00007 layers 5 share 1.00 0.3s
+whisper-tiny vox id10304_PgZsH9ijC3Y_00002 layers 5 share 0.00 0.1s
+whisper-tiny vox id10309_GyJHpVQmcvc_00002 layers 5 share 1.00 0.2s
+whisper-tiny vox id10290_0bA1AJCGEOo_00002 layers 5 share 0.34 0.2s
+whisper-tiny vox id10285_FUqAFZmZJ80_00001 layers 5 share 1.00 0.2s
+whisper-tiny vox id10272_olePnztkm6U_00001 layers 5 share 1.00 0.2s
+whisper-tiny vox id10283_vaK4t1-WD4M_00019 layers 5 share 1.00 0.2s
+whisper-tiny vox id10286_7I1GtGzVfmw_00016 layers 5 share 0.01 0.2s
+whisper-tiny vox id10304_JQtDfEz08aU_00021 layers 5 share 0.00 0.1s
+whisper-tiny vox id10271_LjLjQkfhd2o_00006 layers 5 share 0.43 0.2s
+whisper-tiny vox id10275_LqcUAxrtYOk_00003 layers 5 share 1.00 0.2s
+whisper-tiny vox id10308_rgpPBT4yQcg_00004 layers 5 share 0.00 0.2s
+whisper-tiny vox id10293_TwfthltapLg_00012 layers 5 share 0.00 0.2s
+whisper-tiny vox id10285_thghCiJZYwI_00006 layers 5 share 0.00 0.1s
+whisper-tiny vox id10303_VCEs8oAQAiM_00016 layers 5 share 1.00 0.2s
+whisper-tiny vox id10280_9AtE4C309P8_00001 layers 5 share 0.54 0.3s
+whisper-tiny vox id10301_eVfmXU0RtRo_00002 layers 5 share 1.00 0.2s
+whisper-tiny vox id10293_TwfthltapLg_00005 layers 5 share 1.00 0.3s
+whisper-tiny vox id10280_PQBBKBYGWgU_00007 layers 5 share 0.46 0.3s
+whisper-tiny controlled 1089-134691-0022 layers 5 share 0.36 0.2s
+whisper-tiny controlled 1188-133604-0036 layers 5 share 0.25 0.2s
+whisper-tiny controlled 1188-133604-0039 layers 5 share 0.31 0.2s
+whisper-tiny controlled 121-127105-0007 layers 5 share 0.35 0.2s
+whisper-tiny controlled 1284-1180-0006 layers 5 share 0.29 0.2s
+whisper-tiny controlled 1284-1180-0032 layers 5 share 0.35 0.2s
+whisper-tiny controlled 1284-1181-0015 layers 5 share 0.40 0.2s
+whisper-tiny controlled 1320-122612-0015 layers 5 share 0.32 0.2s
+whisper-tiny controlled 1320-122617-0000 layers 5 share 0.26 0.2s
+whisper-tiny controlled 1320-122617-0024 layers 5 share 0.27 0.2s
+whisper-tiny controlled 1580-141083-0000 layers 5 share 0.23 0.2s
+whisper-tiny controlled 1995-1826-0013 layers 5 share 0.23 0.2s
+whisper-tiny controlled 2094-142345-0024 layers 5 share 0.38 0.2s
+whisper-tiny controlled 237-134493-0011 layers 5 share 0.40 0.2s
+whisper-tiny controlled 237-134500-0032 layers 5 share 0.40 0.2s
+whisper-tiny controlled 237-134500-0033 layers 5 share 0.32 0.2s
+whisper-tiny controlled 237-134500-0036 layers 5 share 0.31 0.2s
+whisper-tiny controlled 260-123286-0006 layers 5 share 0.27 0.2s
+whisper-tiny controlled 2830-3980-0023 layers 5 share 0.33 0.2s
+whisper-tiny controlled 2830-3980-0062 layers 5 share 0.37 0.2s
+whisper-tiny controlled 2961-961-0009 layers 5 share 0.35 0.2s
+whisper-tiny controlled 3570-5694-0008 layers 5 share 0.21 0.2s
+whisper-tiny controlled 3570-5695-0015 layers 5 share 0.25 0.2s
+whisper-tiny controlled 3575-170457-0000 layers 5 share 0.25 0.2s
+whisper-tiny controlled 4077-13751-0010 layers 5 share 0.30 0.2s
+whisper-tiny controlled 4446-2271-0001 layers 5 share 0.32 0.2s
+whisper-tiny controlled 4507-16021-0051 layers 5 share 0.33 0.2s
+whisper-tiny controlled 4507-16021-0056 layers 5 share 0.32 0.2s
+whisper-tiny controlled 4992-23283-0013 layers 5 share 0.31 0.2s
+whisper-tiny controlled 4992-41797-0011 layers 5 share 0.37 0.2s
+whisper-tiny controlled 5142-33396-0032 layers 5 share 0.21 0.2s
+whisper-tiny controlled 5142-33396-0051 layers 5 share 0.36 0.2s
+whisper-tiny controlled 5142-33396-0065 layers 5 share 0.39 0.2s
+whisper-tiny controlled 5683-32879-0020 layers 5 share 0.31 0.2s
+whisper-tiny controlled 61-70970-0036 layers 5 share 0.30 0.2s
+whisper-tiny controlled 61-70970-0037 layers 5 share 0.34 0.2s
+whisper-tiny controlled 6930-75918-0015 layers 5 share 0.32 0.2s
+whisper-tiny controlled 6930-75918-0017 layers 5 share 0.33 0.2s
+whisper-tiny controlled 6930-76324-0017 layers 5 share 0.37 0.2s
+whisper-tiny controlled 6930-81414-0013 layers 5 share 0.28 0.2s
+whisper-tiny controlled 7021-79740-0002 layers 5 share 0.22 0.3s
+whisper-tiny controlled 7127-75947-0001 layers 5 share 0.30 0.2s
+whisper-tiny controlled 7176-88083-0012 layers 5 share 0.40 0.2s
+whisper-tiny controlled 7176-92135-0031 layers 5 share 0.21 0.2s
+whisper-tiny controlled 8224-274384-0013 layers 5 share 0.37 0.3s
+whisper-tiny controlled 8230-279154-0026 layers 5 share 0.22 0.3s
+whisper-tiny controlled 8230-279154-0029 layers 5 share 0.24 0.2s
+whisper-tiny controlled 8455-210777-0000 layers 5 share 0.23 0.2s
+whisper-tiny controlled 8455-210777-0039 layers 5 share 0.36 0.2s
+whisper-tiny controlled 8455-210777-0044 layers 5 share 0.28 0.2s
+whisper-tiny controlled 8455-210777-0056 layers 5 share 0.36 0.2s
+whisper-tiny controlled 8455-210777-0060 layers 5 share 0.29 0.2s
+whisper-tiny controlled 8463-287645-0013 layers 5 share 0.30 0.2s
+whisper-tiny controlled 8463-294828-0031 layers 5 share 0.26 0.2s
+whisper-tiny controlled 8463-294828-0033 layers 5 share 0.32 0.2s
+whisper-tiny controlled 8555-284447-0013 layers 5 share 0.22 0.2s
+whisper-tiny controlled 8555-284447-0018 layers 5 share 0.37 0.2s
+whisper-tiny controlled 8555-284449-0003 layers 5 share 0.23 0.2s
+whisper-tiny controlled 8555-284449-0020 layers 5 share 0.40 0.2s
+whisper-tiny controlled 908-31957-0014 layers 5 share 0.27 0.2s
+**whisper-tiny, 100 VoxCeleb clips, AADD flags (informative clips only): 32 clips**
+
+| layer | spill-over outside | shift inside | CAM focus on degraded | rho(CAM, loudness) |
+|---|---|---|---|---|
+| 0 | 0.03 [0.01, 0.06] | 0.24 [0.22, 0.26] | 0.88 [0.73, 1.01] | 0.01 [-0.04, 0.07] |
+| 1 | 0.10 [0.06, 0.15] | 0.47 [0.42, 0.51] | 0.96 [0.80, 1.11] | 0.00 [-0.05, 0.06] |
+| 2 | 0.13 [0.09, 0.18] | 0.56 [0.51, 0.61] | 0.83 [0.69, 0.97] | 0.03 [-0.03, 0.09] |
+| 3 | 0.20 [0.14, 0.27] | 0.90 [0.79, 1.00] | 0.94 [0.81, 1.07] | 0.10 [0.05, 0.16] |
+| 4 | 0.28 [0.19, 0.39] | 0.91 [0.81, 0.98] | 1.09 [0.78, 1.57] | 0.05 [-0.00, 0.10] |
+
+**whisper-tiny, 60 controlled clips, known 2 s window: 60 clips**
+
+| layer | spill-over outside | shift inside | CAM focus on degraded | rho(CAM, loudness) |
+|---|---|---|---|---|
+| 0 | 0.00 [0.00, 0.01] | 0.28 [0.27, 0.28] | 0.96 [0.82, 1.11] | 0.02 [-0.03, 0.09] |
+| 1 | 0.04 [0.04, 0.05] | 0.48 [0.47, 0.49] | 0.90 [0.79, 1.01] | 0.04 [-0.02, 0.09] |
+| 2 | 0.07 [0.06, 0.07] | 0.59 [0.58, 0.60] | 0.91 [0.78, 1.04] | 0.02 [-0.02, 0.07] |
+| 3 | 0.12 [0.11, 0.12] | 1.09 [1.04, 1.14] | 0.98 [0.87, 1.11] | -0.01 [-0.06, 0.04] |
+| 4 | 0.19 [0.18, 0.20] | 1.03 [1.02, 1.04] | 1.03 [0.94, 1.12] | 0.02 [-0.03, 0.06] |
+
+=== latent whisper-base 04:50:34
+whisper-base vox id10276_HrA2BLcLApA_00017 layers 7 share 1.00 1.0s
+whisper-base vox id10303_R5JGtwc4o1M_00021 layers 7 share 0.00 0.3s
+whisper-base vox id10283_vaK4t1-WD4M_00046 layers 7 share 1.00 0.6s
+whisper-base vox id10296_f_k09R8r_cA_00005 layers 7 share 1.00 0.4s
+whisper-base vox id10290_O-V_sInAw5M_00005 layers 7 share 0.06 0.3s
+whisper-base vox id10273_SgBON1gLfbo_00006 layers 7 share 0.08 0.3s
+whisper-base vox id10295_S9FeIMntmUE_00004 layers 7 share 1.00 0.4s
+whisper-base vox id10276_X1Yr4eI2oRw_00002 layers 7 share 0.40 0.4s
+whisper-base vox id10273_8fKRoUIpAJY_00012 layers 7 share 0.04 0.5s
+whisper-base vox id10276_S0j29b3KVWQ_00005 layers 7 share 0.75 0.4s
+whisper-base vox id10300_VHWZdctr_4s_00004 layers 7 share 1.00 0.4s
+whisper-base vox id10279_UwVmHtdkruw_00001 layers 7 share 1.00 0.3s
+whisper-base vox id10303_VCEs8oAQAiM_00012 layers 7 share 0.00 0.3s
+whisper-base vox id10300_fAe7DXqrZls_00009 layers 7 share 0.00 0.3s
+whisper-base vox id10300_fAe7DXqrZls_00019 layers 7 share 0.00 0.3s
+whisper-base vox id10288_FIxC_PNJNkc_00008 layers 7 share 1.00 0.4s
+  patches = [(b, t) for t in range(grid.n_t) if frames[t * per:(t + 1) * per].mean() >= 0.5 for b in range(8)]
+  ret = ret.dtype.type(ret / rcount)
+whisper-base vox id10300_Fi8lnFPYgII_00012 layers 7 share 1.00 0.4s
+whisper-base vox id10273_8cfyJEV7hP8_00028 layers 7 share 0.05 0.3s
+whisper-base vox id10300_TMBdUkVfwOg_00002 layers 7 share 0.69 0.6s
+whisper-base vox id10304_JQtDfEz08aU_00036 layers 7 share 0.00 0.2s
+whisper-base vox id10272_dkN2DIBrXqQ_00008 layers 7 share 0.96 0.6s
+whisper-base vox id10281_qBTOwaSOS-M_00002 layers 7 share 0.89 0.3s
+whisper-base vox id10300_VHWZdctr_4s_00007 layers 7 share 1.00 0.4s
+whisper-base vox id10303_VCEs8oAQAiM_00023 layers 7 share 0.08 0.4s
+whisper-base vox id10282_ek_uqADnhPQ_00001 layers 7 share 0.00 0.3s
+whisper-base vox id10309_0b1inHMAr6o_00004 layers 7 share 0.99 0.4s
+whisper-base vox id10294_VweNonqOdrE_00010 layers 7 share 0.08 0.3s
+whisper-base vox id10300_VHWZdctr_4s_00012 layers 7 share 0.88 0.4s
+whisper-base vox id10295_nt7dNRvlEHE_00002 layers 7 share 0.55 0.5s
+whisper-base vox id10309_XMLMvfrgdzY_00016 layers 7 share 1.00 0.4s
+whisper-base vox id10309_rxnN8thYzEQ_00010 layers 7 share 0.00 0.3s
+whisper-base vox id10293_l3J1f06Slfo_00001 layers 7 share 1.00 0.4s
+whisper-base vox id10273_eLl_yTeuaKo_00015 layers 7 share 1.00 0.6s
+whisper-base vox id10284_RNYNkXzY5Hk_00021 layers 7 share 0.00 0.3s
+whisper-base vox id10275_LqcUAxrtYOk_00007 layers 7 share 1.00 0.4s
+whisper-base vox id10293_MHOCv7pOmG4_00002 layers 7 share 0.01 0.4s
+whisper-base vox id10270_GWXujl-xAVM_00018 layers 7 share 0.04 0.4s
+whisper-base vox id10309_rxnN8thYzEQ_00005 layers 7 share 0.49 0.3s
+whisper-base vox id10281_eso-dEmfC_c_00001 layers 7 share 0.00 0.3s
+whisper-base vox id10276_XunbBdgkGwU_00001 layers 7 share 1.00 0.7s
+whisper-base vox id10271_PfcJLmkhGbk_00007 layers 7 share 0.00 0.3s
+whisper-base vox id10281_ni6gO5jDLJE_00004 layers 7 share 1.00 0.3s
+whisper-base vox id10273_8cfyJEV7hP8_00040 layers 7 share 0.00 0.3s
+whisper-base vox id10300_8EDKH42GZ1o_00012 layers 7 share 0.11 0.4s
+whisper-base vox id10295_NLyQte6Mhj0_00001 layers 7 share 1.00 0.4s
+whisper-base vox id10309_GyJHpVQmcvc_00004 layers 7 share 1.00 0.3s
+whisper-base vox id10291_TMCTm7GxiDE_00007 layers 7 share 1.00 0.4s
+whisper-base vox id10283_h87Y8nir1o0_00005 layers 7 share 1.00 0.4s
+whisper-base vox id10301_VIAnMw7J5tI_00007 layers 7 share 1.00 0.3s
+whisper-base vox id10294_L812MIi7ruk_00003 layers 7 share 0.52 0.5s
+whisper-base vox id10304_0TJ9sdJiDvA_00002 layers 7 share 0.07 0.4s
+whisper-base vox id10295_K1gPy1UKmBE_00007 layers 7 share 1.00 0.4s
+whisper-base vox id10286_isKyMAYUOgg_00012 layers 7 share 1.00 0.5s
+whisper-base vox id10296_2btSCK00syA_00001 layers 7 share 1.00 0.3s
+whisper-base vox id10300_8Sz2-IYJ2GA_00010 layers 7 share 0.00 0.3s
+whisper-base vox id10303_LKDWhdJQFco_00006 layers 7 share 0.00 0.3s
+whisper-base vox id10285_FUqAFZmZJ80_00018 layers 7 share 1.00 0.4s
+whisper-base vox id10304_zV7LlMi0eHo_00005 layers 7 share 1.00 0.4s
+whisper-base vox id10294_49XYNpeN23I_00011 layers 7 share 1.00 0.4s
+whisper-base vox id10291_TMCTm7GxiDE_00009 layers 7 share 1.00 0.4s
+whisper-base vox id10281_FL2UicCNcwI_00003 layers 7 share 1.00 0.4s
+whisper-base vox id10276_YloBWJxXzMI_00008 layers 7 share 0.41 0.5s
+whisper-base vox id10283_uA1E_38TuTw_00001 layers 7 share 0.00 0.3s
+whisper-base vox id10284_7yx9A0yzLYk_00016 layers 7 share 0.00 0.3s
+whisper-base vox id10285_FUqAFZmZJ80_00008 layers 7 share 1.00 0.3s
+whisper-base vox id10303_LKDWhdJQFco_00012 layers 7 share 1.00 0.5s
+whisper-base vox id10290_cIi74VD0LF0_00003 layers 7 share 0.01 0.3s
+whisper-base vox id10274_89UnsytX6Y8_00006 layers 7 share 0.43 0.4s
+whisper-base vox id10276_5YncBThNd5E_00019 layers 7 share 1.00 0.3s
+whisper-base vox id10282_ek_uqADnhPQ_00007 layers 7 share 0.78 0.8s
+whisper-base vox id10291_oa10caYOOzk_00003 layers 7 share 1.00 0.5s
+whisper-base vox id10286_mYc2BIS0zWU_00003 layers 7 share 1.00 0.4s
+whisper-base vox id10275_Mdk1SXywHck_00021 layers 7 share 1.00 0.6s
+whisper-base vox id10271_gO805KoL2RM_00006 layers 7 share 0.00 0.3s
+whisper-base vox id10293_l3J1f06Slfo_00005 layers 7 share 1.00 0.4s
+whisper-base vox id10308_We7oIBrKQKg_00003 layers 7 share 1.00 0.4s
+whisper-base vox id10280_9AtE4C309P8_00016 layers 7 share 0.00 0.4s
+whisper-base vox id10283_gAKHqHbNt2g_00001 layers 7 share 1.00 0.4s
+whisper-base vox id10304_jUSC4i_eGHs_00002 layers 7 share 0.03 0.3s
+whisper-base vox id10296_SKwsA_nq1P8_00009 layers 7 share 0.86 0.6s
+whisper-base vox id10272_olePnztkm6U_00004 layers 7 share 1.00 0.5s
+whisper-base vox id10303_LKDWhdJQFco_00007 layers 7 share 1.00 0.5s
+whisper-base vox id10304_PgZsH9ijC3Y_00002 layers 7 share 0.00 0.3s
+whisper-base vox id10309_GyJHpVQmcvc_00002 layers 7 share 1.00 0.4s
+whisper-base vox id10290_0bA1AJCGEOo_00002 layers 7 share 0.34 0.4s
+whisper-base vox id10285_FUqAFZmZJ80_00001 layers 7 share 1.00 0.4s
+whisper-base vox id10272_olePnztkm6U_00001 layers 7 share 1.00 0.4s
+whisper-base vox id10283_vaK4t1-WD4M_00019 layers 7 share 1.00 0.4s
+whisper-base vox id10286_7I1GtGzVfmw_00016 layers 7 share 0.01 0.4s
+whisper-base vox id10304_JQtDfEz08aU_00021 layers 7 share 0.00 0.3s
+whisper-base vox id10271_LjLjQkfhd2o_00006 layers 7 share 0.43 0.4s
+whisper-base vox id10275_LqcUAxrtYOk_00003 layers 7 share 1.00 0.3s
+whisper-base vox id10308_rgpPBT4yQcg_00004 layers 7 share 0.00 0.4s
+whisper-base vox id10293_TwfthltapLg_00012 layers 7 share 0.00 0.3s
+whisper-base vox id10285_thghCiJZYwI_00006 layers 7 share 0.00 0.3s
+whisper-base vox id10303_VCEs8oAQAiM_00016 layers 7 share 1.00 0.4s
+whisper-base vox id10280_9AtE4C309P8_00001 layers 7 share 0.54 0.5s
+whisper-base vox id10301_eVfmXU0RtRo_00002 layers 7 share 1.00 0.4s
+whisper-base vox id10293_TwfthltapLg_00005 layers 7 share 1.00 0.5s
+whisper-base vox id10280_PQBBKBYGWgU_00007 layers 7 share 0.46 0.5s
+whisper-base controlled 1089-134691-0022 layers 7 share 0.36 0.4s
+whisper-base controlled 1188-133604-0036 layers 7 share 0.25 0.4s
+whisper-base controlled 1188-133604-0039 layers 7 share 0.31 0.4s
+whisper-base controlled 121-127105-0007 layers 7 share 0.35 0.4s
+whisper-base controlled 1284-1180-0006 layers 7 share 0.29 0.4s
+whisper-base controlled 1284-1180-0032 layers 7 share 0.35 0.4s
+whisper-base controlled 1284-1181-0015 layers 7 share 0.40 0.4s
+whisper-base controlled 1320-122612-0015 layers 7 share 0.32 0.4s
+whisper-base controlled 1320-122617-0000 layers 7 share 0.26 0.4s
+whisper-base controlled 1320-122617-0024 layers 7 share 0.27 0.4s
+whisper-base controlled 1580-141083-0000 layers 7 share 0.23 0.4s
+whisper-base controlled 1995-1826-0013 layers 7 share 0.23 0.4s
+whisper-base controlled 2094-142345-0024 layers 7 share 0.38 0.3s
+whisper-base controlled 237-134493-0011 layers 7 share 0.40 0.4s
+whisper-base controlled 237-134500-0032 layers 7 share 0.40 0.3s
+whisper-base controlled 237-134500-0033 layers 7 share 0.32 0.4s
+whisper-base controlled 237-134500-0036 layers 7 share 0.31 0.4s
+whisper-base controlled 260-123286-0006 layers 7 share 0.27 0.4s
+whisper-base controlled 2830-3980-0023 layers 7 share 0.33 0.4s
+whisper-base controlled 2830-3980-0062 layers 7 share 0.37 0.3s
+whisper-base controlled 2961-961-0009 layers 7 share 0.35 0.4s
+whisper-base controlled 3570-5694-0008 layers 7 share 0.21 0.4s
+whisper-base controlled 3570-5695-0015 layers 7 share 0.25 0.4s
+whisper-base controlled 3575-170457-0000 layers 7 share 0.25 0.4s
+whisper-base controlled 4077-13751-0010 layers 7 share 0.30 0.4s
+whisper-base controlled 4446-2271-0001 layers 7 share 0.32 0.4s
+whisper-base controlled 4507-16021-0051 layers 7 share 0.33 0.4s
+whisper-base controlled 4507-16021-0056 layers 7 share 0.32 0.3s
+whisper-base controlled 4992-23283-0013 layers 7 share 0.31 0.4s
+whisper-base controlled 4992-41797-0011 layers 7 share 0.37 0.3s
+whisper-base controlled 5142-33396-0032 layers 7 share 0.21 0.4s
+whisper-base controlled 5142-33396-0051 layers 7 share 0.36 0.4s
+whisper-base controlled 5142-33396-0065 layers 7 share 0.39 0.3s
+whisper-base controlled 5683-32879-0020 layers 7 share 0.31 0.4s
+whisper-base controlled 61-70970-0036 layers 7 share 0.30 0.4s
+whisper-base controlled 61-70970-0037 layers 7 share 0.34 0.4s
+whisper-base controlled 6930-75918-0015 layers 7 share 0.32 0.4s
+whisper-base controlled 6930-75918-0017 layers 7 share 0.33 0.3s
+whisper-base controlled 6930-76324-0017 layers 7 share 0.37 0.4s
+whisper-base controlled 6930-81414-0013 layers 7 share 0.28 0.4s
+whisper-base controlled 7021-79740-0002 layers 7 share 0.22 0.4s
+whisper-base controlled 7127-75947-0001 layers 7 share 0.30 0.4s
+whisper-base controlled 7176-88083-0012 layers 7 share 0.40 0.4s
+whisper-base controlled 7176-92135-0031 layers 7 share 0.21 0.4s
+whisper-base controlled 8224-274384-0013 layers 7 share 0.37 0.3s
+whisper-base controlled 8230-279154-0026 layers 7 share 0.22 0.4s
+whisper-base controlled 8230-279154-0029 layers 7 share 0.24 0.4s
+whisper-base controlled 8455-210777-0000 layers 7 share 0.23 0.4s
+whisper-base controlled 8455-210777-0039 layers 7 share 0.36 0.4s
+whisper-base controlled 8455-210777-0044 layers 7 share 0.28 0.4s
+whisper-base controlled 8455-210777-0056 layers 7 share 0.36 0.3s
+whisper-base controlled 8455-210777-0060 layers 7 share 0.29 0.4s
+whisper-base controlled 8463-287645-0013 layers 7 share 0.30 0.4s
+whisper-base controlled 8463-294828-0031 layers 7 share 0.26 0.4s
+whisper-base controlled 8463-294828-0033 layers 7 share 0.32 0.4s
+whisper-base controlled 8555-284447-0013 layers 7 share 0.22 0.4s
+whisper-base controlled 8555-284447-0018 layers 7 share 0.37 0.4s
+whisper-base controlled 8555-284449-0003 layers 7 share 0.23 0.4s
+whisper-base controlled 8555-284449-0020 layers 7 share 0.40 0.4s
+whisper-base controlled 908-31957-0014 layers 7 share 0.27 0.4s
+**whisper-base, 100 VoxCeleb clips, AADD flags (informative clips only): 32 clips**
+
+| layer | spill-over outside | shift inside | CAM focus on degraded | rho(CAM, loudness) |
+|---|---|---|---|---|
+| 0 | 0.03 [0.01, 0.06] | 0.30 [0.27, 0.33] | 0.96 [0.79, 1.15] | 0.04 [-0.01, 0.09] |
+| 1 | 0.10 [0.06, 0.14] | 0.50 [0.44, 0.55] | 0.88 [0.74, 1.04] | -0.01 [-0.09, 0.08] |
+| 2 | 0.13 [0.08, 0.19] | 0.53 [0.47, 0.57] | 0.96 [0.78, 1.15] | -0.00 [-0.07, 0.07] |
+| 3 | 0.17 [0.11, 0.24] | 0.63 [0.57, 0.68] | 0.85 [0.72, 0.99] | -0.02 [-0.10, 0.05] |
+| 4 | 0.24 [0.16, 0.32] | 1.20 [1.03, 1.36] | 0.82 [0.70, 0.94] | 0.07 [0.01, 0.13] |
+| 5 | 0.25 [0.17, 0.34] | 1.13 [0.98, 1.26] | 0.92 [0.78, 1.05] | 0.03 [-0.03, 0.09] |
+| 6 | 0.29 [0.21, 0.39] | 0.87 [0.78, 0.95] | 0.93 [0.80, 1.06] | 0.03 [-0.03, 0.09] |
+
+**whisper-base, 60 controlled clips, known 2 s window: 60 clips**
+
+| layer | spill-over outside | shift inside | CAM focus on degraded | rho(CAM, loudness) |
+|---|---|---|---|---|
+| 0 | 0.00 [0.00, 0.01] | 0.35 [0.34, 0.35] | 0.98 [0.81, 1.17] | -0.05 [-0.11, 0.01] |
+| 1 | 0.04 [0.04, 0.05] | 0.49 [0.48, 0.50] | 0.89 [0.78, 1.00] | 0.00 [-0.06, 0.07] |
+| 2 | 0.06 [0.05, 0.06] | 0.51 [0.50, 0.52] | 0.82 [0.73, 0.90] | -0.03 [-0.09, 0.02] |
+| 3 | 0.09 [0.08, 0.09] | 0.66 [0.66, 0.67] | 0.85 [0.76, 0.95] | -0.12 [-0.18, -0.07] |
+| 4 | 0.13 [0.12, 0.14] | 1.42 [1.35, 1.49] | 0.99 [0.87, 1.13] | -0.02 [-0.07, 0.03] |
+| 5 | 0.15 [0.14, 0.16] | 1.29 [1.25, 1.34] | 0.85 [0.76, 0.94] | -0.03 [-0.09, 0.02] |
+| 6 | 0.20 [0.19, 0.22] | 1.01 [1.00, 1.02] | 1.08 [0.97, 1.19] | -0.02 [-0.07, 0.02] |
+
+=== latent moonshine-base 04:51:41
+moonshine-base vox id10276_HrA2BLcLApA_00017 layers 9 share 1.00 0.7s
+moonshine-base vox id10303_R5JGtwc4o1M_00021 layers 9 share 0.00 0.1s
+moonshine-base vox id10283_vaK4t1-WD4M_00046 layers 9 share 1.00 0.5s
+moonshine-base vox id10296_f_k09R8r_cA_00005 layers 9 share 1.00 0.1s
+moonshine-base vox id10290_O-V_sInAw5M_00005 layers 9 share 0.06 0.1s
+moonshine-base vox id10273_SgBON1gLfbo_00006 layers 9 share 0.08 0.1s
+moonshine-base vox id10295_S9FeIMntmUE_00004 layers 9 share 1.00 0.2s
+moonshine-base vox id10276_X1Yr4eI2oRw_00002 layers 9 share 0.40 0.2s
+moonshine-base vox id10273_8fKRoUIpAJY_00012 layers 9 share 0.04 0.3s
+moonshine-base vox id10276_S0j29b3KVWQ_00005 layers 9 share 0.75 0.2s
+moonshine-base vox id10300_VHWZdctr_4s_00004 layers 9 share 1.00 0.1s
+moonshine-base vox id10279_UwVmHtdkruw_00001 layers 9 share 1.00 0.1s
+moonshine-base vox id10303_VCEs8oAQAiM_00012 layers 9 share 0.00 0.1s
+moonshine-base vox id10300_fAe7DXqrZls_00009 layers 9 share 0.00 0.1s
+moonshine-base vox id10300_fAe7DXqrZls_00019 layers 9 share 0.00 0.2s
+moonshine-base vox id10288_FIxC_PNJNkc_00008 layers 9 share 1.00 0.1s
+  patches = [(b, t) for t in range(grid.n_t) if frames[t * per:(t + 1) * per].mean() >= 0.5 for b in range(8)]
+  ret = ret.dtype.type(ret / rcount)
+moonshine-base vox id10300_Fi8lnFPYgII_00012 layers 9 share 1.00 0.2s
+moonshine-base vox id10273_8cfyJEV7hP8_00028 layers 9 share 0.05 0.1s
+moonshine-base vox id10300_TMBdUkVfwOg_00002 layers 9 share 0.69 0.4s
+moonshine-base vox id10304_JQtDfEz08aU_00036 layers 9 share 0.00 0.1s
+moonshine-base vox id10272_dkN2DIBrXqQ_00008 layers 9 share 0.96 0.4s
+moonshine-base vox id10281_qBTOwaSOS-M_00002 layers 9 share 0.89 0.1s
+moonshine-base vox id10300_VHWZdctr_4s_00007 layers 9 share 1.00 0.1s
+moonshine-base vox id10303_VCEs8oAQAiM_00023 layers 9 share 0.08 0.1s
+moonshine-base vox id10282_ek_uqADnhPQ_00001 layers 9 share 0.00 0.1s
+moonshine-base vox id10309_0b1inHMAr6o_00004 layers 9 share 0.99 0.2s
+moonshine-base vox id10294_VweNonqOdrE_00010 layers 9 share 0.08 0.1s
+moonshine-base vox id10300_VHWZdctr_4s_00012 layers 9 share 0.88 0.2s
+moonshine-base vox id10295_nt7dNRvlEHE_00002 layers 9 share 0.55 0.3s
+moonshine-base vox id10309_XMLMvfrgdzY_00016 layers 9 share 1.00 0.6s
+moonshine-base vox id10309_rxnN8thYzEQ_00010 layers 9 share 0.00 0.1s
+moonshine-base vox id10293_l3J1f06Slfo_00001 layers 9 share 1.00 0.2s
+moonshine-base vox id10273_eLl_yTeuaKo_00015 layers 9 share 1.00 0.4s
+moonshine-base vox id10284_RNYNkXzY5Hk_00021 layers 9 share 0.00 0.1s
+moonshine-base vox id10275_LqcUAxrtYOk_00007 layers 9 share 1.00 0.1s
+moonshine-base vox id10293_MHOCv7pOmG4_00002 layers 9 share 0.01 0.1s
+moonshine-base vox id10270_GWXujl-xAVM_00018 layers 9 share 0.04 0.2s
+moonshine-base vox id10309_rxnN8thYzEQ_00005 layers 9 share 0.49 0.1s
+moonshine-base vox id10281_eso-dEmfC_c_00001 layers 9 share 0.00 0.1s
+moonshine-base vox id10276_XunbBdgkGwU_00001 layers 9 share 1.00 0.5s
+moonshine-base vox id10271_PfcJLmkhGbk_00007 layers 9 share 0.00 0.1s
+moonshine-base vox id10281_ni6gO5jDLJE_00004 layers 9 share 1.00 0.1s
+moonshine-base vox id10273_8cfyJEV7hP8_00040 layers 9 share 0.00 0.1s
+moonshine-base vox id10300_8EDKH42GZ1o_00012 layers 9 share 0.11 0.1s
+moonshine-base vox id10295_NLyQte6Mhj0_00001 layers 9 share 1.00 0.1s
+moonshine-base vox id10309_GyJHpVQmcvc_00004 layers 9 share 1.00 0.1s
+moonshine-base vox id10291_TMCTm7GxiDE_00007 layers 9 share 1.00 0.2s
+moonshine-base vox id10283_h87Y8nir1o0_00005 layers 9 share 1.00 0.2s
+moonshine-base vox id10301_VIAnMw7J5tI_00007 layers 9 share 1.00 0.1s
+moonshine-base vox id10294_L812MIi7ruk_00003 layers 9 share 0.52 0.3s
+moonshine-base vox id10304_0TJ9sdJiDvA_00002 layers 9 share 0.07 0.2s
+moonshine-base vox id10295_K1gPy1UKmBE_00007 layers 9 share 1.00 0.2s
+moonshine-base vox id10286_isKyMAYUOgg_00012 layers 9 share 1.00 0.4s
+moonshine-base vox id10296_2btSCK00syA_00001 layers 9 share 1.00 0.1s
+moonshine-base vox id10300_8Sz2-IYJ2GA_00010 layers 9 share 0.00 0.1s
+moonshine-base vox id10303_LKDWhdJQFco_00006 layers 9 share 0.00 0.1s
+moonshine-base vox id10285_FUqAFZmZJ80_00018 layers 9 share 1.00 0.1s
+moonshine-base vox id10304_zV7LlMi0eHo_00005 layers 9 share 1.00 0.2s
+moonshine-base vox id10294_49XYNpeN23I_00011 layers 9 share 1.00 0.1s
+moonshine-base vox id10291_TMCTm7GxiDE_00009 layers 9 share 1.00 0.1s
+moonshine-base vox id10281_FL2UicCNcwI_00003 layers 9 share 1.00 0.1s
+moonshine-base vox id10276_YloBWJxXzMI_00008 layers 9 share 0.41 0.3s
+moonshine-base vox id10283_uA1E_38TuTw_00001 layers 9 share 0.00 0.1s
+moonshine-base vox id10284_7yx9A0yzLYk_00016 layers 9 share 0.00 0.1s
+moonshine-base vox id10285_FUqAFZmZJ80_00008 layers 9 share 1.00 0.1s
+moonshine-base vox id10303_LKDWhdJQFco_00012 layers 9 share 1.00 0.3s
+moonshine-base vox id10290_cIi74VD0LF0_00003 layers 9 share 0.01 0.1s
+moonshine-base vox id10274_89UnsytX6Y8_00006 layers 9 share 0.43 0.1s
+moonshine-base vox id10276_5YncBThNd5E_00019 layers 9 share 1.00 0.1s
+moonshine-base vox id10282_ek_uqADnhPQ_00007 layers 9 share 0.78 0.7s
+moonshine-base vox id10291_oa10caYOOzk_00003 layers 9 share 1.00 0.1s
+moonshine-base vox id10286_mYc2BIS0zWU_00003 layers 9 share 1.00 0.1s
+moonshine-base vox id10275_Mdk1SXywHck_00021 layers 9 share 1.00 0.2s
+moonshine-base vox id10271_gO805KoL2RM_00006 layers 9 share 0.00 0.1s
+moonshine-base vox id10293_l3J1f06Slfo_00005 layers 9 share 1.00 0.1s
+moonshine-base vox id10308_We7oIBrKQKg_00003 layers 9 share 1.00 0.2s
+moonshine-base vox id10280_9AtE4C309P8_00016 layers 9 share 0.00 0.1s
+moonshine-base vox id10283_gAKHqHbNt2g_00001 layers 9 share 1.00 0.2s
+moonshine-base vox id10304_jUSC4i_eGHs_00002 layers 9 share 0.03 0.1s
+moonshine-base vox id10296_SKwsA_nq1P8_00009 layers 9 share 0.86 0.4s
+moonshine-base vox id10272_olePnztkm6U_00004 layers 9 share 1.00 0.2s
+moonshine-base vox id10303_LKDWhdJQFco_00007 layers 9 share 1.00 0.3s
+moonshine-base vox id10304_PgZsH9ijC3Y_00002 layers 9 share 0.00 0.1s
+moonshine-base vox id10309_GyJHpVQmcvc_00002 layers 9 share 1.00 0.2s
+moonshine-base vox id10290_0bA1AJCGEOo_00002 layers 9 share 0.34 0.1s
+moonshine-base vox id10285_FUqAFZmZJ80_00001 layers 9 share 1.00 0.5s
+moonshine-base vox id10272_olePnztkm6U_00001 layers 9 share 1.00 0.1s
+moonshine-base vox id10283_vaK4t1-WD4M_00019 layers 9 share 1.00 0.1s
+moonshine-base vox id10286_7I1GtGzVfmw_00016 layers 9 share 0.01 0.2s
+moonshine-base vox id10304_JQtDfEz08aU_00021 layers 9 share 0.00 0.1s
+moonshine-base vox id10271_LjLjQkfhd2o_00006 layers 9 share 0.43 0.1s
+moonshine-base vox id10275_LqcUAxrtYOk_00003 layers 9 share 1.00 0.1s
+moonshine-base vox id10308_rgpPBT4yQcg_00004 layers 9 share 0.00 0.2s
+moonshine-base vox id10293_TwfthltapLg_00012 layers 9 share 0.00 0.1s
+moonshine-base vox id10285_thghCiJZYwI_00006 layers 9 share 0.00 0.1s
+moonshine-base vox id10303_VCEs8oAQAiM_00016 layers 9 share 1.00 0.2s
+moonshine-base vox id10280_9AtE4C309P8_00001 layers 9 share 0.54 0.3s
+moonshine-base vox id10301_eVfmXU0RtRo_00002 layers 9 share 1.00 0.1s
+moonshine-base vox id10293_TwfthltapLg_00005 layers 9 share 1.00 0.3s
+moonshine-base vox id10280_PQBBKBYGWgU_00007 layers 9 share 0.46 0.3s
+moonshine-base controlled 1089-134691-0022 layers 9 share 0.36 0.1s
+moonshine-base controlled 1188-133604-0036 layers 9 share 0.25 0.1s
+moonshine-base controlled 1188-133604-0039 layers 9 share 0.31 0.1s
+moonshine-base controlled 121-127105-0007 layers 9 share 0.35 0.1s
+moonshine-base controlled 1284-1180-0006 layers 9 share 0.29 0.1s
+moonshine-base controlled 1284-1180-0032 layers 9 share 0.35 0.1s
+moonshine-base controlled 1284-1181-0015 layers 9 share 0.40 0.1s
+moonshine-base controlled 1320-122612-0015 layers 9 share 0.32 0.1s
+moonshine-base controlled 1320-122617-0000 layers 9 share 0.26 0.1s
+moonshine-base controlled 1320-122617-0024 layers 9 share 0.27 0.1s
+moonshine-base controlled 1580-141083-0000 layers 9 share 0.23 0.2s
+moonshine-base controlled 1995-1826-0013 layers 9 share 0.23 0.2s
+moonshine-base controlled 2094-142345-0024 layers 9 share 0.38 0.1s
+moonshine-base controlled 237-134493-0011 layers 9 share 0.40 0.1s
+moonshine-base controlled 237-134500-0032 layers 9 share 0.40 0.1s
+moonshine-base controlled 237-134500-0033 layers 9 share 0.32 0.1s
+moonshine-base controlled 237-134500-0036 layers 9 share 0.31 0.1s
+moonshine-base controlled 260-123286-0006 layers 9 share 0.27 0.1s
+moonshine-base controlled 2830-3980-0023 layers 9 share 0.33 0.1s
+moonshine-base controlled 2830-3980-0062 layers 9 share 0.37 0.1s
+moonshine-base controlled 2961-961-0009 layers 9 share 0.35 0.1s
+moonshine-base controlled 3570-5694-0008 layers 9 share 0.21 0.2s
+moonshine-base controlled 3570-5695-0015 layers 9 share 0.25 0.2s
+moonshine-base controlled 3575-170457-0000 layers 9 share 0.25 0.2s
+moonshine-base controlled 4077-13751-0010 layers 9 share 0.30 0.1s
+moonshine-base controlled 4446-2271-0001 layers 9 share 0.32 0.1s
+moonshine-base controlled 4507-16021-0051 layers 9 share 0.33 0.1s
+moonshine-base controlled 4507-16021-0056 layers 9 share 0.32 0.1s
+moonshine-base controlled 4992-23283-0013 layers 9 share 0.31 0.1s
+moonshine-base controlled 4992-41797-0011 layers 9 share 0.37 0.1s
+moonshine-base controlled 5142-33396-0032 layers 9 share 0.21 0.2s
+moonshine-base controlled 5142-33396-0051 layers 9 share 0.36 0.1s
+moonshine-base controlled 5142-33396-0065 layers 9 share 0.39 0.1s
+moonshine-base controlled 5683-32879-0020 layers 9 share 0.31 0.1s
+moonshine-base controlled 61-70970-0036 layers 9 share 0.30 0.1s
+moonshine-base controlled 61-70970-0037 layers 9 share 0.34 0.1s
+moonshine-base controlled 6930-75918-0015 layers 9 share 0.32 0.1s
+moonshine-base controlled 6930-75918-0017 layers 9 share 0.33 0.1s
+moonshine-base controlled 6930-76324-0017 layers 9 share 0.37 0.1s
+moonshine-base controlled 6930-81414-0013 layers 9 share 0.28 0.1s
+moonshine-base controlled 7021-79740-0002 layers 9 share 0.22 0.1s
+moonshine-base controlled 7127-75947-0001 layers 9 share 0.30 0.1s
+moonshine-base controlled 7176-88083-0012 layers 9 share 0.40 0.1s
+moonshine-base controlled 7176-92135-0031 layers 9 share 0.21 0.2s
+moonshine-base controlled 8224-274384-0013 layers 9 share 0.37 0.1s
+moonshine-base controlled 8230-279154-0026 layers 9 share 0.22 0.2s
+moonshine-base controlled 8230-279154-0029 layers 9 share 0.24 0.2s
+moonshine-base controlled 8455-210777-0000 layers 9 share 0.23 0.2s
+moonshine-base controlled 8455-210777-0039 layers 9 share 0.36 0.1s
+moonshine-base controlled 8455-210777-0044 layers 9 share 0.28 0.1s
+moonshine-base controlled 8455-210777-0056 layers 9 share 0.36 0.1s
+moonshine-base controlled 8455-210777-0060 layers 9 share 0.29 0.1s
+moonshine-base controlled 8463-287645-0013 layers 9 share 0.30 0.1s
+moonshine-base controlled 8463-294828-0031 layers 9 share 0.26 0.2s
+moonshine-base controlled 8463-294828-0033 layers 9 share 0.32 0.1s
+moonshine-base controlled 8555-284447-0013 layers 9 share 0.22 0.2s
+moonshine-base controlled 8555-284447-0018 layers 9 share 0.37 0.1s
+moonshine-base controlled 8555-284449-0003 layers 9 share 0.23 0.2s
+moonshine-base controlled 8555-284449-0020 layers 9 share 0.40 0.1s
+moonshine-base controlled 908-31957-0014 layers 9 share 0.27 0.1s
+**moonshine-base, 100 VoxCeleb clips, AADD flags (informative clips only): 32 clips**
+
+| layer | spill-over outside | shift inside | CAM focus on degraded | rho(CAM, loudness) |
+|---|---|---|---|---|
+| 0 | 0.25 [0.16, 0.36] | 0.47 [0.41, 0.52] | 0.93 [0.80, 1.06] | 0.26 [0.13, 0.39] |
+| 1 | 0.15 [0.10, 0.21] | 0.43 [0.39, 0.47] | 1.15 [0.93, 1.47] | 0.01 [-0.11, 0.13] |
+| 2 | 0.16 [0.10, 0.22] | 0.45 [0.40, 0.49] | 0.97 [0.79, 1.15] | 0.06 [-0.02, 0.14] |
+| 3 | 0.14 [0.09, 0.19] | 0.48 [0.42, 0.53] | 1.39 [0.94, 2.21] | 0.05 [-0.08, 0.17] |
+| 4 | 0.13 [0.09, 0.18] | 0.52 [0.46, 0.58] | 0.96 [0.81, 1.11] | -0.00 [-0.09, 0.08] |
+| 5 | 0.14 [0.10, 0.19] | 0.52 [0.45, 0.58] | 1.00 [0.84, 1.17] | 0.02 [-0.06, 0.11] |
+| 6 | 0.15 [0.11, 0.21] | 0.52 [0.46, 0.59] | 1.00 [0.82, 1.18] | 0.04 [-0.03, 0.11] |
+| 7 | 0.19 [0.13, 0.25] | 0.57 [0.50, 0.64] | 0.97 [0.74, 1.23] | -0.01 [-0.09, 0.06] |
+| 8 | 0.36 [0.27, 0.46] | 0.80 [0.70, 0.89] | 1.00 [0.82, 1.20] | 0.00 [-0.06, 0.07] |
+
+**moonshine-base, 60 controlled clips, known 2 s window: 60 clips**
+
+| layer | spill-over outside | shift inside | CAM focus on degraded | rho(CAM, loudness) |
+|---|---|---|---|---|
+| 0 | 0.12 [0.10, 0.14] | 0.58 [0.55, 0.60] | 0.93 [0.83, 1.03] | 0.24 [0.13, 0.34] |
+| 1 | 0.08 [0.07, 0.08] | 0.47 [0.46, 0.48] | 0.97 [0.83, 1.12] | 0.01 [-0.08, 0.10] |
+| 2 | 0.08 [0.08, 0.09] | 0.50 [0.49, 0.51] | 1.01 [0.89, 1.14] | 0.09 [0.02, 0.15] |
+| 3 | 0.08 [0.07, 0.08] | 0.51 [0.50, 0.52] | 0.94 [0.83, 1.08] | -0.04 [-0.11, 0.03] |
+| 4 | 0.08 [0.07, 0.09] | 0.54 [0.53, 0.55] | 0.88 [0.72, 1.08] | -0.08 [-0.14, -0.02] |
+| 5 | 0.09 [0.09, 0.10] | 0.57 [0.56, 0.58] | 0.89 [0.76, 1.02] | 0.06 [0.00, 0.12] |
+| 6 | 0.11 [0.10, 0.11] | 0.59 [0.58, 0.60] | 1.04 [0.82, 1.29] | 0.05 [-0.02, 0.11] |
+| 7 | 0.13 [0.13, 0.14] | 0.67 [0.66, 0.69] | 0.89 [0.73, 1.07] | -0.05 [-0.10, 0.01] |
+| 8 | 0.29 [0.27, 0.31] | 0.92 [0.91, 0.93] | 0.97 [0.84, 1.10] | 0.00 [-0.05, 0.06] |
+
+=== latent all done 04:52:14

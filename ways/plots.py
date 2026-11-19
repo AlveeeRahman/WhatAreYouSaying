@@ -249,7 +249,7 @@ def clip_figure(att: Attribution, probs, wav, path, title="", window=None):
     from .figure import from_attribution, ways_figure
 
     fig = ways_figure(wav, 16000, quality=probs, quality_hop=SEG_S, quality_classes=CLASSES,
-                      models=[from_attribution(att, att.model)], window=window, title=title, out=path, width_in=10.0)
+                      models=[from_attribution(att, att.model)], window=window, title=title, out=path, style=dict(width_in=10.0))
     plt.close(fig)
 
 
@@ -347,7 +347,7 @@ def comparison_figure(clips: dict, tokens: dict, path, title="", band_edges=None
     ax = axes[1]
     for i, n in enumerate(names):
         c = clips[n]
-        f = c.loc[(c.frac_flagged > 0) & (c.frac_flagged < 1), "focus_ratio_mean"].dropna()
+        f = c.loc[(c.frac_flagged >= 0.05) & (c.frac_flagged <= 0.95), "focus_ratio_mean"].dropna()
         ax.boxplot(f, positions=[i], widths=0.55, patch_artist=True, boxprops=dict(facecolor=col(i), alpha=0.35, edgecolor=col(i)),
                    medianprops=dict(color=col(i), lw=2), whiskerprops=dict(color=col(i)), capprops=dict(color=col(i)), flierprops=dict(marker=".", markeredgecolor=col(i), alpha=0.5))
     ax.axhline(1, color=TXT2, lw=1, ls="--"); ax.text(len(names) - 0.5, 1.02, "no preference", ha="right", va="bottom", fontsize=10, color=TXT2)

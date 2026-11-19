@@ -12,7 +12,7 @@
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a>
   <img src="https://img.shields.io/badge/python-3.12-blue.svg" alt="Python 3.12">
-  <img src="https://img.shields.io/badge/tests-19%20passed-brightgreen.svg" alt="tests: 19 passed">
+  <img src="https://img.shields.io/badge/tests-29%20passed-brightgreen.svg" alt="tests: 29 passed">
   <img src="https://img.shields.io/badge/CI-not%20set%20up%20yet-lightgrey.svg" alt="CI: not set up yet">
 </p>
 
@@ -33,7 +33,7 @@ the pipeline repository,
 rewritten so that it does not depend on that pipeline and so that the same erasure operator serves
 every model.
 
-**Contents:** [What it answers](#what-it-answers) · [How it works](#how-it-works) · [What I verified](#what-i-verified) · [Results on 100 random test clips](#results-on-100-random-test-clips) · [Does the detector's backbone matter](#does-the-detectors-backbone-matter) · [Controlled degradation](#controlled-degradation-on-librispeech) · [Install and use](#install-and-use) · [The figure](#the-figure-plug-and-play) · [Backends](#backends-local-weights-vllm-llamacpp) · [Reproducibility](#reproducibility) · [Limitations and future work](#limitations-and-future-work) · [Status](#status) · [References](#references) · [Repository layout](#repository-layout) · [Credits and licence](#credits-and-licence)
+**Contents:** [What it answers](#what-it-answers) · [How it works](#how-it-works) · [What I verified](#what-i-verified) · [Results on 100 random test clips](#results-on-100-random-test-clips) · [Does the detector's backbone matter](#does-the-detectors-backbone-matter) · [Controlled degradation](#controlled-degradation-on-librispeech) · [Install and use](#install-and-use) · [The figure](#the-figure-plug-and-play) · [Latent space](#noise-in-the-latent-space) · [Backends](#backends-local-weights-vllm-llamacpp) · [Reproducibility](#reproducibility) · [Limitations and future work](#limitations-and-future-work) · [Status](#status) · [References](#references) · [Repository layout](#repository-layout) · [Credits and licence](#credits-and-licence)
 
 <details><summary>Stats for nerds</summary>
 
@@ -46,7 +46,7 @@ every model.
 | sample | 100 clips, simple random sample with seed 8001 from the saved 1 500-clip test slice (sha256 `dfb0451d…`), total 862 s of audio |
 | controlled set | 60 LibriSpeech test-clean utterances, one 2 s degradation each from AADD's synthesiser, clean and degraded twins, three models |
 | detectors | AADD v3.1 (whisper-small backbone, 88.6 M parameters); AADD's head on whisper-base and on moonshine-base encoders (21 M each, AADD recipe on LibriSpeech dev-clean); plus AADD v3-lite (CRNN, 1.3 M) and v2 (EfficientNet-B0, 4.0 M) |
-| tests | 17 CPU checks of the operator, the formulas and the figure, 2 end-to-end HTTP checks against a mock OpenAI-compatible server |
+| tests | 27 CPU checks of the operator, the formulas, the figures (overlaps, repeatability, editable text) and the latent view, 2 end-to-end HTTP checks against a mock OpenAI-compatible server |
 
 </details>
 
@@ -151,7 +151,7 @@ $$
 
 NFR is 1 when a token spreads its evidence without regard to the flags, above 1 when it leans on
 flagged audio, below 1 when it avoids it. It is undefined when the clip has no flagged frames and
-trivially 1 when every frame is flagged, so the tables report it on the clips in between
+trivially 1 when every frame is flagged, so the tables report it on the clips with 5 to 95 % of their frames flagged
 ("informative" clips) as well as on all clips. Uncertainty is a 10 000-resample bootstrap over
 clips (seed 8001); model differences are paired on the same clips.
 
@@ -191,9 +191,9 @@ whisper-tiny, 14 s for whisper-base and 4 s for moonshine-base on the GPU in
 
 | model | tokens | WER (mean over clips) | corpus WER | top-patch share | tokens with any flip | noise-focus ratio (v3) | focus, informative clips |
 |---|---|---|---|---|---|---|---|
-| whisper-tiny | 4034 | 0.35 [0.22, 0.55] | 0.383 | 0.30 [0.29, 0.32] | 0.45 [0.41, 0.48] | 0.97 [0.92, 1.03] | 0.95 [0.87, 1.04] (n=46) |
-| whisper-base | 3267 | 0.20 [0.17, 0.22] | 0.182 | 0.26 [0.25, 0.27] | 0.33 [0.30, 0.36] | 1.01 [0.95, 1.10] | 1.02 [0.91, 1.17] (n=46) |
-| moonshine-base | 4055 | 0.32 [0.16, 0.57] | 0.256 | 0.31 [0.29, 0.33] | 0.29 [0.26, 0.32] | 1.02 [0.96, 1.09] | 1.04 [0.93, 1.15] (n=46) |
+| whisper-tiny | 4034 | 0.35 [0.22, 0.55] | 0.383 | 0.30 [0.29, 0.32] | 0.45 [0.41, 0.48] | 0.97 [0.92, 1.03] | 0.93 [0.83, 1.03] (n=22) |
+| whisper-base | 3267 | 0.20 [0.17, 0.22] | 0.182 | 0.26 [0.25, 0.27] | 0.33 [0.30, 0.36] | 1.01 [0.95, 1.10] | 1.04 [0.92, 1.18] (n=22) |
+| moonshine-base | 4055 | 0.32 [0.16, 0.57] | 0.256 | 0.31 [0.29, 0.33] | 0.29 [0.26, 0.32] | 1.02 [0.96, 1.09] | 1.04 [0.93, 1.15] (n=22) |
 
 | paired difference | WER | noise-focus ratio | top-patch share |
 |---|---|---|---|
@@ -220,8 +220,8 @@ What this says, in order of how sure I am:
 * **Single-patch erasure flips a token's choice in a minority of cases**: 45% of whisper-tiny
   tokens have at least one patch whose erasure changes the argmax, 33% for whisper-base and
   29% for moonshine-base. Most tokens survive the loss of any one patch.
-* **On this data no model prefers degraded audio.** The noise-focus ratio is 0.95, 1.02 and
-  1.04 on the 46 clips where it is informative, with intervals that all contain 1, and the
+* **On this data no model prefers degraded audio.** The noise-focus ratio is 0.93, 1.04 and
+  1.04 on the 22 clips where it is informative, with intervals that all contain 1, and the
   paired differences between models contain 0. The reason is the data as much as the models: AADD
   flags 59% of all frames, every frame in 32 of the 100 clips and none in 22, so the
   flag carries little within-clip information on VoxCeleb. That is why the controlled experiment
@@ -274,9 +274,9 @@ in this check; only the flags that the noise-focus ratio is computed against do.
 
 | detector | whisper-tiny | whisper-base | moonshine-base | paired whisper-base − moonshine-base |
 |---|---|---|---|---|
-| whisper-small detector (AADD v3.1) | 0.95 [0.87, 1.04] (n=46) | 1.02 [0.91, 1.17] (n=46) | 1.04 [0.93, 1.15] (n=46) | -0.013 [-0.163, +0.127] |
-| whisper-base detector | 0.97 [0.90, 1.03] (n=92) | 0.99 [0.93, 1.05] (n=92) | 0.95 [0.89, 1.01] (n=92) | +0.031 [-0.020, +0.094] |
-| moonshine-base detector | 0.84 [0.78, 0.91] (n=91) | 0.94 [0.85, 1.05] (n=91) | 0.85 [0.78, 0.91] (n=91) | +0.095 [+0.018, +0.190] |
+| whisper-small detector (AADD v3.1) | 0.93 [0.83, 1.03] (n=22) | 1.04 [0.92, 1.18] (n=22) | 1.04 [0.93, 1.15] (n=22) | +0.004 [-0.088, +0.097] |
+| whisper-base detector | 1.01 [0.96, 1.07] (n=65) | 1.03 [0.99, 1.07] (n=65) | 1.02 [0.97, 1.07] (n=65) | +0.007 [-0.023, +0.036] |
+| moonshine-base detector | 0.84 [0.78, 0.91] (n=67) | 0.90 [0.84, 0.96] (n=67) | 0.86 [0.79, 0.92] (n=67) | +0.043 [+0.002, +0.086] |
 
 * On the controlled clips, where the damaged 2 s is known, AADD's own detector is the best of the
   three (92% of frames flagged inside the window, 12% outside), the whisper-base detector is close (84% and 18%), and the Moonshine one is the weakest (74% and 20%, right class
@@ -296,9 +296,9 @@ EfficientNet-B0 on log-mel at 1 s resolution) give the same picture, every inter
 
 | detector | whisper-tiny | whisper-base | moonshine-base | paired base - moonshine |
 |---|---|---|---|---|
-| v3 | 0.95 [0.87, 1.04] (n=46) | 1.02 [0.91, 1.17] (n=46) | 1.04 [0.93, 1.15] (n=46) | -0.013 [-0.163, +0.127] |
-| v3-lite | 1.00 [0.94, 1.06] (n=41) | 0.99 [0.94, 1.05] (n=41) | 1.00 [0.95, 1.06] (n=41) | -0.012 [-0.046, +0.019] |
-| v2 | 0.92 [0.84, 1.01] (n=51) | 0.92 [0.83, 1.01] (n=51) | 0.91 [0.82, 1.00] (n=51) | +0.005 [-0.059, +0.067] |
+| v3 | 0.93 [0.83, 1.03] (n=22) | 1.04 [0.92, 1.18] (n=22) | 1.04 [0.93, 1.15] (n=22) | +0.004 [-0.088, +0.097] |
+| v3-lite | 1.04 [0.94, 1.16] (n=17) | 1.00 [0.90, 1.14] (n=17) | 1.00 [0.88, 1.15] (n=17) | +0.000 [-0.050, +0.060] |
+| v2 | 0.94 [0.85, 1.03] (n=46) | 0.94 [0.85, 1.03] (n=46) | 0.93 [0.84, 1.02] (n=46) | +0.009 [-0.059, +0.076] |
 
 ## Controlled degradation on LibriSpeech
 
@@ -363,6 +363,52 @@ What the controlled set shows:
   <br><sub>LibriSpeech 2094-142345-0024 with pink noise at 0 dB inserted at 0.6 to 2.6 s (dashed). The clean twin is <code>figures/controlled_noise_clean__2094-142345-0024.png</code>; a reverb pair is in the same folder.</sub>
 </p>
 
+## Noise in the latent space
+
+The attribution says which audio each word used. This view asks what the degraded audio does to
+the model's own representation, layer by layer, with two measures on the 20 ms frame grid
+(`ways/latent.py`, `ways latent clip.wav --backend hf-whisper --aadd --figure`):
+
+* **Spill-over.** Erase the degraded stretch with the same operator as the attribution, run the
+  encoder on the original and on the erased audio, and measure how much each layer's representation
+  of each frame moves, relative to its size. Inside the stretch it has to move. Outside it, in
+  clean frames, it should not move if the layer kept clean speech apart from the noise. The mean
+  outside is the spill-over, and it is an erasure test, not a saliency.
+* **Grad-CAM per layer.** The gradient of the transcript's summed surprisal with respect to every
+  encoder layer, pooled the Grad-CAM way, time-only because encoder frames have no frequency axis.
+  Every layer is shown rather than the last one, which is AADD's own reading of a Whisper encoder.
+  It is a hint next to the spill-over, and it is labelled as one.
+
+<p align="center">
+  <img src="figures/latent__whisper-base__id10274_89UnsytX6Y8_00006.png" width="860" alt="whisper-base on the partly degraded clip: damage rows, spectrogram with the degraded band and the loudness line, Grad-CAM per encoder layer, the spill-over per layer under erasure of the degraded stretch, and the per-layer summary">
+  <br><sub>whisper-base on the partly degraded clip. Inside the noise (the boxed stretch) every layer moves when the noise is erased. Outside it, the clean frames move more the deeper the layer: that is the noise leaking into the representation of clean speech. The Moonshine twin is <code>figures/latent__moonshine-base__id10274_89UnsytX6Y8_00006.png</code>.</sub>
+</p>
+
+Over the 60 controlled clips, where the damaged 2 s is known, the spill-over outside the window
+grows with depth in every model: whisper-tiny from 0.00 at the input to 0.19 at its top layer,
+whisper-base from 0.00 to 0.20, moonshine-base from 0.12 to 0.29. Moonshine's
+input embedding already moves outside the window (0.12) because its encoder applies a GroupNorm with a single group right after its convolutions, which
+normalises over the whole clip, so erasing one stretch rescales every frame (checked: `groupnorm`,
+`num_groups=1`, in the Hugging Face Moonshine encoder; its processor does no normalisation). Whisper's
+log-mel frames carry no such coupling. The Grad-CAM
+focus on the degraded stretch stays between 0.8 and 1.2 in every layer of every model but one
+(Moonshine's layer 3 on the VoxCeleb clips, 1.6 with an interval from 0.9 to 2.2), and its
+correlation with loudness is weak (no interval edge beyond 0.35), so the gradients do not single
+out loud or degraded frames. The representation shift does. Full per-layer tables with intervals, for the
+VoxCeleb clips and the controlled set: `experiments/results/latent/<model>/summary.md`.
+
+**whisper-base, 60 controlled clips, known 2 s window: 60 clips**
+
+| layer | spill-over outside | shift inside | CAM focus on degraded | rho(CAM, loudness) |
+|---|---|---|---|---|
+| 0 | 0.00 [0.00, 0.01] | 0.35 [0.34, 0.35] | 0.98 [0.81, 1.17] | -0.05 [-0.11, 0.01] |
+| 1 | 0.04 [0.04, 0.05] | 0.49 [0.48, 0.50] | 0.89 [0.78, 1.00] | 0.00 [-0.06, 0.07] |
+| 2 | 0.06 [0.05, 0.06] | 0.51 [0.50, 0.52] | 0.82 [0.73, 0.90] | -0.03 [-0.09, 0.02] |
+| 3 | 0.09 [0.08, 0.09] | 0.66 [0.66, 0.67] | 0.85 [0.76, 0.95] | -0.12 [-0.18, -0.07] |
+| 4 | 0.13 [0.12, 0.14] | 1.42 [1.35, 1.49] | 0.99 [0.87, 1.13] | -0.02 [-0.07, 0.03] |
+| 5 | 0.15 [0.14, 0.16] | 1.29 [1.25, 1.34] | 0.85 [0.76, 0.94] | -0.03 [-0.09, 0.02] |
+| 6 | 0.20 [0.19, 0.22] | 1.01 [1.00, 1.02] | 1.08 [0.97, 1.19] | -0.02 [-0.07, 0.02] |
+
 ## Install and use
 
 ```bash
@@ -410,10 +456,11 @@ transcript and grid in a JSON field.
 Every clip figure in this repository comes from one function in one self-contained file,
 `ways/figure.py` (numpy and matplotlib only, no other import from WAYS). Copy that file into any
 Python project and call it with your own audio, your own degradation detector and your own
-attribution method; the structure is always the same four lanes on one time axis: the damage per
+attribution method. The structure is always the same four lanes on one time axis: the damage per
 frame (one row per kind, dark blue = sure), the spectrogram with the degraded spans painted on it
 and one box per word, the transcript in the box colours with words on degraded audio underlined,
-and the count against chance in each model's row title.
+and the count against chance in each model's row title. `latent_figure` adds the per-layer lanes
+of the section below.
 
 ```python
 from ways.figure import ways_figure          # or copy ways/figure.py next to your code
@@ -427,12 +474,28 @@ ways_figure(
              "top": [(2, 14), (3, 20)],       # per word: (band, time index) of the audio patch it used most
              "patch_s": 0.1, "n_bands": 8, "wer": 0.1}],
     window=None,                              # or (start_s, end_s) of a known damaged span
-    title="my clip", out="my_clip.png")       # PNG at 300 dpi plus an SVG twin
+    text={"title": "my clip", "x_time": "seconds", "caption": "my own caption"},   # any heading, axis name or sentence
+    style={"width_in": 10, "font_size": 11},  # colours, fonts, sizes
+    out="my_clip.png")                        # PNG at 300 dpi plus an SVG twin
 ```
 
-`ways.figure.from_attribution(att)` turns a WAYS attribution into the `models` entry, and the
-tests in `tests/test_figure.py` draw the figure from synthetic arrays with no model and no
-detector, so the file is checked on its own.
+The figures are software, not drawings, and three rules are enforced in code:
+
+* **Every string is data.** Headings, lane titles, axis names, the verdict sentences and the
+  caption are fields of `FigureText` (and `LatentText`), with `str.format` templates where a
+  number goes in. Pass an instance or a dict of the fields you want to change. Colours, fonts and
+  sizes are `FigureStyle`.
+* **No overlapping text, ever.** Word labels and transcript lines are placed from measured text
+  widths. After drawing, every text artist's pixel box is checked against every other; if two
+  overlap, the rows are widened and the check runs again, and if that does not separate them the
+  function raises `LayoutError` naming the two texts instead of writing the file. The test suite
+  draws figures with absurdly long titles and 40-word transcripts and asserts zero overlaps, and
+  one test asserts that an impossible style does raise.
+* **Same inputs, same bytes.** The font is the one bundled with matplotlib, the SVG hash salt is
+  fixed, and the PNG and SVG metadata that would carry a date or a version are removed. A test
+  draws the same figure twice and compares the SHA-256 of both files.
+
+`ways.figure.from_attribution(att)` turns a WAYS attribution into the `models` entry.
 
 ## Backends: local weights, vLLM, llama.cpp
 
@@ -512,9 +575,9 @@ then tested on real hardware. The full checklist is [docs/reproducibility.md](do
 
 ## Status
 
-* Done: operator, three backends, scores, summaries, AADD context, CLI, figures, tests, 100-clip
-  runs for three models, the detector-backbone check (whisper-small, whisper-base, moonshine-base),
-  the controlled LibriSpeech set, clean-environment run, provenance.
+* Done: operator, three backends, scores, summaries, AADD context, CLI, the figure system, the
+  latent view, tests, 100-clip runs for three models, the detector-backbone check (whisper-small,
+  whisper-base, moonshine-base), the controlled LibriSpeech set, clean-environment run, provenance.
 * Next: CI workflow once Actions minutes are available (the test command is fixed); a live vLLM
   transcription run; the same 100 clips on Modal if a larger model is wanted.
 
@@ -541,10 +604,11 @@ then tested on real hardware. The full checklist is [docs/reproducibility.md](do
 | `ways/backends/` | `hf_whisper.py`, `hf_moonshine.py`, `openai_compat.py` (vLLM, llama.cpp) |
 | `ways/quality.py` | AADD wrapper, flagged mask, degraded intervals |
 | `ways/metrics.py` | token and clip summaries, noise-focus ratio, WER, bootstrap |
-| `ways/figure.py` | the universal clip figure, self-contained: copy it into any project |
+| `ways/figure.py` | the universal clip figure and the latent figure, self-contained: text and style as data, overlap check, repeatable bytes |
+| `ways/latent.py` | spill-over under erasure and Grad-CAM per encoder layer |
 | `ways/plots.py` | the method, comparison and controlled-summary figures; the clip figures call `ways/figure.py` |
 | `ways/provenance.py` | the provenance manifest (claimed and runtime dependencies, hashes, model commits) |
-| `ways/cli.py` | `ways explain`, `ways quality` |
+| `ways/cli.py` | `ways explain`, `ways latent`, `ways quality` |
 | `tests/` | operator and formula checks; mock OpenAI-compatible server and the HTTP test |
 | `experiments/` | sample selection, the three-model runs, the detector runs (`run_aadd_variants.py`, `train_detectors.py`, `detector_backbones.py`), comparison tables, the example clip, the controlled LibriSpeech set (`controlled.py`); `common.py` holds the pipeline path and the pinned model revisions |
 | `experiments/results/` | per-clip rows, per-token tables, `comparison.json`, `comparison.md`, provenance (npz maps are not committed) |

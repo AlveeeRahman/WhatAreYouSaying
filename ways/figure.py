@@ -1,32 +1,49 @@
-"""One figure, same structure every time: which audio each word used, and whether that audio was clean.
+"""The WAYS figures as software: text and style are data, layout is measured, output is repeatable.
 
-This file is self-contained (numpy and matplotlib only) so it can be copied into any Python project.
-Give it a waveform, optionally a degradation score per frame from any detector, and optionally one
-or more sets of word attributions from any method, and it draws four lanes with one time axis:
+This file is self-contained (numpy and matplotlib only), so it can be copied into any Python project.
 
-  1. Damage: one row per kind of degradation that reaches the threshold, plus the maximum, as a blue
-     heat map over time (dark = sure). Any stretch above the threshold is a "degraded span".
-  2. Spectrogram of the audio (orange = loud, pale = quiet) with the degraded spans painted as blue
-     bands, and, per model, one box per word on the patch of audio that mattered most to it.
-  3. The transcript as one sentence in the box colours; a word on degraded audio is underlined.
-  4. The verdict in each model's row title: k of K words on degraded audio, e expected by chance.
+Two figures share the same lanes on one time axis:
+
+  ways_figure    damage per frame (one row per kind, dark blue = sure), the spectrogram with the
+                 degraded spans painted on it and one box per word, the transcript in the box
+                 colours with words on degraded audio underlined, and in each model's row title the
+                 count of words on degraded audio against chance.
+  latent_figure  the same two top lanes, then Grad-CAM per encoder layer, the spill-over of each
+                 layer under erasure of the degraded stretch, and a per-layer summary.
+
+What makes them software rather than drawings:
+
+  * Every heading, lane title, axis name, verdict sentence and caption is a field of FigureText or
+    LatentText. Pass your own instance, or a dict of the fields you want to change, as `text=`.
+    Fields with braces are str.format templates; the field names say what they receive.
+  * Colours, fonts, sizes and the figure width live in FigureStyle, passed as `style=`.
+  * Word labels and transcript lines are placed from measured text widths (matplotlib's TextPath),
+    not character counts.
+  * After drawing, the figure is checked for overlapping text (every Text artist, in pixels). If two
+    texts overlap, the row spacing is widened and the check runs again; if that does not clear it,
+    a LayoutError names the two texts and nothing is written to disk. `strict=False` turns the
+    error into a warning and records the pairs on `fig.ways_overlaps`.
+  * The same inputs give the same bytes: the font is the one bundled with matplotlib, the SVG hash
+    salt is fixed, and the PNG and SVG metadata that would carry a date or a version are removed.
 
 Minimal use, with your own detector and your own attribution method:
 
     from ways.figure import ways_figure
     ways_figure(wav, 16000,
-                quality=probs, quality_hop=0.02, quality_classes=["noise", "reverb", ...],
+                quality=probs, quality_hop=0.02, quality_classes=["noise", "reverb"],
                 models=[{"name": "my-asr", "tokens": ["hello", "world"], "top": [(2, 14), (3, 20)],
                          "patch_s": 0.1, "n_bands": 8, "wer": 0.1}],
-                title="my clip", out="my_clip.png")
+                text={"title": "my clip", "caption": "my own caption"}, out="my_clip.png")
 
-`top` is, per token, (band index, time index) of the patch it used most; bands are equal groups of
-80 mel bins from low to high, time indices are patches of `patch_s` seconds. `quality` is any
-[n_frames, n_classes] array of probabilities at `quality_hop` seconds per frame (AADD gives 12
-classes every 20 ms; a single-column array works too). Everything else is optional.
+`top` is, per token, (band index, time index) of the patch it used most, or None; bands are equal
+groups of 80 mel bins from low to high, time indices are patches of `patch_s` seconds. `quality` is
+any [n_frames, n_classes] array of probabilities at `quality_hop` seconds per frame; a single
+column works too.
 """
 from __future__ import annotations
 
+import warnings
+from dataclasses import dataclass, fields, replace
 from pathlib import Path
 
 import numpy as np
@@ -35,29 +52,197 @@ import matplotlib
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+from matplotlib import rcParams
 from matplotlib.colors import LinearSegmentedColormap
+from matplotlib.font_manager import FontProperties
 from matplotlib.patches import Rectangle
+from matplotlib.text import Text
+from matplotlib.textpath import TextPath
 
-BG, GRID, BORDER, TXT, TXT2, MUTED = "#fcfcfb", "#ecebe7", "#e4e3df", "#0b0b0b", "#52514e", "#77766f"
+# ----------------------------------------------------------------------------- style and text
 SEQ = ["#f0efec", "#cde2fb", "#9ec5f4", "#6da7ec", "#3987e5", "#256abf", "#184f95", "#0d366b"]
 BLUE = LinearSegmentedColormap.from_list("ways_seq", SEQ)
-DEG = "#0d366b"
-CAT = ["#2a78d6", "#c2185b", "#1b9e77", "#7e3fc2"]        # token colours: colour-blind safe adjacent pairs
-MEL_CMAP = "YlOrBr"
-DPI = 300
-plt.rcParams.update({"font.family": "DejaVu Sans", "font.size": 12, "axes.titlesize": 12, "axes.labelsize": 12,
-                     "xtick.labelsize": 12, "ytick.labelsize": 12, "figure.facecolor": BG, "axes.facecolor": BG,
-                     "axes.edgecolor": BORDER, "xtick.color": TXT2, "ytick.color": TXT2, "axes.labelcolor": TXT2,
-                     "svg.fonttype": "none"})
 
 
-def col(k):
-    return CAT[k % len(CAT)]
+@dataclass
+class FigureStyle:
+    """Colours, fonts and sizes. The defaults are the palette used in the README."""
+    width_in: float = 12.0
+    dpi: int = 300
+    font: str = "DejaVu Sans"           # bundled with matplotlib, so the same on every machine
+    font_size: float = 12.0
+    label_size: float = 10.0            # word labels on the spectrogram
+    strip_size: float = 12.0            # transcript strip
+    background: str = "#fcfcfb"
+    text: str = "#0b0b0b"
+    text_soft: str = "#52514e"
+    muted: str = "#77766f"
+    border: str = "#e4e3df"
+    degraded: str = "#0d366b"           # bands, rules, underlines
+    band_alpha: float = 0.16
+    mel_cmap: str = "YlOrBr"
+    token_colours: tuple = ("#2a78d6", "#c2185b", "#1b9e77", "#7e3fc2")   # colour-blind safe adjacent pairs
+    svg_hashsalt: str = "ways"
+
+
+@dataclass
+class FigureText:
+    """Every string in ways_figure. Fields with braces are str.format templates."""
+    title: str = ""
+    damage_lane: str = "Damage per {hop_ms:.0f} ms frame (dark blue = sure). A boxed stretch reaches {threshold:g} and counts as degraded."
+    damage_none: str = "no degradation scores given"
+    damage_missing_lane: str = "Damage: none measured"
+    damage_clean: str = "nothing reaches {threshold:g}: clean"
+    damage_max_row: str = "max"
+    spectrogram_only: str = "Spectrogram (orange = loud, pale = quiet). Blue bands = degraded audio."
+    model_row: str = "{name}{wer}  ·  {verdict}"            # wer is "" or the rendered `wer` field
+    wer: str = "  ·  WER {wer:.0%}"
+    verdict_none: str = "no degraded audio in this clip ({K} words)"
+    verdict_all: str = "every frame degraded, so all {K} words sit on degraded audio"
+    verdict_mixed: str = "{k} of {K} words on degraded audio, {expected:.0f} expected by chance ({frac:.0%} of the clip is degraded)"
+    verdict_no_quality: str = "{K} words"
+    y_mel: str = "Hz (mel)"
+    x_time: str = "time (s)"
+    mel_ticks: tuple = ("0", "1.9 k", "8 k")
+    caption: str = ("Orange = loud, pale = quiet (sound energy, not damage). Blue bands = degraded audio (score above the threshold). "
+                    "Dashed box and underlined word = that word's evidence sits on degraded audio. Same colour and number = same word.")
+
+
+@dataclass
+class LatentText:
+    """Every string in latent_figure."""
+    title: str = ""
+    damage_lane: str = FigureText.damage_lane
+    damage_missing_lane: str = "Damage: none measured"
+    damage_clean: str = FigureText.damage_clean
+    damage_max_row: str = "max"
+    spectrogram: str = "{name}: spectrogram (orange = loud), degraded bands in blue, loudness per frame as the thin black line"
+    cam_lane: str = "Grad-CAM per encoder layer (row 0 = input embedding, last row = top layer), each row scaled to its own maximum"
+    cam_missing: str = "Grad-CAM: not computed"
+    shift_lane: str = "Spill-over: how much each layer's representation moves when the degraded stretch is erased (relative)"
+    shift_missing: str = "Spill-over: not computed"
+    summary_lane: str = "Per layer: spill-over outside the degraded stretch grows with depth when noise leaks into clean speech"
+    legend_out: str = "spill-over outside the degraded stretch"
+    legend_in: str = "shift inside it"
+    legend_cam: str = "CAM mass on degraded / share"
+    y_mel: str = "Hz (mel)"
+    y_loud: str = "loudness (dB)"
+    y_layer: str = "layer"
+    y_shift: str = "relative shift"
+    y_focus: str = "CAM focus"
+    x_time: str = "time (s)"
+    x_layer: str = "encoder layer"
+    mel_ticks: tuple = ("0", "1.9 k", "8 k")
+    caption: str = ("Spill-over is an erasure test (the same operator as the attribution). Grad-CAM is a gradient saliency, shown per layer "
+                    "as in AADD's all-layers reading, and should be read as a hint, not a measurement.")
+
+
+def _merge(cls, given):
+    """A dataclass instance from the default, an instance, or a dict of overrides."""
+    if given is None:
+        return cls()
+    if isinstance(given, cls):
+        return given
+    if isinstance(given, dict):
+        unknown = set(given) - {f.name for f in fields(cls)}
+        if unknown:
+            raise KeyError(f"unknown {cls.__name__} field(s): {sorted(unknown)}")
+        return replace(cls(), **given)
+    raise TypeError(f"{cls.__name__} or dict expected, got {type(given).__name__}")
+
+
+class LayoutError(RuntimeError):
+    """Two pieces of text overlap and widening the rows did not separate them."""
+
+
+def _rc(style: FigureStyle):
+    rcParams.update({"font.family": style.font, "font.size": style.font_size, "axes.titlesize": style.font_size,
+                     "axes.labelsize": style.font_size, "xtick.labelsize": style.font_size, "ytick.labelsize": style.font_size,
+                     "legend.fontsize": style.font_size, "figure.facecolor": style.background, "axes.facecolor": style.background,
+                     "axes.edgecolor": style.border, "xtick.color": style.text_soft, "ytick.color": style.text_soft,
+                     "axes.labelcolor": style.text_soft, "svg.fonttype": "none", "svg.hashsalt": style.svg_hashsalt,
+                     "path.simplify": False})
+
+
+# ----------------------------------------------------------------------------- measuring text
+def text_width_pt(s: str, size: float, weight: str = "normal", font: str = "DejaVu Sans") -> float:
+    """Width of a string in points at a font size, from the glyph outlines (no renderer needed)."""
+    if not s:
+        return 0.0
+    return TextPath((0, 0), s, size=size, prop=FontProperties(family=font, weight=weight)).get_extents().width
+
+
+def wrap_to_width(s: str, width_pt: float, size: float, weight: str = "normal", font: str = "DejaVu Sans") -> str:
+    """Wrap on spaces so that no line is wider than width_pt."""
+    words, lines, cur = s.split(" "), [], ""
+    for w in words:
+        cand = (cur + " " + w).strip()
+        if cur and text_width_pt(cand, size, weight, font) > width_pt:
+            lines.append(cur); cur = w
+        else:
+            cur = cand
+    if cur:
+        lines.append(cur)
+    return "\n".join(lines)
+
+
+def text_overlaps(fig, min_px: float = 0.5) -> list[tuple[str, str]]:
+    """Pairs of visible, non-empty text artists whose pixel boxes overlap (after a draw)."""
+    fig.canvas.draw()
+    r = fig.canvas.get_renderer()
+    items = []
+    for t in fig.findobj(Text):
+        if not t.get_visible() or not t.get_text().strip():
+            continue
+        try:
+            bb = t.get_window_extent(r)
+        except Exception:
+            continue
+        if bb.width <= 0 or bb.height <= 0:
+            continue
+        items.append((t.get_text().replace("\n", " ")[:60], bb))
+    out = []
+    for i in range(len(items)):
+        ai, a = items[i]
+        for j in range(i + 1, len(items)):
+            bj, b = items[j]
+            if a.x0 < b.x1 - min_px and b.x0 < a.x1 - min_px and a.y0 < b.y1 - min_px and b.y0 < a.y1 - min_px:
+                out.append((ai, bj))
+    return out
+
+
+def _settle(fig, gs, strict: bool, rounds: int = 8, step: float = 0.12):
+    """Widen row spacing until no two texts overlap, or fail loudly."""
+    hspace = gs.get_subplot_params(fig).hspace or 0.3
+    for _ in range(rounds):
+        ov = text_overlaps(fig)
+        if not ov:
+            fig.ways_overlaps = []
+            return
+        hspace += step
+        gs.update(hspace=hspace)
+    ov = text_overlaps(fig)
+    fig.ways_overlaps = ov
+    if ov and strict:
+        raise LayoutError("overlapping text after widening the rows: " + "; ".join(f"{a!r} / {b!r}" for a, b in ov[:6]))
+    if ov:
+        warnings.warn("figure has overlapping text: " + "; ".join(f"{a!r} / {b!r}" for a, b in ov[:6]))
+
+
+def _save(fig, out, dpi):
+    """Write PNG (and an SVG twin) without the metadata that changes between runs."""
+    out = Path(out)
+    if out.suffix.lower() == ".png":
+        fig.savefig(out, dpi=dpi, metadata={"Software": None})
+        fig.savefig(out.with_suffix(".svg"), metadata={"Date": None, "Creator": None})
+    elif out.suffix.lower() == ".svg":
+        fig.savefig(out, metadata={"Date": None, "Creator": None})
+    else:
+        fig.savefig(out, dpi=dpi)
 
 
 # ----------------------------------------------------------------------------- audio -> log-mel (numpy only)
 def _slaney_mel_edges(n_mels, fmin, fmax):
-    """The n_mels + 2 edge frequencies of a slaney mel scale (linear to 1 kHz, log above), as librosa."""
     f_sp, min_log_hz, logstep = 200.0 / 3, 1000.0, np.log(6.4) / 27
     hz_to_mel = lambda f: np.where(f >= min_log_hz, 15 + np.log(np.maximum(f, 1e-9) / min_log_hz) / logstep, f / f_sp)
     mel_to_hz = lambda m: np.where(m >= 15, min_log_hz * np.exp(logstep * (m - 15)), f_sp * m)
@@ -74,14 +259,13 @@ def logmel(wav, sr=16000, n_fft=400, hop=160, n_mels=80, fmax=None):
     n = 1 + (len(x) - n_fft) // hop
     idx = np.arange(n_fft)[None, :] + hop * np.arange(n)[:, None]
     frames = x[idx] * np.hanning(n_fft + 1)[:-1]
-    power = np.abs(np.fft.rfft(frames, axis=1)) ** 2                       # [n, n_fft//2+1]
+    power = np.abs(np.fft.rfft(frames, axis=1)) ** 2
     freqs = np.fft.rfftfreq(n_fft, 1 / sr)
     edges = _slaney_mel_edges(n_mels, 0.0, fmax or sr / 2)
     fb = np.zeros((n_mels, len(freqs)))
     for m in range(n_mels):
         lo, c, hi = edges[m], edges[m + 1], edges[m + 2]
-        fb[m] = np.maximum(0, np.minimum((freqs - lo) / max(c - lo, 1e-9), (hi - freqs) / max(hi - c, 1e-9)))
-        fb[m] *= 2.0 / (hi - lo)                                            # slaney normalisation
+        fb[m] = np.maximum(0, np.minimum((freqs - lo) / max(c - lo, 1e-9), (hi - freqs) / max(hi - c, 1e-9))) * 2.0 / (hi - lo)
     L = np.log10(np.maximum(fb @ power.T, 1e-10))[:, : len(wav) // hop]
     return np.maximum(L, L.max() - 8)
 
@@ -91,8 +275,7 @@ def degraded_spans(quality, hop, threshold=0.5, min_gap=0.1):
     """(start_s, end_s) stretches where any class is at or above threshold; gaps under min_gap merged."""
     if quality is None:
         return []
-    q = np.asarray(quality, np.float32)
-    q = q[:, None] if q.ndim == 1 else q
+    q = np.asarray(quality, np.float32); q = q[:, None] if q.ndim == 1 else q
     fl = (q >= threshold).any(1)
     runs, a = [], None
     for i, v in enumerate(fl):
@@ -112,11 +295,9 @@ def degraded_spans(quality, hop, threshold=0.5, min_gap=0.1):
 
 
 def _flag_per_patch(quality, hop, threshold, patch_s, n_t):
-    """Share of each patch's frames that are flagged -> f[n_t]; None without quality. Same rule as ways.quality.flag_profile."""
     if quality is None:
         return None
-    q = np.asarray(quality, np.float32)
-    q = q[:, None] if q.ndim == 1 else q
+    q = np.asarray(quality, np.float32); q = q[:, None] if q.ndim == 1 else q
     fl = (q >= threshold).any(1).astype(np.float32)
     per = max(1, int(round(patch_s / hop)))
     f = np.zeros(n_t, np.float32)
@@ -126,127 +307,158 @@ def _flag_per_patch(quality, hop, threshold, patch_s, n_t):
     return f
 
 
-# ----------------------------------------------------------------------------- layout helpers
-def _tidy(ax, dur, bottom=False):
-    ax.set_xlim(0, dur)
-    for s in ax.spines.values():
-        s.set_color(BORDER)
-    ax.tick_params(labelbottom=bottom, colors=TXT2)
-    if bottom:
-        ax.set_xlabel("time (s)")
-
-
-def _label(ax, text):
-    ax.set_title(text, loc="left", fontsize=12, color=TXT2, pad=4)
-
-
-def _bands(ax, spans):
-    for a, b in spans:
-        ax.axvspan(a, b, color=DEG, alpha=0.16, lw=0, zorder=2)
-        y0, y1 = ax.get_ylim()
-        ax.add_patch(Rectangle((a, y1 - (y1 - y0) * 0.035), b - a, (y1 - y0) * 0.035, facecolor=DEG, edgecolor="none", zorder=3))
-
-
-def _damage_lane(ax, quality, hop, classes, threshold, dur, spans):
-    """Rows: every class that reaches the threshold somewhere, then 'max'. Blue = probability."""
-    q = np.asarray(quality, np.float32)
-    q = q[:, None] if q.ndim == 1 else q
-    classes = list(classes) if classes is not None else ([f"class {i}" for i in range(q.shape[1])] if q.shape[1] > 1 else ["degradation"])
-    active = [j for j in range(q.shape[1]) if q[:, j].max() >= threshold]
-    rows = [(classes[j], q[:, j]) for j in active]
-    if q.shape[1] > 1:
-        rows.append(("max", q.max(1)))
-    elif not rows:
-        rows = [(classes[0], q[:, 0])]
-    H = np.stack([r for _, r in rows])
-    ax.imshow(np.clip(H, 0, 1), aspect="auto", cmap=BLUE, extent=[0, H.shape[1] * hop, len(rows), 0], interpolation="nearest", vmin=0, vmax=1)
-    ax.set_yticks(np.arange(len(rows)) + 0.5); ax.set_yticklabels([n.replace("_", " ") for n, _ in rows], fontsize=10)
-    for a, b in spans:
-        ax.add_patch(Rectangle((a, 0), b - a, len(rows), fill=False, edgecolor=DEG, lw=1.2, zorder=3))
-    if not active:
-        ax.text(dur / 2, len(rows) / 2, f"nothing reaches {threshold:g}: clean", ha="center", va="center", color=MUTED, fontsize=11)
-
-
-def _place_labels(items, dur, axis_in, mel_h=80, char_in=0.085, line_h=7.0):
-    """Non-overlapping text positions beside the boxes. items: [(k, text, b, t, patch_s, mpb)]."""
-    placed, out = [], []
-    cw = char_in * dur / axis_in
-    for k, text, b, t, ps, mpb in sorted(items, key=lambda r: (r[3], r[0])):
-        w = (len(text) + 0.2) * cw
-        x0 = min(max(t * ps + ps / 2 - w / 2, 0.0), max(dur - w, 0.0))
-        cands = []
-        for step in range(6):
-            cands.append((x0, (b + 1) * mpb + 0.5 + step * line_h, "bottom"))
-            cands.append((x0, b * mpb - 0.5 - step * line_h, "top"))
-        for dx in (0.6, -0.6, 1.2, -1.2):
-            for step in range(3):
-                xx = min(max(x0 + dx * w, 0.0), max(dur - w, 0.0))
-                cands.append((xx, (b + 1) * mpb + 0.5 + step * line_h, "bottom"))
-                cands.append((xx, b * mpb - 0.5 - step * line_h, "top"))
-        for x, y, va in cands:
-            y0, y1 = (y, y + line_h) if va == "bottom" else (y - line_h, y)
-            if y0 < -0.5 or y1 > mel_h + 0.5:
-                continue
-            if all(x + w <= px or x >= px + pw or y1 <= py0 or y0 >= py1 for px, pw, py0, py1 in placed):
-                placed.append((x, w, y0, y1)); out.append((k, text, x, y, va)); break
-        else:
-            out.append((k, text, x0, (b + 1) * mpb + 0.5, "bottom"))
-    return out
-
-
-def _sentence_lines(tokens, axis_in, char_in=0.105, gap_in=0.22):
-    lines, x, cur = [], 0.0, []
-    for k, tok in enumerate(tokens):
-        text = f"{k} {tok.strip() or '_'}"
-        w = 0.16 + len(text) * char_in + gap_in
-        if cur and x + w > axis_in:
-            lines.append(cur); cur, x = [], 0.0
-        cur.append((k, x, text)); x += w
-    if cur:
-        lines.append(cur)
-    return lines
-
-
-def _sentence_strip(ax, tokens, on_degraded, axis_in):
-    lines = _sentence_lines(tokens, axis_in)
-    ax.set_xlim(0, axis_in); ax.set_ylim(-0.15, len(lines) + 0.15); ax.set_xticks([]); ax.set_yticks([])
-    for s in ax.spines.values():
-        s.set_visible(False)
-    for li, line in enumerate(lines):
-        y = len(lines) - 1 - li + 0.5
-        for k, x, text in line:
-            ax.add_patch(Rectangle((x, y - 0.3), 0.16, 0.6, facecolor=col(k), edgecolor="white", lw=0.5))
-            ax.text(x + 0.21, y, text, color=col(k), fontsize=12, ha="left", va="center", fontweight="bold")
-            if on_degraded is not None and on_degraded[k]:
-                ax.add_patch(Rectangle((x, y - 0.46), 0.16 + len(text) * 0.105 + 0.05, 0.07, facecolor=DEG, edgecolor="none"))
-    return len(lines)
-
-
-def verdict(on_degraded, frac):
+def verdict(on_degraded, frac, text: FigureText | None = None):
+    """The row-title sentence: k of K words on degraded audio against chance."""
+    T = text or FigureText()
     K = int(sum(v is not None for v in on_degraded)); k = int(sum(bool(v) for v in on_degraded))
     if frac is None:
-        return f"{K} words"
+        return T.verdict_no_quality.format(K=K)
     if frac <= 0:
-        return f"no degraded audio in this clip ({K} words)"
+        return T.verdict_none.format(K=K)
     if frac >= 1:
-        return f"every frame degraded, so all {K} words sit on degraded audio"
-    return f"{k} of {K} words on degraded audio, {frac * K:.0f} expected by chance ({frac:.0%} of the clip is degraded)"
+        return T.verdict_all.format(K=K)
+    return T.verdict_mixed.format(k=k, K=K, expected=frac * K, frac=frac)
+
+
+# ----------------------------------------------------------------------------- drawing helpers
+class _Canvas:
+    """Shared state for one figure: style, geometry and the measured-text helpers."""
+
+    def __init__(self, style, dur, width_in, right=0.97):
+        self.S, self.dur = style, dur
+        self.left, self.right = 0.12, right
+        self.axis_in = width_in * (self.right - self.left)
+        self.axis_pt = self.axis_in * 72
+        self.mel_axis_in = 2.0          # set once the grid is known; used to turn points into mel units
+
+    def col(self, k):
+        return self.S.token_colours[k % len(self.S.token_colours)]
+
+    def tidy(self, ax, bottom=False, x_label=""):
+        ax.set_xlim(0, self.dur)
+        for s in ax.spines.values():
+            s.set_color(self.S.border)
+        ax.tick_params(labelbottom=bottom, colors=self.S.text_soft)
+        if bottom:
+            ax.set_xlabel(x_label, labelpad=2)
+
+    def label(self, ax, s):
+        ax.set_title(wrap_to_width(s, self.axis_pt, self.S.font_size, font=self.S.font), loc="left", fontsize=self.S.font_size,
+                     color=self.S.text_soft, pad=4)
+
+    def mel(self, ax, L, y_label, ticks):
+        ax.imshow(L, origin="lower", aspect="auto", cmap=self.S.mel_cmap, extent=[0, L.shape[1] * 0.01, 0, 80], interpolation="nearest",
+                  vmin=np.percentile(L, 3), vmax=np.percentile(L, 99.7))
+        ax.set_xlim(0, self.dur); ax.set_ylim(0, 80); ax.set_yticks([0, 40, 80]); ax.set_yticklabels(list(ticks)); ax.set_ylabel(y_label)
+        ax.get_yticklabels()[0].set_va("bottom")
+
+    def bands(self, ax, spans):
+        for a, b in spans:
+            ax.axvspan(a, b, color=self.S.degraded, alpha=self.S.band_alpha, lw=0, zorder=2)
+            y0, y1 = ax.get_ylim()
+            ax.add_patch(Rectangle((a, y1 - (y1 - y0) * 0.035), b - a, (y1 - y0) * 0.035, facecolor=self.S.degraded, edgecolor="none", zorder=3))
+
+    def damage_lane(self, ax, quality, hop, classes, threshold, spans, clean_text, max_row):
+        q = np.asarray(quality, np.float32); q = q[:, None] if q.ndim == 1 else q
+        classes = list(classes) if classes is not None else ([f"class {i}" for i in range(q.shape[1])] if q.shape[1] > 1 else ["degradation"])
+        active = [j for j in range(q.shape[1]) if q[:, j].max() >= threshold]
+        rows = [(classes[j], q[:, j]) for j in active]
+        if q.shape[1] > 1:
+            rows.append((max_row, q.max(1)))
+        elif not rows:
+            rows = [(classes[0], q[:, 0])]
+        H = np.stack([r for _, r in rows])
+        ax.imshow(np.clip(H, 0, 1), aspect="auto", cmap=BLUE, extent=[0, H.shape[1] * hop, len(rows), 0], interpolation="nearest", vmin=0, vmax=1)
+        ax.set_yticks(np.arange(len(rows)) + 0.5); ax.set_yticklabels([n.replace("_", " ") for n, _ in rows], fontsize=self.S.label_size)
+        for a, b in spans:
+            ax.add_patch(Rectangle((a, 0), b - a, len(rows), fill=False, edgecolor=self.S.degraded, lw=1.2, zorder=3))
+        if not active:
+            ax.text(self.dur / 2, len(rows) / 2, clean_text, ha="center", va="center", color=self.S.muted, fontsize=self.S.label_size + 1)
+
+    def place_labels(self, items, mel_h=80):
+        """Non-overlapping positions beside the boxes, from measured text widths. items: [(k, text, b, t, patch_s, mpb)]."""
+        line_h = (self.S.label_size * 1.3 / 72) / max(self.mel_axis_in, 0.5) * mel_h      # one text line, in mel units
+        pt_to_data = self.dur / self.axis_pt
+        placed, out = [], []
+        for k, text, b, t, ps, mpb in sorted(items, key=lambda r: (r[3], r[0])):
+            w = (text_width_pt(text, self.S.label_size, "bold", self.S.font) + 4) * pt_to_data
+            x0 = min(max(t * ps + ps / 2 - w / 2, 0.0), max(self.dur - w, 0.0))
+            cands = []
+            for step in range(6):
+                cands.append((x0, (b + 1) * mpb + 0.5 + step * line_h, "bottom"))
+                cands.append((x0, b * mpb - 0.5 - step * line_h, "top"))
+            for dx in (0.6, -0.6, 1.2, -1.2):
+                for step in range(3):
+                    xx = min(max(x0 + dx * w, 0.0), max(self.dur - w, 0.0))
+                    cands.append((xx, (b + 1) * mpb + 0.5 + step * line_h, "bottom"))
+                    cands.append((xx, b * mpb - 0.5 - step * line_h, "top"))
+            for x, y, va in cands:
+                y0, y1 = (y, y + line_h) if va == "bottom" else (y - line_h, y)
+                if y0 < -0.5 or y1 > mel_h + 0.5:
+                    continue
+                if all(x + w <= px or x >= px + pw or y1 <= py0 or y0 >= py1 for px, pw, py0, py1 in placed):
+                    placed.append((x, w, y0, y1)); out.append((k, text, x, y, va)); break
+            else:
+                out.append((k, text, x0, (b + 1) * mpb + 0.5, "bottom"))
+        return out
+
+    def sentence_lines(self, tokens):
+        """Transcript laid out in reading order, wrapped by measured width (inches)."""
+        lines, x, cur = [], 0.0, []
+        for k, tok in enumerate(tokens):
+            text = f"{k} {tok.strip() or '_'}"
+            w = 0.16 + text_width_pt(text, self.S.strip_size, "bold", self.S.font) / 72 + 0.22
+            if cur and x + w > self.axis_in:
+                lines.append(cur); cur, x = [], 0.0
+            cur.append((k, x, text, w)); x += w
+        if cur:
+            lines.append(cur)
+        return lines
+
+    def sentence_strip(self, ax, tokens, on_degraded):
+        lines = self.sentence_lines(tokens)
+        ax.set_xlim(0, self.axis_in); ax.set_ylim(-0.15, len(lines) + 0.15); ax.set_xticks([]); ax.set_yticks([])
+        for s in ax.spines.values():
+            s.set_visible(False)
+        for li, line in enumerate(lines):
+            y = len(lines) - 1 - li + 0.5
+            for k, x, text, w in line:
+                ax.add_patch(Rectangle((x, y - 0.3), 0.16, 0.6, facecolor=self.col(k), edgecolor="white", lw=0.5))
+                ax.text(x + 0.21, y, text, color=self.col(k), fontsize=self.S.strip_size, ha="left", va="center", fontweight="bold")
+                if on_degraded is not None and on_degraded[k]:
+                    ax.add_patch(Rectangle((x, y - 0.46), w - 0.2, 0.07, facecolor=self.S.degraded, edgecolor="none"))
+        return len(lines)
+
+
+def _title_and_caption(fig, C, title, caption):
+    """Figure title (top left, wrapped) and caption (bottom left, wrapped); returns their heights in inches."""
+    S = C.S
+    tl = wrap_to_width(title, C.axis_pt, S.font_size + 1, "bold", S.font) if title else ""
+    cl = wrap_to_width(caption, C.axis_pt, S.label_size, font=S.font) if caption else ""
+    if tl:
+        fig.suptitle(tl, x=C.left, ha="left", fontsize=S.font_size + 1, fontweight="bold", color=S.text, y=0.995, va="top")
+    if cl:
+        fig.text(C.left, 0.005, cl, fontsize=S.label_size, color=S.text_soft, va="bottom")
+    t_in = (tl.count("\n") + 1) * (S.font_size + 1) * 1.3 / 72 if tl else 0.0
+    c_in = (cl.count("\n") + 1) * S.label_size * 1.3 / 72 if cl else 0.0
+    return t_in, c_in
 
 
 # ----------------------------------------------------------------------------- the figure
-def ways_figure(wav, sr=16000, quality=None, quality_hop=0.02, quality_classes=None, threshold=0.5,
-                models=None, window=None, title="", out=None, dpi=DPI, width_in=12.0):
-    """Draw the standard WAYS figure. Returns the matplotlib Figure (saved to `out` and its .svg twin if given).
+def ways_figure(wav, sr=16000, quality=None, quality_hop=0.02, quality_classes=None, threshold=0.5, models=None, window=None,
+                title=None, out=None, text=None, style=None, strict=True):
+    """Draw the standard WAYS figure. Returns the matplotlib Figure; writes `out` (PNG plus an SVG twin) when given.
 
-    models: list of dicts, each with
-      name (str), tokens (list of str), top (list of (band, time) or None per token),
-      patch_s (seconds per time index, default 0.1), n_bands (default 8), wer (optional float).
-    window: optional (start_s, end_s) to mark a known damaged span with dashed lines.
+    models: list of dicts with name, tokens, top ((band, time) or None per token), patch_s (default 0.1),
+    n_bands (default 8), wer (optional). window: (start_s, end_s) of a known damaged span, drawn dashed.
+    text: FigureText or dict of overrides; `title` is a shortcut for text["title"]. style: FigureStyle or dict.
     """
-    import textwrap
-
-    wav = np.asarray(wav, np.float32)
-    dur = len(wav) / sr
+    T, S = _merge(FigureText, text), _merge(FigureStyle, style)
+    if title is not None:
+        T = replace(T, title=title)
+    _rc(S)
+    wav = np.asarray(wav, np.float32); dur = len(wav) / sr
+    C = _Canvas(S, dur, S.width_in)
     L = logmel(wav, sr)
     spans = degraded_spans(quality, quality_hop, threshold)
     frac = None
@@ -255,83 +467,72 @@ def ways_figure(wav, sr=16000, quality=None, quality_hop=0.02, quality_classes=N
         n = int(np.ceil(dur / quality_hop)); fl = (q[:n] >= threshold).any(1)
         frac = float(fl.mean()) if len(fl) else 0.0
     models = models or []
-    axis_in = width_in * (0.97 - 0.12)
-    # per-model bookkeeping
     prepared = []
     for m in models:
-        ps, B = m.get("patch_s", 0.1), m.get("n_bands", 8)
-        n_t = int(np.ceil(dur / ps))
+        ps = m.get("patch_s", 0.1); n_t = int(np.ceil(dur / ps))
         f = _flag_per_patch(quality, quality_hop, threshold, ps, n_t)
         on = [None if tp is None else (bool(f[min(tp[1], n_t - 1)] >= 0.5) if f is not None else False) for tp in m["top"]]
-        prepared.append((m, on, len(_sentence_lines(m["tokens"], axis_in))))
+        prepared.append((m, on, len(C.sentence_lines(m["tokens"]))))
     n_dmg_rows = 1
     if quality is not None:
         q = np.asarray(quality, np.float32); q = q[:, None] if q.ndim == 1 else q
         n_dmg_rows = max(1, sum(int(q[:, j].max() >= threshold) for j in range(q.shape[1])) + (1 if q.shape[1] > 1 else 0))
-    hs = [0.22 * n_dmg_rows + 0.15]
+    # lane heights in inches: a damage row needs 1.6 text lines, a transcript line 1.9, the spectrogram 2.4
+    row_in = S.label_size * 1.6 / 72; line_in = S.strip_size * 1.9 / 72
+    hs = [row_in * n_dmg_rows + 0.08]
     for _, _, nl in prepared:
-        hs += [2.6, 0.42 * nl + 0.1]
+        hs += [2.4, line_in * nl + 0.12]
     if not prepared:
-        hs += [2.6]
-    fig = plt.figure(figsize=(width_in, min(1.6 + sum(hs) * 0.62, 15)))
-    gs = fig.add_gridspec(len(hs), 1, height_ratios=hs, hspace=0.3, left=0.12, right=0.97, top=0.89, bottom=0.07)
-    # lane 1: damage
+        hs += [2.4]
+    gap_in = S.font_size * 2.6 / 72                        # room for a lane title between lanes
+    t_in = (wrap_to_width(T.title, C.axis_pt, S.font_size + 1, "bold", S.font).count("\n") + 1) * (S.font_size + 1) * 1.3 / 72 if T.title else 0.0
+    c_in = (wrap_to_width(T.caption, C.axis_pt, S.label_size, font=S.font).count("\n") + 1) * S.label_size * 1.3 / 72 if T.caption else 0.0
+    H = min(t_in + 0.35 + sum(hs) + gap_in * len(hs) + c_in + 0.6, 40.0)
+    fig = plt.figure(figsize=(S.width_in, H))
+    _title_and_caption(fig, C, T.title, T.caption)
+    top, bottom = 1 - (t_in + 0.35) / H, (c_in + 0.6) / H
+    mean_in = sum(hs) / len(hs)
+    gs = fig.add_gridspec(len(hs), 1, height_ratios=hs, hspace=gap_in / mean_in, left=C.left, right=C.right, top=top, bottom=bottom)
+    C.mel_axis_in = 2.4
     axq = fig.add_subplot(gs[0])
     if quality is not None:
-        _damage_lane(axq, quality, quality_hop, quality_classes, threshold, dur, spans)
-        _label(axq, f"Damage per {quality_hop * 1000:.0f} ms frame (dark blue = sure); boxed stretches reach {threshold:g} and count as degraded")
+        C.damage_lane(axq, quality, quality_hop, quality_classes, threshold, spans, T.damage_clean.format(threshold=threshold), T.damage_max_row)
+        C.label(axq, T.damage_lane.format(hop_ms=quality_hop * 1000, threshold=threshold))
     else:
-        axq.text(dur / 2, 0.5, "no degradation scores given", ha="center", va="center", color=MUTED); axq.set_yticks([])
-        _label(axq, "Damage: none measured")
-    _tidy(axq, dur)
+        axq.text(dur / 2, 0.5, T.damage_none, ha="center", va="center", color=S.muted); axq.set_yticks([])
+        C.label(axq, T.damage_missing_lane)
+    C.tidy(axq)
     if window is not None:
-        axq.axvspan(window[0], window[1], color=DEG, alpha=0.10, lw=0, zorder=1)
-    # lanes 2+3 per model (or just the spectrogram)
+        axq.axvspan(window[0], window[1], color=S.degraded, alpha=0.10, lw=0, zorder=1)
     if not prepared:
-        axm = fig.add_subplot(gs[1]); _mel(axm, L, dur); _bands(axm, spans); _tidy(axm, dur, bottom=True)
-        _label(axm, "Spectrogram (orange = loud, pale = quiet); blue bands = degraded audio")
+        axm = fig.add_subplot(gs[1]); C.mel(axm, L, T.y_mel, T.mel_ticks); C.bands(axm, spans); C.tidy(axm, True, T.x_time)
+        C.label(axm, T.spectrogram_only)
     for i, (m, on, nl) in enumerate(prepared):
         ps, B = m.get("patch_s", 0.1), m.get("n_bands", 8); mpb = 80 // B
         axm = fig.add_subplot(gs[1 + 2 * i]); axt = fig.add_subplot(gs[2 + 2 * i])
-        _mel(axm, L, dur); _bands(axm, spans)
+        C.mel(axm, L, T.y_mel, T.mel_ticks); C.bands(axm, spans)
         items = []
         for k, tp in enumerate(m["top"]):
             if tp is None:
                 continue
             b, t = tp
-            axm.add_patch(Rectangle((t * ps, b * mpb), ps, mpb, fill=False, edgecolor=col(k), lw=2.4 if on[k] else 2.0,
+            axm.add_patch(Rectangle((t * ps, b * mpb), ps, mpb, fill=False, edgecolor=C.col(k), lw=2.4 if on[k] else 2.0,
                                     ls=(0, (2.5, 1.5)) if on[k] else "-", zorder=4))
             items.append((k, f"{k} {m['tokens'][k].strip() or '_'}", b, t, ps, mpb))
-        for k, text, x, y, va in _place_labels(items, dur, axis_in):
-            axm.text(x, y, text, color=col(k), fontsize=10, ha="left", va=va, fontweight="bold", zorder=5, clip_on=True,
-                     bbox=dict(boxstyle="square,pad=0.08", fc=BG, ec="none", alpha=0.75))
-        _tidy(axm, dur, bottom=True)
-        if i < len(prepared) - 1:
-            axm.set_xlabel("")
+        for k, lab, x, y, va in C.place_labels(items):
+            axm.text(x, y, lab, color=C.col(k), fontsize=S.label_size, ha="left", va=va, fontweight="bold", zorder=5, clip_on=True,
+                     bbox=dict(boxstyle="square,pad=0.08", fc=S.background, ec="none", alpha=0.75))
+        C.tidy(axm, True, T.x_time if i == len(prepared) - 1 else "")
         if window is not None:
-            axm.axvspan(window[0], window[1], color=DEG, alpha=0.10, lw=0, zorder=1)
-            axm.axvline(window[0], color=DEG, lw=1.2, ls="--", zorder=5); axm.axvline(window[1], color=DEG, lw=1.2, ls="--", zorder=5)
-        w = f"  ·  WER {m['wer']:.0%}" if m.get("wer") is not None and np.isfinite(m["wer"]) else ""
-        _label(axm, f"{m['name']}{w}  ·  {verdict(on, frac)}")
-        _sentence_strip(axt, m["tokens"], on, axis_in)
-    title = "\n".join(textwrap.fill(line, 95) for line in str(title).split("\n")) if title else ""
-    if title:
-        fig.suptitle(title, x=0.12, ha="left", fontsize=13, fontweight="bold", color=TXT, y=0.985, va="top")
-    fig.text(0.12, 0.006, "Orange = loud, pale = quiet (sound energy, not damage). Blue bands = degraded audio (score above the threshold).\n"
-             "Dashed box and underlined word = that word's evidence sits on degraded audio. Same colour and number = same word.",
-             fontsize=10, color=TXT2, va="bottom")
+            axm.axvspan(window[0], window[1], color=S.degraded, alpha=0.10, lw=0, zorder=1)
+            axm.axvline(window[0], color=S.degraded, lw=1.2, ls="--", zorder=5); axm.axvline(window[1], color=S.degraded, lw=1.2, ls="--", zorder=5)
+        w = T.wer.format(wer=m["wer"]) if m.get("wer") is not None and np.isfinite(m["wer"]) else ""
+        C.label(axm, T.model_row.format(name=m["name"], wer=w, verdict=verdict(on, frac, T)))
+        C.sentence_strip(axt, m["tokens"], on)
+    _settle(fig, gs, strict)
     if out is not None:
-        out = Path(out)
-        fig.savefig(out, dpi=dpi)
-        if out.suffix.lower() == ".png":
-            fig.savefig(out.with_suffix(".svg"))
+        _save(fig, out, S.dpi)
     return fig
-
-
-def _mel(ax, L, dur):
-    ax.imshow(L, origin="lower", aspect="auto", cmap=MEL_CMAP, extent=[0, L.shape[1] * 0.01, 0, 80], interpolation="nearest",
-              vmin=np.percentile(L, 3), vmax=np.percentile(L, 99.7))
-    ax.set_xlim(0, dur); ax.set_ylim(0, 80); ax.set_yticks([0, 40, 80]); ax.set_yticklabels(["0", "1.9 k", "8 k"]); ax.set_ylabel("Hz (mel)")
 
 
 def from_attribution(att, name=None, wer=None):
@@ -339,24 +540,23 @@ def from_attribution(att, name=None, wer=None):
     m = np.clip(att.delta, 0, None).astype(np.float64)
     top = []
     for k in range(m.shape[0]):
-        if m[k].sum() <= 0:
-            top.append(None)
-        else:
-            top.append(tuple(int(v) for v in np.unravel_index(int(m[k].argmax()), m[k].shape)))
+        top.append(None if m[k].sum() <= 0 else tuple(int(v) for v in np.unravel_index(int(m[k].argmax()), m[k].shape)))
     return dict(name=name or att.model, tokens=list(att.pieces), top=top, patch_s=att.patch_s, n_bands=att.n_bands, wer=wer)
 
 
 # ----------------------------------------------------------------------------- the latent-space figure
-def latent_figure(wav, sr=16000, quality=None, quality_hop=0.02, quality_classes=None, threshold=0.5,
-                  cam=None, shift=None, degraded=None, loudness_db=None, summary=None, layer_hop=0.02,
-                  model_name="", title="", out=None, dpi=DPI, width_in=12.0):
-    """Same lanes as ways_figure on top (damage rows, spectrogram with degraded bands), then two heat maps
-    with one row per encoder layer: Grad-CAM over time, and the relative shift of each layer's
-    representation when the degraded stretch is erased (spill-over), and a per-layer summary strip.
-    cam and shift are [layers, frames] arrays at layer_hop seconds per frame; degraded is a bool [frames]."""
-    import textwrap
-
+def latent_figure(wav, sr=16000, quality=None, quality_hop=0.02, quality_classes=None, threshold=0.5, cam=None, shift=None,
+                  degraded=None, loudness_db=None, summary=None, layer_hop=0.02, model_name="", title=None, out=None,
+                  text=None, style=None, strict=True):
+    """Damage rows and the spectrogram as in ways_figure, then Grad-CAM per encoder layer, the spill-over per
+    layer under erasure of the degraded stretch, and a per-layer summary. cam and shift are [layers, frames]
+    at layer_hop seconds per frame; summary is ways.latent's per-layer list. text: LatentText or dict."""
+    T, S = _merge(LatentText, text), _merge(FigureStyle, style)
+    if title is not None:
+        T = replace(T, title=title)
+    _rc(S)
     wav = np.asarray(wav, np.float32); dur = len(wav) / sr
+    C = _Canvas(S, dur, S.width_in, right=0.93)
     L = logmel(wav, sr)
     spans = degraded_spans(quality, quality_hop, threshold)
     n_dmg_rows = 1
@@ -364,58 +564,57 @@ def latent_figure(wav, sr=16000, quality=None, quality_hop=0.02, quality_classes
         q = np.asarray(quality, np.float32); q = q[:, None] if q.ndim == 1 else q
         n_dmg_rows = max(1, sum(int(q[:, j].max() >= threshold) for j in range(q.shape[1])) + (1 if q.shape[1] > 1 else 0))
     layers = cam.shape[0] if cam is not None else (shift.shape[0] if shift is not None else 1)
-    hs = [0.22 * n_dmg_rows + 0.15, 2.2, 0.16 * layers + 0.3, 0.16 * layers + 0.3, 1.7]
-    fig = plt.figure(figsize=(width_in, min(2.4 + sum(hs) * 1.05, 15)))
-    gs = fig.add_gridspec(5, 1, height_ratios=hs, hspace=0.55, left=0.12, right=0.93, top=0.9, bottom=0.1)
-    gs.set_height_ratios(hs)
+    row_in = S.label_size * 1.6 / 72
+    hs = [row_in * n_dmg_rows + 0.08, 2.2, row_in * layers + 0.1, row_in * layers + 0.1, 1.7]
+    gap_in = S.font_size * 2.6 / 72
+    t_in = (wrap_to_width(T.title, C.axis_pt, S.font_size + 1, "bold", S.font).count("\n") + 1) * (S.font_size + 1) * 1.3 / 72 if T.title else 0.0
+    c_in = (wrap_to_width(T.caption, C.axis_pt, S.label_size, font=S.font).count("\n") + 1) * S.label_size * 1.3 / 72 if T.caption else 0.0
+    H = min(t_in + 0.35 + sum(hs) + gap_in * 5 + 0.6 + c_in + 0.6, 40.0)     # extra 0.6 for the legend row above the summary
+    fig = plt.figure(figsize=(S.width_in, H))
+    _title_and_caption(fig, C, T.title, T.caption)
+    mean_in = sum(hs) / 5
+    gs = fig.add_gridspec(5, 1, height_ratios=hs, hspace=gap_in / mean_in, left=C.left, right=C.right, top=1 - (t_in + 0.35) / H, bottom=(c_in + 0.6) / H)
     axq, axm, axc, axs, axb = [fig.add_subplot(gs[i]) for i in range(5)]
     if quality is not None:
-        _damage_lane(axq, quality, quality_hop, quality_classes, threshold, dur, spans)
-        _label(axq, f"Damage per {quality_hop * 1000:.0f} ms frame (dark blue = sure); boxed stretches reach {threshold:g} and count as degraded")
+        C.damage_lane(axq, quality, quality_hop, quality_classes, threshold, spans, T.damage_clean.format(threshold=threshold), T.damage_max_row)
+        C.label(axq, T.damage_lane.format(hop_ms=quality_hop * 1000, threshold=threshold))
     else:
-        axq.set_yticks([]); _label(axq, "Damage: none measured")
-    _tidy(axq, dur)
-    _mel(axm, L, dur); _bands(axm, spans); _tidy(axm, dur)
+        axq.set_yticks([]); C.label(axq, T.damage_missing_lane)
+    C.tidy(axq)
+    C.mel(axm, L, T.y_mel, T.mel_ticks); C.bands(axm, spans); C.tidy(axm)
     if loudness_db is not None:
         ax2 = axm.twinx(); t = np.arange(len(loudness_db)) * layer_hop
-        ax2.plot(t, loudness_db, color=TXT, lw=0.7, alpha=0.55); ax2.set_ylabel("loudness (dB)", fontsize=10); ax2.tick_params(labelsize=9, colors=TXT2)
+        ax2.plot(t, loudness_db, color=S.text, lw=0.7, alpha=0.55); ax2.set_ylabel(T.y_loud, fontsize=S.label_size)
+        ax2.tick_params(labelsize=S.label_size - 1, colors=S.text_soft)
         for s in ax2.spines.values():
-            s.set_color(BORDER)
-    _label(axm, f"{model_name}: spectrogram (orange = loud), degraded bands in blue, loudness per frame as the black line")
-    for ax, M, name in ((axc, cam, "Grad-CAM per encoder layer (row 0 = input embedding, last row = top layer), each row scaled to its own maximum"),
-                        (axs, shift, "Spill-over: how much each layer's representation moves when the degraded stretch is erased (relative)")):
+            s.set_color(S.border)
+    C.label(axm, T.spectrogram.format(name=model_name))
+    for ax, M, name, missing in ((axc, cam, T.cam_lane, T.cam_missing), (axs, shift, T.shift_lane, T.shift_missing)):
         if M is None:
-            ax.set_yticks([]); _label(ax, name + ": not computed"); _tidy(ax, dur); continue
+            ax.set_yticks([]); C.label(ax, missing); C.tidy(ax); continue
         Mn = M / np.maximum(M.max(1, keepdims=True), 1e-12) if ax is axc else M
-        ax.imshow(Mn, aspect="auto", cmap="Greys" if ax is axc else BLUE, extent=[0, M.shape[1] * layer_hop, M.shape[0], 0], interpolation="nearest",
-                  vmin=0, vmax=1 if ax is axc else max(float(np.percentile(M, 98)), 1e-6))
-        ax.set_yticks(np.arange(M.shape[0]) + 0.5); ax.set_yticklabels([str(i) for i in range(M.shape[0])], fontsize=9); ax.set_ylabel("layer", fontsize=10)
+        ax.imshow(Mn, aspect="auto", cmap="Greys" if ax is axc else BLUE, extent=[0, M.shape[1] * layer_hop, M.shape[0], 0],
+                  interpolation="nearest", vmin=0, vmax=1 if ax is axc else max(float(np.percentile(M, 98)), 1e-6))
+        ax.set_yticks(np.arange(M.shape[0]) + 0.5); ax.set_yticklabels([str(i) for i in range(M.shape[0])], fontsize=S.label_size - 1)
+        ax.set_ylabel(T.y_layer, fontsize=S.label_size)
         for a, b in spans:
-            ax.add_patch(Rectangle((a, 0), b - a, M.shape[0], fill=False, edgecolor=DEG, lw=1.2, zorder=3))
-        _tidy(ax, dur, bottom=(ax is axs)); _label(ax, name)
-        if ax is axs:
-            ax.set_xlabel("time (s)", labelpad=2)
-    # per-layer summary: spill-over outside vs inside, CAM focus
+            ax.add_patch(Rectangle((a, 0), b - a, M.shape[0], fill=False, edgecolor=S.degraded, lw=1.2, zorder=3))
+        C.tidy(ax, bottom=(ax is axs), x_label=T.x_time); C.label(ax, name)
     if summary:
         ls = [r["layer"] for r in summary]; w = 0.38
-        axb.bar(np.array(ls) - w / 2, [r["shift_out"] for r in summary], width=w, color=DEG, alpha=0.85, label="spill-over outside the degraded stretch")
-        axb.bar(np.array(ls) + w / 2, [r["shift_in"] for r in summary], width=w, color=SEQ[2], label="shift inside it")
-        axb.set_xticks(ls); axb.set_xlabel("encoder layer"); axb.set_ylabel("relative shift")
-        ax3 = axb.twinx(); ax3.plot(ls, [r["cam_focus"] for r in summary], color=CAT[1], marker="o", lw=1.6, label="CAM mass on degraded / share")
-        ax3.axhline(1, color=CAT[1], lw=0.8, ls="--"); ax3.set_ylabel("CAM focus", color=CAT[1], fontsize=10); ax3.tick_params(labelsize=9, colors=CAT[1])
-        h1, l1 = axb.get_legend_handles_labels(); h2, l2 = ax3.get_legend_handles_labels()
-        axb.legend(h1 + h2, l1 + l2, frameon=False, fontsize=9, loc="upper center", bbox_to_anchor=(0.5, 1.0), ncol=3)
+        axb.bar(np.array(ls) - w / 2, [r["shift_out"] for r in summary], width=w, color=S.degraded, alpha=0.85, label=T.legend_out)
+        axb.bar(np.array(ls) + w / 2, [r["shift_in"] for r in summary], width=w, color=SEQ[2], label=T.legend_in)
+        axb.set_xticks(ls); axb.set_xlabel(T.x_layer); axb.set_ylabel(T.y_shift)
         axb.set_ylim(0, max(max(r["shift_in"] for r in summary), 1e-3) * 1.45)
+        ax3 = axb.twinx(); ax3.plot(ls, [r["cam_focus"] for r in summary], color=S.token_colours[1], marker="o", lw=1.6, label=T.legend_cam)
+        ax3.axhline(1, color=S.token_colours[1], lw=0.8, ls="--"); ax3.set_ylabel(T.y_focus, color=S.token_colours[1], fontsize=S.label_size)
+        ax3.tick_params(labelsize=S.label_size - 1, colors=S.token_colours[1])
+        h1, l1 = axb.get_legend_handles_labels(); h2, l2 = ax3.get_legend_handles_labels()
+        axb.legend(h1 + h2, l1 + l2, frameon=False, fontsize=S.label_size - 1, loc="upper center", bbox_to_anchor=(0.5, 1.0), ncol=3)
         for s in list(axb.spines.values()) + list(ax3.spines.values()):
-            s.set_color(BORDER)
-        axb.set_title("Per layer: spill-over outside the degraded stretch grows with depth when noise leaks into clean speech", loc="left", fontsize=12, color=TXT2, pad=6)
-    title = "\n".join(textwrap.fill(line, 95) for line in str(title).split("\n")) if title else ""
-    if title:
-        fig.suptitle(title, x=0.12, ha="left", fontsize=13, fontweight="bold", color=TXT, y=0.985, va="top")
-    fig.text(0.12, 0.008, "Spill-over is an erasure test (the same operator as the attribution). Grad-CAM is a gradient saliency, shown per layer as in AADD's\n"
-             "all-layers reading, and should be read as a hint, not a measurement.", fontsize=10, color=TXT2, va="bottom")
+            s.set_color(S.border)
+        axb.set_title(wrap_to_width(T.summary_lane, C.axis_pt, S.font_size, font=S.font), loc="left", fontsize=S.font_size, color=S.text_soft, pad=4)
+    _settle(fig, gs, strict)
     if out is not None:
-        out = Path(out); fig.savefig(out, dpi=dpi)
-        if out.suffix.lower() == ".png":
-            fig.savefig(out.with_suffix(".svg"))
+        _save(fig, out, S.dpi)
     return fig

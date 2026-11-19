@@ -67,7 +67,7 @@ S = {}
 for tag in ("vox", "controlled"):
     rows = [json.loads(l) for l in open(OUT / f"{tag}.jsonl")]
     if tag == "vox":
-        rows = [r for r in rows if 0 < r["degraded_share"] < 1]   # informative clips only
+        rows = [r for r in rows if 0.05 <= r["degraded_share"] <= 0.95]   # informative clips only, same rule as compare.py
     L = rows[0]["layers"]
     S[tag] = dict(n_clips=len(rows), layers=[])
     for l in range(L):
@@ -77,7 +77,7 @@ for tag in ("vox", "controlled"):
 (OUT / "summary.json").write_text(json.dumps(S, indent=1, default=float))
 ci = lambda d: f"{d['mean']:.2f} [{d['ci'][0]:.2f}, {d['ci'][1]:.2f}]"
 lines = []
-for tag, title in (("vox", "100 VoxCeleb clips, AADD flags (informative clips only)"), ("controlled", "60 controlled clips, known 2 s window")):
+for tag, title in (("vox", "100 VoxCeleb clips, AADD flags (clips with 5 to 95 % flagged)"), ("controlled", "60 controlled clips, known 2 s window")):
     lines += [f"**{name}, {title}: {S[tag]['n_clips']} clips**", "", "| layer | spill-over outside | shift inside | CAM focus on degraded | rho(CAM, loudness) |", "|---|---|---|---|---|"]
     for d in S[tag]["layers"]:
         lines.append(f"| {d['layer']} | {ci(d['shift_out'])} | {ci(d['shift_in'])} | {ci(d['cam_focus'])} | {ci(d['rho_loud'])} |")

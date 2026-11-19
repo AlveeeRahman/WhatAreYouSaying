@@ -17,6 +17,7 @@ RES = HERE / "results"
 FIG = HERE.parent / "figures"
 MODELS = ["whisper-tiny", "whisper-base", "moonshine-base"]
 DETS = {"v3": 0.02, "v3-lite": 0.02, "v2": 1.0}
+INFORMATIVE = (0.05, 0.95)   # a clip counts as informative for the noise-focus ratio when this share of it is flagged
 sample = pd.read_csv(HERE / "sample100.csv")
 clips = {m: pd.read_csv(RES / m / "clips.csv").set_index("clip").loc[sample.file].reset_index() for m in MODELS}
 tokens = {m: pd.read_csv(RES / m / "tokens.csv") for m in MODELS}
@@ -41,8 +42,8 @@ def focus_under(det: str, m: str) -> np.ndarray:
             seg = flag[lo:max(hi, lo + 1)]
             f[t] = seg.mean() if len(seg) else 0.0
         fbar = f.mean()
-        if fbar <= 0 or fbar >= 1:
-            out.append(np.nan); continue      # ratio undefined when nothing / everything is flagged
+        if not (INFORMATIVE[0] <= fbar <= INFORMATIVE[1]):
+            out.append(np.nan); continue      # ratio says nothing when almost nothing or almost everything is flagged
         mass = token_mass(att)
         prof = np.nansum(mass, axis=1)        # [K, T]
         ok = ~np.isnan(mass).any((1, 2))
@@ -64,7 +65,7 @@ for m in MODELS:
         top_share=bootstrap_ci(c.top_share_median),
         flip_any=bootstrap_ci(c.flip_any_frac),
         focus_ratio=bootstrap_ci(c.focus_ratio_mean),
-        focus_ratio_informative=bootstrap_ci(c.loc[(c.frac_flagged > 0) & (c.frac_flagged < 1), "focus_ratio_mean"]),
+        focus_ratio_informative=bootstrap_ci(c.loc[(c.frac_flagged >= INFORMATIVE[0]) & (c.frac_flagged <= INFORMATIVE[1]), "focus_ratio_mean"]),
         frac_flagged=bootstrap_ci(c.frac_flagged),
         n_all_flagged=int((c.frac_flagged >= 1).sum()), n_none_flagged=int((c.frac_flagged <= 0).sum()),
         band_shares=[float(t[f"band{b}"].mean()) for b in range(8)],
