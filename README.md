@@ -1,4 +1,10 @@
 <p align="center">
+  <img src="docs/images/ways_icon.png" width="180" alt="WhatAreYouSaying: a large ear with a hand cupped behind it and three sound arcs coming in">
+</p>
+<h1 align="center">WhatAreYouSaying</h1>
+<p align="center"><sub>Which audio did the speech model use for each word it wrote, and was that audio clean?</sub></p>
+
+<p align="center">
   <img src="figures/method_whisper_base.png" width="860" alt="Representation erasure on audio for whisper-base on one clip: the erasure grid over the spectrogram with one patch highlighted, the patch before and after erasure in the model's log-mel input, the surprisal change of every token for that patch, and the full map of the most affected token with the AADD-flagged frames marked above it">
   <br><sub>The method on one clip (whisper-base). Erase one patch of the spectrogram, re-score the model's own transcript, note which token got less likely. Repeat for every patch.</sub>
 </p>
@@ -389,7 +395,7 @@ then tested on real hardware. The full checklist is [docs/reproducibility.md](do
 | `experiments/` | sample selection, the three-model runs, the three-detector run, comparison tables, the example clip |
 | `experiments/results/` | per-clip rows, per-token tables, `comparison.json`, `comparison.md`, provenance (npz maps are not committed) |
 | `figures/` | the method figure, per-model clip figures, the three-model figure, the comparison figure |
-| `docs/` | backends, reproducibility checklist |
+| `docs/` | backends, reproducibility checklist, the icon and its drawing script |
 | `provenance/` | clean-environment run log and runtime dependency set |
 | `scripts/reproduce_clean_env.sh` | the clean-environment execution test |
 
