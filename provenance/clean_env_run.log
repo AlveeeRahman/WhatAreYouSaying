@@ -10,8 +10,14 @@ clean venv at <tmp>/ways-clean-venv, Python 3.12.3
   !!
     with strategy, WheelFile(wheel_path, "w") as wheel_obj:
 No broken requirements found.
-............                                                             [100%]
-12 passed, 2 deselected in 1.05s
+...................................                                      [100%]
+=============================== warnings summary ===============================
+tests/test_figure.py::test_strict_layout_error_is_raised_when_text_cannot_be_separated
+  ways/figure.py:246: UserWarning: figure has overlapping text: 'reverb' / 'page edge'; 'Damage per 20 ms frame (dark blue = sure). A boxed stretch r' / 'page edge'; '3.0' / 'page edge'; 'Hz (mel)' / 'page edge'; '1.9 k' / 'page edge'; '3.0' / 'page edge'
+    warnings.warn("figure has overlapping text: " + "; ".join(f"{a!r} / {b!r}" for a, b in ov[:6]))
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+35 passed, 2 deselected, 1 warning in 30.05s
 claimed 15 packages, runtime 60, multiplier 4.0x; not claimed: 45
 lock file: 83 pinned distributions in provenance/requirements-lock.txt
 clean-environment run passed

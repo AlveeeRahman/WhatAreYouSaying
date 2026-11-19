@@ -60,6 +60,11 @@ def controlled_items():
 
 run("vox", vox_items())
 run("controlled", controlled_items())
+from ways.provenance import write as write_manifest
+write_manifest(OUT / "provenance.json", inputs={"sample100.csv": str(HERE / "sample100.csv"), "aadd_seg20ms_csv": str(AADD_CSV),
+                                                "controlled_manifest.csv": str(HERE / "results/controlled/manifest.csv")},
+               seeds={"sample": 8001, "bootstrap": 8001}, models={model_id: REVISIONS.get(model_id)},
+               extra=dict(backend=be.describe(), passes=["vox", "controlled"]))
 
 # summary per layer, bootstrap over clips
 from ways.metrics import bootstrap_ci

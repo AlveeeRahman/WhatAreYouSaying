@@ -111,6 +111,12 @@ need the pipeline clip and cached whisper-tiny.
   provenance caveat, the wider clean-env test, prerequisites and download commands in "Re-running".
 * `provenance/clean_env_run.json` and `.log`: rewritten by the final clean-env run.
 
+Later (2026-11-19, after the VoiceBank-DEMAND set was added): the README claimed that every run
+writes `provenance.json`, but only `run_models.py` did. `controlled.py`, `latent_run.py` and
+`demand.py` now write one at the end of each model pass (the finished passes were re-entered, which
+skips the done clips and writes the manifest, so their `code_commit` is the commit of that re-entry,
+not of the original run). The clean-environment test was re-run on the final tree.
+
 ## 4. Not fixed, and why
 
 * **AADD weights are fetched from `main`.** The URLs live inside AADD (`aadd/model.py`). Pinning

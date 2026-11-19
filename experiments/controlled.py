@@ -156,6 +156,10 @@ def run(name, kind, model_id):
             with open(rows_f, "a") as f:
                 f.write(json.dumps(row) + "\n")
             print(f"{name} {r.id} {cond} WER {w['wer']:.2f} {row['seconds']:.1f}s", flush=True)
+    from ways.provenance import write as write_manifest
+    write_manifest(d / "provenance.json", inputs={"manifest.csv": str(OUT / "manifest.csv"), "aadd_detection.csv": str(OUT / "aadd_detection.csv")},
+                   seeds={"sample": SEED, "synth": SEED, "bootstrap": 8001}, models={model_id: REVISIONS.get(model_id)},
+                   extra=dict(backend=be.describe(), patch_s=0.1, n_bands=8, n_clips=int(len(man)), conditions=["clean", "deg"]))
 
 
 # ----------------------------------------------------------------------------- summarise

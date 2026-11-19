@@ -192,7 +192,13 @@ def run(name, kind, model_id, max_minutes=30.0):
                 f.write(json.dumps(row) + "\n")
             n_new += 1
             print(f"{name} {r.id} {cond} WER {w['wer']:.2f} {row['seconds']:.1f}s", flush=True)
-    (d / "time_cap.json").write_text(json.dumps(dict(max_minutes=max_minutes, done=len(done) + n_new, total=3 * len(man), minutes=(time.time() - t_run) / 60)))
+    if n_new or not (d / "time_cap.json").exists():       # keep the timing of the run that did the work
+        (d / "time_cap.json").write_text(json.dumps(dict(max_minutes=max_minutes, done=len(done) + n_new, total=3 * len(man), minutes=(time.time() - t_run) / 60)))
+    from ways.provenance import write as write_manifest
+    write_manifest(d / "provenance.json", inputs={**{f: str(CACHE / "dl" / f) for f in FILES}, "manifest.csv": str(OUT / "manifest.csv")},
+                   seeds={"sample": SEED, "segments": SEED, "bootstrap": 8001}, models={model_id: REVISIONS.get(model_id)},
+                   extra=dict(backend=be.describe(), patch_s=0.1, n_bands=8, n_clips=int(len(man)), conditions=["clean", "noisy", "alt"],
+                              max_minutes=max_minutes, new_this_run=n_new))
 
 
 # ----------------------------------------------------------------------------- summarise
