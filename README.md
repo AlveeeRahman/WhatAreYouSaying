@@ -55,14 +55,14 @@ what changes.
 WAYS gives three things per clip:
 
 * a map per token over time and frequency, saying how much each patch of audio supported it;
-* the top patch per token, drawn on the spectrogram and in a token lane (figure below);
+* the top patch per token, drawn and labelled on the spectrogram, with the transcript printed below it in the same colours and numbers (figure below);
 * a noise-focus ratio per token and per clip: how much of the token's evidence sits in audio that
   AADD flags as degraded, relative to how much of the clip is flagged. 1 means no preference, 2 means
   the token leaned on degraded audio twice as much as chance.
 
 <p align="center">
   <img src="figures/three_models__id10288_FIxC_PNJNkc_00003.png" width="860" alt="The same clip through whisper-tiny, whisper-base and moonshine-base: for each model the spectrogram with each token's most important patch boxed in the token's colour, and the tokens placed on the audio segment they used most">
-  <br><sub>One clip, three models. The spectrogram and the AADD strip are identical in every row; only the boxes and the token lane change. Same colour and number = same token.</sub>
+  <br><sub>One clip, three models. The spectrogram and the AADD strip are identical in every row; only the boxes and the transcript strip change. Same colour and number = same token.</sub>
 </p>
 
 ## How it works
@@ -217,7 +217,7 @@ What this says, in order of how sure I am:
 | moonshine-base | 0.19 | 0.26 | 0.06 | 0.11 | 0.15 | 0.10 | 0.05 | 0.09 |
 
 <p align="center">
-  <img src="figures/vox_clean__id10271_gO805KoL2RM_00006.png" width="860" alt="A VoxCeleb clip that AADD rates clean, through whisper-tiny, whisper-base and moonshine-base: spectrogram with each token's most important patch boxed and labelled, and the token lane">
+  <img src="figures/vox_clean__id10271_gO805KoL2RM_00006.png" width="860" alt="A VoxCeleb clip that AADD rates clean, through whisper-tiny, whisper-base and moonshine-base: spectrogram with each token's most important patch boxed and labelled, and the transcript strip">
   <br><sub>A clean clip (AADD flags no frame). whisper-base and moonshine-base agree on 25 of 26 words; whisper-tiny drops "kind of" and "it".</sub>
 </p>
 <p align="center">

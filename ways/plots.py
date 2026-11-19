@@ -141,7 +141,35 @@ def _place_labels(rows, att, dur, axis_in, mel_h=80, char_in=0.085, line_h=7.0):
     return out
 
 
-def _tokens_on_mel(axm, axt, att, rows, dur, nl, axis_in=8.1):
+def _sentence_lines(att, rows, axis_in, char_in=0.105, gap_in=0.22):
+    """Lay the tokens out in reading order as a sentence, wrapping by the axis width (inches).
+    Returns lines: list of [(k, x_in, text)] with x in inches from the left edge."""
+    lines, x, cur = [], 0.0, []
+    for r in rows:
+        text = f'{r["k"]} {r["tok"].strip() or "_"}'
+        w = 0.16 + len(text) * char_in + gap_in
+        if cur and x + w > axis_in:
+            lines.append(cur); cur, x = [], 0.0
+        cur.append((r["k"], x, text)); x += w
+    if cur:
+        lines.append(cur)
+    return lines
+
+
+def _sentence_strip(ax, att, rows, axis_in):
+    lines = _sentence_lines(att, rows, axis_in)
+    ax.set_xlim(0, axis_in); ax.set_ylim(0, len(lines)); ax.set_xticks([]); ax.set_yticks([])
+    for s_ in ax.spines.values():
+        s_.set_visible(False)
+    for li, line in enumerate(lines):
+        y = len(lines) - 1 - li + 0.5
+        for k, x, text in line:
+            ax.add_patch(Rectangle((x, y - 0.3), 0.16, 0.6, facecolor=col(k), edgecolor="white", lw=0.5))
+            ax.text(x + 0.21, y, text, color=col(k), fontsize=12, ha="left", va="center", fontweight="bold")
+    return len(lines)
+
+
+def _tokens_on_mel(axm, att, rows, dur, axis_in=8.1):
     B, ps = att.n_bands, att.patch_s
     mel_per_band = 80 // B
     for r in rows:
@@ -152,39 +180,32 @@ def _tokens_on_mel(axm, axt, att, rows, dur, nl, axis_in=8.1):
     for k, x, y, va in _place_labels(rows, att, dur, axis_in):
         axm.text(x, y, f'{k} {att.pieces[k].strip() or "_"}', color=col(k), fontsize=10, ha="left", va=va, fontweight="bold",
                  zorder=4, clip_on=True, bbox=dict(boxstyle="square,pad=0.08", fc=BG, ec="none", alpha=0.75))
-    axt.set_ylim(0, nl); axt.set_yticks([]); axt.grid(axis="x", color=GRID, lw=0.7)
-    for r in rows:
-        if "top_t" not in r:
-            continue
-        y = nl - 1 - r["lane"]; x0 = r["top_t"] * ps
-        axt.add_patch(Rectangle((x0, y + 0.12), ps, 0.76, facecolor=col(r["k"]), edgecolor="white", lw=0.6))
-        label = f'{r["k"]} {r["tok"].strip() or "_"}'
-        if x0 + ps + (len(label) + 2) * 0.095 * dur / axis_in > dur:      # would run off the right edge
-            axt.text(x0 - 0.012 * dur, y + 0.5, label, color=col(r["k"]), fontsize=12, ha="right", va="center", fontweight="bold")
-        else:
-            axt.text(x0 + ps + 0.012 * dur, y + 0.5, label, color=col(r["k"]), fontsize=12, ha="left", va="center", fontweight="bold")
 
 
 def clip_figure(att: Attribution, probs, wav, path, title="", window=None):
-    """AADD max-p strip, spectrogram with each token's most important patch boxed, token lane."""
+    """AADD max-p strip, spectrogram with each token's most important patch boxed and labelled, and the
+    transcript as one sentence in reading order with the same colours and numbers."""
     L = logmel(wav); dur = att.duration
     rows = token_rows(att)
-    nl = _lanes(rows, dur, att.patch_s)
-    lane_h = 0.34 * nl
-    fig = plt.figure(figsize=(10, min(8.0 + max(0, lane_h - 2.4) * 0.9, 10.5)))
-    gs = fig.add_gridspec(3, 1, height_ratios=[0.25, 2.6, lane_h], hspace=0.3, left=0.16, right=0.97, top=0.86, bottom=0.14)
+    axis_in = 10 * (0.97 - 0.16)
+    nl = len(_sentence_lines(att, rows, axis_in))
+    strip_h = 0.3 * nl + 0.25
+    fig = plt.figure(figsize=(10, min(7.4 + strip_h * 0.8, 10.5)))
+    gs = fig.add_gridspec(3, 1, height_ratios=[0.25, 2.8, strip_h], hspace=0.45, left=0.16, right=0.97, top=0.86, bottom=0.09)
     axq, axm, axt = [fig.add_subplot(gs[i]) for i in range(3)]
     _strip(axq, probs, dur); _tidy(axq, dur); _label(axq, "Audio quality: AADD maximum degradation probability per 20 ms (dark = degraded)")
-    _mel(axm, L); _tidy(axm, dur); _label(axm, "Spectrogram; each box is the patch whose erasure raised that token's surprisal most")
-    _tokens_on_mel(axm, axt, att, rows, dur, nl); _tidy(axt, dur, bottom=True)
-    _label(axt, "Tokens, placed on the 100 ms of audio that mattered most to each one")
+    _mel(axm, L); _tokens_on_mel(axm, att, rows, dur, axis_in); _tidy(axm, dur, bottom=True)
+    _label(axm, "Spectrogram; each box is the patch whose erasure raised that token's surprisal most")
+    _sentence_strip(axt, att, rows, axis_in)
+    _label(axt, "The transcript, token by token, in the colours and numbers used above")
+    axt.set_ylim(-0.15, len(_sentence_lines(att, rows, axis_in)) + 0.15)
     if window is not None:
-        for ax in (axq, axm, axt):
+        for ax in (axq, axm):
             ax.axvspan(window[0], window[1], color="#0d366b", alpha=0.10, lw=0, zorder=1)
             ax.axvline(window[0], color="#0d366b", lw=1.2, ls="--", zorder=5); ax.axvline(window[1], color="#0d366b", lw=1.2, ls="--", zorder=5)
     fig.suptitle(title, x=0.16, ha="left", fontsize=13, fontweight="bold", color=TXT, y=0.975)
-    fig.text(0.16, 0.012, f"Each box carries its token's number and text; the lane below repeats them in time order. Colours repeat every {len(CAT)} tokens, "
-             "the number is the link. Box = the 0.1 s x one-band patch whose erasure hurts the token most.", fontsize=10, color=TXT2, va="bottom", wrap=True)
+    fig.text(0.16, 0.012, f"Same colour and number = same token; colours repeat every {len(CAT)} tokens, the number is the link. "
+             "Box = the 0.1 s x one-band patch whose erasure hurts the token most.", fontsize=10, color=TXT2, va="bottom", wrap=True)
     fig.savefig(path, dpi=DPI); fig.savefig(str(path).rsplit(".", 1)[0] + ".svg"); plt.close(fig)
 
 
@@ -257,31 +278,35 @@ def method_figure(att: Attribution, probs, wav, path, k: int | None = None, titl
 
 
 def three_models_figure(atts: dict[str, Attribution], probs, wav, path, title="", wers: dict | None = None, window=None):
-    """Same clip, one row per model: spectrogram with each token's top patch boxed, and the token lane."""
+    """Same clip, one row per model: spectrogram with each token's top patch boxed and labelled, then the
+    model's transcript as one sentence in the same colours and numbers."""
+    import textwrap
+
     L = logmel(wav); dur = next(iter(atts.values())).duration
     names = list(atts)
-    prepared = []
-    for n in names:
-        rows = token_rows(atts[n]); nl = _lanes(rows, dur, atts[n].patch_s); prepared.append((rows, nl))
-    hs = []
-    for rows, nl in prepared:
-        hs += [2.6, 0.27 * nl + 0.1]
-    hs = [0.25] + hs
-    fig = plt.figure(figsize=(12, min(0.9 + sum(hs) * 0.62, 14)))
-    gs = fig.add_gridspec(len(hs), 1, height_ratios=hs, hspace=0.28, left=0.12, right=0.97, top=0.89, bottom=0.06)
+    axis_in = 12 * (0.97 - 0.12)
+    prepared = [(token_rows(atts[n]), None) for n in names]
+    hs = [0.25]
+    for rows, _ in prepared:
+        nl = len(_sentence_lines(atts[names[0]], rows, axis_in))
+        hs += [2.6, 0.42 * nl + 0.1]
+    fig = plt.figure(figsize=(12, min(1.2 + sum(hs) * 0.62, 14)))
+    gs = fig.add_gridspec(len(hs), 1, height_ratios=hs, hspace=0.3, left=0.12, right=0.97, top=0.89, bottom=0.05)
     axq = fig.add_subplot(gs[0]); _strip(axq, probs, dur); _tidy(axq, dur); _label(axq, "AADD maximum degradation probability (dark = degraded)")
+    if window is not None:
+        axq.axvspan(window[0], window[1], color="#0d366b", alpha=0.10, lw=0, zorder=1)
     for i, n in enumerate(names):
-        rows, nl = prepared[i]
+        rows, _ = prepared[i]
         axm = fig.add_subplot(gs[1 + 2 * i]); axt = fig.add_subplot(gs[2 + 2 * i])
-        _mel(axm, L); _tidy(axm, dur)
-        _tokens_on_mel(axm, axt, atts[n], rows, dur, nl, axis_in=10.2); _tidy(axt, dur, bottom=(i == len(names) - 1))
+        _mel(axm, L); _tokens_on_mel(axm, atts[n], rows, dur, axis_in); _tidy(axm, dur, bottom=True)
+        if i < len(names) - 1:
+            axm.set_xlabel("")
+        _sentence_strip(axt, atts[n], rows, axis_in)
         if window is not None:
-            for ax in (axm, axt):
-                ax.axvspan(window[0], window[1], color="#0d366b", alpha=0.10, lw=0, zorder=1)
-                ax.axvline(window[0], color="#0d366b", lw=1.2, ls="--", zorder=5); ax.axvline(window[1], color="#0d366b", lw=1.2, ls="--", zorder=5)
+            axm.axvspan(window[0], window[1], color="#0d366b", alpha=0.10, lw=0, zorder=1)
+            axm.axvline(window[0], color="#0d366b", lw=1.2, ls="--", zorder=5); axm.axvline(window[1], color="#0d366b", lw=1.2, ls="--", zorder=5)
         w = f"  ·  WER {wers[n]:.0%}" if wers and n in wers and np.isfinite(wers[n]) else ""
-        _label(axm, f"{n}{w}  ·  {len(rows)} tokens: '{atts[n].text[:70]}{'…' if len(atts[n].text) > 70 else ''}'")
-    import textwrap
+        _label(axm, f"{n}{w}  ·  {len(rows)} tokens")
     title = "\n".join(textwrap.fill(line, 95) for line in title.split("\n"))
     fig.suptitle(title, x=0.12, ha="left", fontsize=13, fontweight="bold", color=TXT, y=0.985, va="top")
     fig.savefig(path, dpi=DPI); fig.savefig(str(path).rsplit(".", 1)[0] + ".svg"); plt.close(fig)
