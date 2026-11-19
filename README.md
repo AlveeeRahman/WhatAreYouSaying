@@ -19,11 +19,6 @@
 </p>
 
 <p align="center">
-  <img src="figures/method_whisper_base.png" width="860" alt="Representation erasure on audio for whisper-base on one clip: the erasure grid over the spectrogram with one patch highlighted, the patch before and after erasure in the model's log-mel input, the surprisal change of every token for that patch, and the full map of the most affected token with the AADD-flagged frames marked above it">
-  <br><sub>The method on one clip (whisper-base). One patch of the spectrogram is erased, the model's own transcript is re-scored, and the tokens that became less likely are recorded. This is repeated for every patch.</sub>
-</p>
-
-<p align="center">
   <img src="docs/images/erase_sweep.gif" width="720" alt="Animation: a patch sweeps along one pitch band of the example clip's spectrogram; for each position the bars show how much less sure whisper-base became of every word, and the map of the word that reacts most builds up underneath">
   <br><sub>One band of whisper-base's input, erased one patch at a time. The surprisal of the word "Ron" rises for one patch and barely changes for the others.</sub>
 </p>
