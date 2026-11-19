@@ -1,0 +1,41 @@
+[
+ {
+  "model": "whisper-tiny",
+  "wer_clean": 0.2727272727272727,
+  "wer_deg": 0.45454545454545453,
+  "text_clean": "Money, my iron's, tright told. Please put it down to warm.",
+  "text_deg": "Money, clients quite told. Please put it down to warm.",
+  "words_in_window": "4 -> 4",
+  "correct_in_window": "2 of 4 -> 1 of 4",
+  "correct_outside": "6 of 7 -> 5 of 6",
+  "shared_words": 8,
+  "mass_in_window_of_window_words": "0.76 -> 0.89",
+  "mass_in_window_of_outside_words": "0.21 -> 0.20"
+ },
+ {
+  "model": "whisper-base",
+  "wer_clean": 0.45454545454545453,
+  "wer_deg": 0.45454545454545453,
+  "text_clean": "Money, my iron's tried to hold. Please put it down to warm.",
+  "text_deg": "Money, fire and sprite told. Please put it down to warm.",
+  "words_in_window": "4 -> 6",
+  "correct_in_window": "2 of 4 -> 2 of 6",
+  "correct_outside": "5 of 8 -> 4 of 5",
+  "shared_words": 6,
+  "mass_in_window_of_window_words": "0.72 -> 0.88",
+  "mass_in_window_of_outside_words": "0.23 -> 0.26"
+ },
+ {
+  "model": "moonshine-base",
+  "wer_clean": 0.36363636363636365,
+  "wer_deg": 0.5454545454545454,
+  "text_clean": "Money, my earns, Trite told, These put it down to warm.",
+  "text_deg": "Money, lions, fight cold. These put it down to warm.",
+  "words_in_window": "4 -> 3",
+  "correct_in_window": "1 of 4 -> 0 of 3",
+  "correct_outside": "6 of 7 -> 5 of 7",
+  "shared_words": 7,
+  "mass_in_window_of_window_words": "0.71 -> 0.90",
+  "mass_in_window_of_outside_words": "0.21 -> 0.36"
+ }
+]
