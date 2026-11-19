@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.2.1
+
+One ambiguous clip read in depth, and a per-token view in aud-cam.
+
+- **aud-cam `tokens=True`** (`--tokens`): a gradient saliency per token and encoder layer, one
+  backward pass per token from its own surprisal (`ways.latent.token_cam`), a per-token summary
+  (`token_cam_summary`: centre, width, share on the degraded stretch, reading against the erasure
+  test) and the token figure (`ways.figure.token_cam_figure`).
+- The token map is gradient times activation per frame, Grad-CAM without the time pooling. Grad-CAM
+  proper (`pooled=True`) is kept for comparison: on these encoders it places every token in the
+  middle of the clip, so it is not used for the token view.
+- **experiments/ambiguous_case.py**: the controlled noise example (LibriSpeech 2094-142345-0024)
+  through whisper-base and moonshine-base, degraded and clean, with erasure, the per-frame map and
+  pooled Grad-CAM placed against the spoken order; README section with the figure and the tables.
+- Tests: the token summary and figure on synthetic arrays, the tool schema.
+
 ## 0.2.0
 
 The two views become a tool framework, and the repository carries no project, machine or user

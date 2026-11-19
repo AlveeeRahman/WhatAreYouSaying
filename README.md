@@ -9,7 +9,7 @@
   <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/python-3.12%2B-blue.svg" alt="Python 3.12+"></a>
   <a href="requirements.txt"><img src="https://img.shields.io/badge/PyTorch-2.11-EE4C2C.svg" alt="PyTorch 2.11"></a>
   <a href="https://github.com/gertelrina/aadd"><img src="https://img.shields.io/badge/AADD-v3.1-191919.svg" alt="AADD v3.1"></a>
-  <a href="tests/"><img src="https://img.shields.io/badge/tests-40%20passed-brightgreen.svg" alt="tests: 40 passed"></a>
+  <a href="tests/"><img src="https://img.shields.io/badge/tests-42%20passed-brightgreen.svg" alt="tests: 40 passed"></a>
   <a href="provenance/clean_env_run.log"><img src="https://img.shields.io/badge/clean--env%20run-passed-brightgreen.svg" alt="clean-environment run: passed"></a>
   <a href="#reproducibility"><img src="https://img.shields.io/badge/CI-not%20set%20up%20yet-lightgrey.svg" alt="CI: not set up yet"></a>
 </p>
@@ -39,7 +39,7 @@ what is wrong with a recording and where, every 20 ms. The speech models are Whi
 re-executable research [[5]](#ref-5) [[6]](#ref-6), drawn in [Reproducibility](#reproducibility).
 MIT licence; changes are in [CHANGELOG.md](CHANGELOG.md).
 
-**Contents:** [What it answers](#what-it-answers) · [How it works](#how-it-works) · [What I verified](#what-i-verified) · [100 VoxCeleb clips](#100-voxceleb-clips-three-models) · [Detector backbones](#does-the-detectors-backbone-matter) · [Controlled damage](#controlled-damage-on-librispeech) · [Noise on and off](#real-noise-that-comes-and-goes-voicebank-demand) · [Latent space](#noise-in-the-latent-space) · [Install and use](#install-and-use) · [The tool framework](#the-tool-framework-sound-token-and-aud-cam) · [The figure](#the-figure-plug-and-play) · [Backends](#backends-local-weights-vllm-llamacpp) · [Reproducibility](#reproducibility) · [Limitations](#limitations-and-future-work) · [Status](#status) · [References](#references) · [Layout](#repository-layout) · [Credits and licence](#credits-and-licence)
+**Contents:** [What it answers](#what-it-answers) · [How it works](#how-it-works) · [What I verified](#what-i-verified) · [100 VoxCeleb clips](#100-voxceleb-clips-three-models) · [Detector backbones](#does-the-detectors-backbone-matter) · [Controlled damage](#controlled-damage-on-librispeech) · [One ambiguous clip](#one-ambiguous-clip-read-in-depth) · [Noise on and off](#real-noise-that-comes-and-goes-voicebank-demand) · [Latent space](#noise-in-the-latent-space) · [Install and use](#install-and-use) · [The tool framework](#the-tool-framework-sound-token-and-aud-cam) · [The figure](#the-figure-plug-and-play) · [Backends](#backends-local-weights-vllm-llamacpp) · [Reproducibility](#reproducibility) · [Limitations](#limitations-and-future-work) · [Status](#status) · [References](#references) · [Layout](#repository-layout) · [Credits and licence](#credits-and-licence)
 
 <details>
 <summary><b>Stats for nerds</b> (the grid, the scores, the data, the cost)</summary>
@@ -54,7 +54,7 @@ MIT licence; changes are in [CHANGELOG.md](CHANGELOG.md).
 | controlled set | 60 LibriSpeech test-clean utterances, one 2 s degradation each from AADD's synthesiser, clean and degraded twins, three models |
 | on-and-off set | 100 VoiceBank-DEMAND sentences (CC BY 4.0), real noise at 2.5 to 17.5 dB switched on and off in 4 to 7 segments per sentence, clean and noisy-throughout twins, three models, 30 min cap per model |
 | detectors | AADD v3.1 (whisper-small backbone, 88.6 M parameters); AADD's head on whisper-base and on moonshine-base encoders (21 M each, AADD recipe on LibriSpeech dev-clean); plus AADD v3-lite (CRNN, 1.3 M) and v2 (EfficientNet-B0, 4.0 M) |
-| tests | 38 CPU checks of the operator, the formulas, the figures (overlaps, page edges, repeatability, editable text), the latent view and the tool framework, 2 end-to-end HTTP checks against a mock OpenAI-compatible server |
+| tests | 40 CPU checks of the operator, the formulas, the figures (overlaps, page edges, repeatability, editable text), the latent view and the tool framework, 2 end-to-end HTTP checks against a mock OpenAI-compatible server |
 
 </details>
 
@@ -336,6 +336,128 @@ survive the degradation unchanged. On clean LibriSpeech all three models sit at 
   <br><sub>LibriSpeech 2094-142345-0024 with pink noise at 0 dB inserted at 0.6 to 2.6 s (dashed). The clean twin is <code>figures/controlled_noise_clean__2094-142345-0024.png</code>.</sub>
 </p>
 
+## One ambiguous clip, read in depth
+
+The clip above is the ambiguous case. Inside the noise whisper-base writes "fire and sprite told",
+moonshine-base "lions, fight cold", and the gold is "my iron's twite told". The sound-token figure
+says those words sit on the noisy stretch and stops there. `aud-cam` with `tokens=True` reads the
+same tokens a second way, one backward pass per token through the encoder, so each token gets a
+gradient map per layer next to its erasure map. `experiments/ambiguous_case.py` runs both readings on
+the degraded recording and on its clean twin, for both models.
+
+<p align="center">
+  <img src="figures/ambiguous__2094-142345-0024__whisper-base__deg__aud-cam-tokens.png" width="860" alt="whisper-base on the noisy clip: one lane per token with its gradient saliency in grey and the erasure test's first patch as a coloured tick, and below it the share of each token's saliency on the noisy stretch per encoder layer">
+  <br><sub>whisper-base on the degraded recording. Grey = gradient times activation per frame at the top encoder layer, tick = the patch the erasure test ranked first. Below, how much of each token's saliency falls on the noisy 0.6 to 2.6 s, layer by layer. The moonshine-base twin is <code>figures/ambiguous__2094-142345-0024__moonshine-base__deg__aud-cam-tokens.png</code>, the clean recordings end in <code>__clean__aud-cam-tokens.png</code>.</sub>
+</p>
+
+* **Outside the noise the two methods agree token by token.** "Please put it down to warm" sit on
+  their own syllables, grey mass and tick a few hundred milliseconds apart, and the tokens that
+  appear in both transcripts keep their erasure anchor between the clean and the degraded
+  recording: 0 ms moved for whisper's "put" and "down" and for all six of moonshine's words after
+  the noise.
+* **Inside the noise both methods say the same thing: those words were made from the noisy audio.**
+  whisper's "fire", "and", "sprite", "told" carry 93 to 95 % of their erasure mass and 70 to 90 % of
+  their gradient mass on the noisy stretch; moonshine's "l", "ions", "fight", "cold" 59 to 94 % and
+  57 to 73 %. Neither model guessed from context. They heard the same two seconds and wrote
+  different words, which is what the ambiguity is.
+* **The encoder keeps the noisy evidence where it belongs.** For the words spoken in the noise the
+  share of saliency on the noisy stretch stays at 0.6 to 0.8 through every whisper layer; for the
+  words after it the share falls from 0.36 at the input embedding to 0.13 at the top. Moonshine
+  shows the same shape (0.5 to 0.7 against 0.35 falling to 0.05).
+* **Grad-CAM proper cannot do this job.** With its time-pooled channel weights every token's map
+  sits in the middle of the clip, 1 to 3 s wide, and the rank correlation between token order and
+  placed time is between -0.35 and 0.46. The per-frame gradient map (Grad-CAM without the pooling)
+  reaches 0.89 to 0.94, erasure 0.95 to 0.98 on the clean recording. The per-layer Grad-CAM in
+  `aud-cam` stays a hint about layers; the token view uses the per-frame map.
+* **What the two methods disagree on is worth reading too.** On the degraded recording the erasure
+  test puts whisper's "it" and the final full stop partly on the noisy stretch (62 and 61 % of
+  their mass) while their gradient maps stay on the clean audio: erasing the noise changes those
+  low-content tokens, which is the decoder leaning on the noisy context for them, not the encoder.
+
+<details>
+<summary><b>Stats for nerds</b> (the three placements, every token, the clean-recording control)</summary>
+
+Three ways of placing each token in time. The tokens are in spoken order, so rho(order) near 1 means the placement follows the speech; width is the median effective width of a token's map at the top layer.
+
+| model | recording | method | rho(order) | median width (s) | tokens placed in the window |
+|---|---|---|---|---|---|
+| whisper-base | degraded | erasure | 0.48 | 0.10 | 57% |
+| whisper-base | degraded | grad x act | 0.89 | 0.73 | 50% |
+| whisper-base | degraded | Grad-CAM | -0.35 | 1.76 | 64% |
+| moonshine-base | degraded | erasure | 0.70 | 0.10 | 50% |
+| moonshine-base | degraded | grad x act | 0.94 | 1.22 | 50% |
+| moonshine-base | degraded | Grad-CAM | 0.46 | 2.58 | 25% |
+| whisper-base | clean | erasure | 0.95 | 0.10 | 38% |
+| whisper-base | clean | grad x act | 0.93 | 0.67 | 50% |
+| whisper-base | clean | Grad-CAM | 0.16 | 1.21 | 62% |
+| moonshine-base | clean | erasure | 0.98 | 0.10 | 44% |
+| moonshine-base | clean | grad x act | 0.94 | 1.18 | 56% |
+| moonshine-base | clean | Grad-CAM | -0.03 | 2.43 | 44% |
+
+Per token on the degraded recording (top layer). cam_t / width: where the gradient map sits and how spread it is; cam_in / erase_in: share of the gradient map / of the erasure mass on the noisy stretch; band: the frequency band (0 = lowest of 8) the erasure test ranked first.
+
+**whisper-base: 'Money, fire and sprite told. Please put it down to warm.'**
+
+| k | token | cam_t (s) | width (s) | cam_in | erase_t (s) | erase_in | band | reading |
+|---|---|---|---|---|---|---|---|---|
+| 0 | Money | 2.21 | 1.05 | 0.46 | 0.75 | 0.98 | 1 | diffuse |
+| 1 | , | 1.89 | 0.47 | 0.89 | 1.85 | 0.91 | 5 | degraded |
+| 2 | fire | 1.61 | 0.70 | 0.88 | 1.55 | 0.93 | 1 | degraded |
+| 3 | and | 2.11 | 0.78 | 0.86 | 1.85 | 0.94 | 0 | degraded |
+| 4 | sprite | 1.91 | 0.57 | 0.90 | 2.25 | 0.95 | 4 | degraded |
+| 5 | told | 2.26 | 0.69 | 0.70 | 2.45 | 0.95 | 1 | degraded |
+| 6 | . | 2.57 | 1.05 | 0.26 | 3.45 | 0.69 | 1 | diffuse |
+| 7 | Please | 3.36 | 1.00 | 0.11 | 3.45 | 0.14 | 4 | clean |
+| 8 | put | 3.48 | 0.47 | 0.09 | 3.65 | 0.42 | 4 | clean |
+| 9 | it | 3.33 | 0.50 | 0.11 | 1.55 | 0.62 | 1 | split |
+| 10 | down | 3.63 | 0.39 | 0.08 | 3.95 | 0.29 | 4 | clean |
+| 11 | to | 3.03 | 0.87 | 0.18 | 4.35 | 0.04 | 1 | clean |
+| 12 | warm | 3.65 | 0.75 | 0.22 | 4.55 | 0.07 | 3 | clean |
+| 13 | . | 4.01 | 1.02 | 0.12 | 0.75 | 0.61 | 1 | diffuse |
+
+**moonshine-base: 'Money, lions, fight cold. These put it down to warm.'**
+
+| k | token | cam_t (s) | width (s) | cam_in | erase_t (s) | erase_in | band | reading |
+|---|---|---|---|---|---|---|---|---|
+| 0 | M | 1.47 | 1.55 | 0.14 | 0.85 | 0.85 | 0 | diffuse |
+| 1 | oney | 1.67 | 1.37 | 0.67 | 0.95 | 0.97 | 0 | diffuse |
+| 2 | , | 2.23 | 1.41 | 0.69 | 2.25 | 0.85 | 0 | diffuse |
+| 3 | l | 2.06 | 1.58 | 0.69 | 1.95 | 0.87 | 0 | diffuse |
+| 4 | ions | 2.37 | 1.48 | 0.73 | 1.85 | 0.94 | 4 | diffuse |
+| 5 | , | 2.02 | 1.20 | 0.74 | 1.45 | 0.73 | 5 | diffuse |
+| 6 | fight | 2.37 | 1.41 | 0.57 | 2.15 | 0.93 | 1 | diffuse |
+| 7 | cold | 2.09 | 0.85 | 0.63 | 2.65 | 0.59 | 1 | degraded |
+| 8 | . | 2.87 | 1.34 | 0.18 | 2.65 | 0.42 | 1 | diffuse |
+| 9 | These | 3.71 | 1.23 | 0.05 | 3.35 | 0.09 | 5 | diffuse |
+| 10 | put | 3.59 | 0.85 | 0.06 | 3.75 | 0.08 | 4 | clean |
+| 11 | it | 3.57 | 0.73 | 0.04 | 3.75 | 0.44 | 4 | clean |
+| 12 | down | 3.76 | 0.80 | 0.03 | 3.95 | 0.43 | 4 | clean |
+| 13 | to | 3.74 | 0.83 | 0.04 | 4.35 | 0.29 | 1 | clean |
+| 14 | warm | 4.01 | 1.10 | 0.09 | 4.35 | 0.07 | 1 | diffuse |
+| 15 | . | 4.38 | 1.01 | 0.06 | 1.45 | 0.58 | 4 | diffuse |
+
+Control: tokens that appear in both transcripts of a model, and how far the erasure test and the gradient map moved them between the clean and the degraded recording. After the noise the audio is identical, so the anchors should stay.
+
+| model | token | erase_t clean | erase_t degraded | cam_t clean | cam_t degraded | moved (erasure, ms) | moved (gradient, ms) |
+|---|---|---|---|---|---|---|---|
+| whisper-base | Money | 0.65 | 0.75 | 1.65 | 2.21 | +100 | +562 |
+| whisper-base | , | 1.55 | 1.85 | 1.89 | 1.89 | +300 | +5 |
+| whisper-base | Please | 3.35 | 3.45 | 3.24 | 3.36 | +100 | +116 |
+| whisper-base | put | 3.65 | 3.65 | 3.30 | 3.48 | +0 | +182 |
+| whisper-base | it | 3.75 | 1.55 | 3.18 | 3.33 | -2200 | +143 |
+| whisper-base | down | 3.95 | 3.95 | 3.46 | 3.63 | +0 | +164 |
+| whisper-base | warm | 4.35 | 4.55 | 3.70 | 3.65 | +200 | -50 |
+| moonshine-base | M | 1.55 | 0.85 | 1.49 | 1.47 | -700 | -24 |
+| moonshine-base | oney | 0.75 | 0.95 | 1.09 | 1.67 | +200 | +578 |
+| moonshine-base | These | 3.35 | 3.35 | 3.49 | 3.71 | +0 | +217 |
+| moonshine-base | put | 3.75 | 3.75 | 3.43 | 3.59 | +0 | +157 |
+| moonshine-base | it | 3.75 | 3.75 | 3.43 | 3.57 | +0 | +145 |
+| moonshine-base | down | 3.95 | 3.95 | 3.37 | 3.76 | +0 | +387 |
+| moonshine-base | to | 4.35 | 4.35 | 3.32 | 3.74 | +0 | +422 |
+| moonshine-base | warm | 4.35 | 4.35 | 4.08 | 4.01 | +0 | -63 |
+
+</details>
+
 ## Real noise that comes and goes: VoiceBank-DEMAND
 
 When the noise comes and goes inside a sentence, does each word's evidence follow the word, or
@@ -468,8 +590,9 @@ ways aud-cam     clip.wav --backend hf-whisper=openai/whisper-base --aadd --gran
 ```
 
 `sound-token` writes `out/clip__sound-token.png` and an SVG twin. `aud-cam` writes
-`out/clip__aud-cam.png`, and with `--granular` the Grad-CAM lane, the spill-over lane and the
-per-layer summary as their own figures. Both print the `ToolResult` as JSON.
+`out/clip__aud-cam.png`, with `--granular` the Grad-CAM lane, the spill-over lane and the
+per-layer summary as their own figures, and with `--tokens` a gradient saliency per token (one
+backward pass each) with its own figure and per-token summary. Both print the `ToolResult` as JSON.
 
 <p align="center">
   <img src="figures/tool_aud_cam__vox_mixed__whisper-base__spillover.png" width="920" alt="aud-cam granular: spill-over per layer, whisper-base">
@@ -481,8 +604,8 @@ from ways.tools import sound_token, aud_cam, call, schemas
 res = sound_token(wav, sr, backends=[("hf-whisper", "openai/whisper-base")], aadd=True, out="out/clip",
                   text={"title": "my clip", "caption": "my caption"})    # any heading or sentence of the figure
 res.summary["models"][0]["focus_ratio_mean"], res.figure, res.data["attributions"]
-res = aud_cam(wav, sr, backend=("hf-whisper", "openai/whisper-base"), window=(1.5, 3.8), out="out/clip", granular=True)
-res.summary["per_layer"][-1]["shift_out"], res.figures["spillover"]
+res = aud_cam(wav, sr, backend=("hf-whisper", "openai/whisper-base"), window=(1.5, 3.8), out="out/clip", granular=True, tokens=True)
+res.summary["per_layer"][-1]["shift_out"], res.figures["spillover"], res.summary["per_token"], res.figures["tokens"]
 tools = schemas()                                  # OpenAI function shape; rename parameters to input_schema for Anthropic
 call("aud-cam", audio="clip.wav", aadd=True, out="out/clip", granular=True).to_json()
 ```
@@ -585,14 +708,18 @@ commands a workflow would run are `make test` and `make lint`.
   is reported on the clips where it is informative and under five detectors, and the main claims
   rest on the two datasets with known damage.
 * **Moonshine has no timestamps**, so the distance-to-timestamp summary exists only for Whisper.
+* **Grad-CAM with time-pooled weights carries no per-token time information** on these encoders
+  (shown on the ambiguous clip), so the per-layer CAM is a hint about layers and the token view uses
+  the per-frame gradient map, itself a saliency and not an erasure test.
 * **No live vLLM or llama.cpp run yet**, only the mock server. Three small models, 260 clips in all:
   enough for paired comparisons with intervals, not for claims about large models or other languages.
 
 ## Status
 
-* Done (0.2.0): operator, three backends, scores, summaries, AADD context, the figure system, the
-  latent view, the tool framework with two registered tools and plug-in discovery, tests, the three
-  datasets through three models, the detector-backbone check, clean-environment run, provenance.
+* Done (0.2.1): operator, three backends, scores, summaries, AADD context, the figure system, the
+  latent view, the tool framework with two registered tools and plug-in discovery, the per-token
+  gradient view and the ambiguous-clip experiment, tests, the three datasets through three models,
+  the detector-backbone check, clean-environment run, provenance.
 * Next: a CI workflow once Actions minutes are available (the test command is fixed); a live vLLM
   transcription run; a larger model on the same clips.
 

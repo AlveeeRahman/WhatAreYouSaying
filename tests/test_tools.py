@@ -102,3 +102,10 @@ def test_granular_figures_with_many_layers_and_long_title(tmp_path):
     wav, q, cam, shift, summary = _latent(layers=24)
     f = cam_figure(wav, 16000, cam, quality=q, title="a long title " * 12, out=tmp_path / "deep.png")
     assert text_overlaps(f) == []
+
+
+def test_aud_cam_schema_has_tokens_flag():
+    from ways.tools import get
+
+    props = get("aud-cam").parameters["properties"]
+    assert props["tokens"]["type"] == "boolean" and props["tokens"]["default"] is False

@@ -115,6 +115,8 @@ def cmd_tool(a):
         kw["wer_reference"] = a.reference
     if "granular" in props:
         kw["granular"] = a.granular
+    if "tokens" in props:
+        kw["tokens"] = a.tokens
     print(call(a.cmd, **kw).to_json())
 
 
@@ -183,6 +185,7 @@ def main(argv=None):
         t.add_argument("--window", type=float, nargs=2, metavar=("START_S", "END_S"), help="a known damaged span instead of AADD's flags")
         t.add_argument("--reference", default=None, help="human transcript, to report WER (tools that take wer_reference)")
         t.add_argument("--granular", action="store_true", help="also write each lane as its own figure (tools that take granular)")
+        t.add_argument("--tokens", action="store_true", help="also compute Grad-CAM per token (tools that take tokens)")
         t.add_argument("--title", default=None)
         t.add_argument("--out", default="ways_out/clip")
         t.set_defaults(fn=cmd_tool)

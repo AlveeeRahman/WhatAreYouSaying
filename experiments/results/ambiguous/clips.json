@@ -1,0 +1,330 @@
+{
+ "clip": "2094-142345-0024",
+ "gold": "munny my iron's twite told pease put it down to warm",
+ "window": [
+  0.6330364198138565,
+  2.6330364198138563
+ ],
+ "runs": [
+  {
+   "model": "whisper-base",
+   "cond": "deg",
+   "text": "Money, fire and sprite told. Please put it down to warm.",
+   "n_tokens": 14,
+   "degraded_share": 0.3840304182509506,
+   "per_layer": [
+    {
+     "layer": 0,
+     "cam_mass": 0.8158462047576904,
+     "cam_focus": 0.6353706121444702,
+     "rho_loud": -0.3147646613421872,
+     "shift_in": 0.32912659645080566,
+     "shift_out": 0.003460892476141453
+    },
+    {
+     "layer": 1,
+     "cam_mass": 0.18904104828834534,
+     "cam_focus": 0.9778331518173218,
+     "rho_loud": -0.03259808354025483,
+     "shift_in": 0.3922916054725647,
+     "shift_out": 0.03711486980319023
+    },
+    {
+     "layer": 2,
+     "cam_mass": 0.39879363775253296,
+     "cam_focus": 0.9334691762924194,
+     "rho_loud": 0.4431038670003987,
+     "shift_in": 0.43576979637145996,
+     "shift_out": 0.05520837754011154
+    },
+    {
+     "layer": 3,
+     "cam_mass": 0.8789694309234619,
+     "cam_focus": 0.7028452754020691,
+     "rho_loud": 0.014555382100097847,
+     "shift_in": 0.6212605237960815,
+     "shift_out": 0.08899666368961334
+    },
+    {
+     "layer": 4,
+     "cam_mass": 0.19074973464012146,
+     "cam_focus": 0.24628297984600067,
+     "rho_loud": -0.5709238000989381,
+     "shift_in": 1.353238821029663,
+     "shift_out": 0.1616452932357788
+    },
+    {
+     "layer": 5,
+     "cam_mass": 0.3301302194595337,
+     "cam_focus": 0.7670673131942749,
+     "rho_loud": -0.06632197102979798,
+     "shift_in": 1.2366827726364136,
+     "shift_out": 0.18537575006484985
+    },
+    {
+     "layer": 6,
+     "cam_mass": 0.345093697309494,
+     "cam_focus": 1.1991374492645264,
+     "rho_loud": -0.10255279314722067,
+     "shift_in": 0.9763107895851135,
+     "shift_out": 0.2711386978626251
+    }
+   ],
+   "figures": {
+    "main": "figures/ambiguous__2094-142345-0024__whisper-base__deg__aud-cam.png",
+    "cam": "figures/ambiguous__2094-142345-0024__whisper-base__deg__aud-cam-cam.png",
+    "spillover": "figures/ambiguous__2094-142345-0024__whisper-base__deg__aud-cam-spillover.png",
+    "layers": "figures/ambiguous__2094-142345-0024__whisper-base__deg__aud-cam-layers.png",
+    "tokens": "figures/ambiguous__2094-142345-0024__whisper-base__deg__aud-cam-tokens.png"
+   }
+  },
+  {
+   "model": "moonshine-base",
+   "cond": "deg",
+   "text": "Money, lions, fight cold. These put it down to warm.",
+   "n_tokens": 16,
+   "degraded_share": 0.3840304182509506,
+   "per_layer": [
+    {
+     "layer": 0,
+     "cam_mass": 0.5831164555620585,
+     "cam_focus": 2.0292869555050617,
+     "rho_loud": 0.4494714294618846,
+     "shift_in": 0.7549123657596801,
+     "shift_out": 0.20340905904839016
+    },
+    {
+     "layer": 1,
+     "cam_mass": 0.08762615329570046,
+     "cam_focus": 0.9138110937990169,
+     "rho_loud": 0.2749901979388413,
+     "shift_in": 0.4961889260507411,
+     "shift_out": 0.1364371533140052
+    },
+    {
+     "layer": 2,
+     "cam_mass": 5.786436394017819,
+     "cam_focus": 1.5918087589237213,
+     "rho_loud": 0.23323321611967046,
+     "shift_in": 0.4727466857615154,
+     "shift_out": 0.1409523017369866
+    },
+    {
+     "layer": 3,
+     "cam_mass": 5.283170832458891,
+     "cam_focus": 1.0997829125932945,
+     "rho_loud": 0.4713714300613414,
+     "shift_in": 0.5056043048009953,
+     "shift_out": 0.11493279561499024
+    },
+    {
+     "layer": 4,
+     "cam_mass": 3.7822188932936376,
+     "cam_focus": 1.2343658456345787,
+     "rho_loud": 0.28231511709849133,
+     "shift_in": 0.5185808854379961,
+     "shift_out": 0.12297358477657874
+    },
+    {
+     "layer": 5,
+     "cam_mass": 7.7248046709024925,
+     "cam_focus": 1.1746736898113253,
+     "rho_loud": 0.2835760245727885,
+     "shift_in": 0.5509206764712136,
+     "shift_out": 0.1309673337598426
+    },
+    {
+     "layer": 6,
+     "cam_mass": 7.692947812577219,
+     "cam_focus": 1.1931737507778508,
+     "rho_loud": 0.25654390181787334,
+     "shift_in": 0.5726321372118349,
+     "shift_out": 0.14442026230449104
+    },
+    {
+     "layer": 7,
+     "cam_mass": 2.0871684944886275,
+     "cam_focus": 0.8440947847202296,
+     "rho_loud": -0.1578035345840081,
+     "shift_in": 0.6548580096544672,
+     "shift_out": 0.1831531966396195
+    },
+    {
+     "layer": 8,
+     "cam_mass": 6.160772317239353,
+     "cam_focus": 0.8674932069754407,
+     "rho_loud": -0.06035252204513827,
+     "shift_in": 0.8894790102014082,
+     "shift_out": 0.40712471859079385
+    }
+   ],
+   "figures": {
+    "main": "figures/ambiguous__2094-142345-0024__moonshine-base__deg__aud-cam.png",
+    "cam": "figures/ambiguous__2094-142345-0024__moonshine-base__deg__aud-cam-cam.png",
+    "spillover": "figures/ambiguous__2094-142345-0024__moonshine-base__deg__aud-cam-spillover.png",
+    "layers": "figures/ambiguous__2094-142345-0024__moonshine-base__deg__aud-cam-layers.png",
+    "tokens": "figures/ambiguous__2094-142345-0024__moonshine-base__deg__aud-cam-tokens.png"
+   }
+  },
+  {
+   "model": "whisper-base",
+   "cond": "clean",
+   "text": "Money, my iron's tried to hold. Please put it down to warm.",
+   "n_tokens": 16,
+   "degraded_share": 0.3840304182509506,
+   "per_layer": [
+    {
+     "layer": 0,
+     "cam_mass": 0.10263241827487946,
+     "cam_focus": 1.3028000593185425,
+     "rho_loud": -0.5761161644581342,
+     "shift_in": 0.3048313856124878,
+     "shift_out": 0.0034608079586178064
+    },
+    {
+     "layer": 1,
+     "cam_mass": 0.4735766053199768,
+     "cam_focus": 1.3975569009780884,
+     "rho_loud": -0.014055790753492926,
+     "shift_in": 0.4488266408443451,
+     "shift_out": 0.07075078040361404
+    },
+    {
+     "layer": 2,
+     "cam_mass": 0.5599660873413086,
+     "cam_focus": 1.2458100318908691,
+     "rho_loud": 0.1290268997394702,
+     "shift_in": 0.48350146412849426,
+     "shift_out": 0.09876634180545807
+    },
+    {
+     "layer": 3,
+     "cam_mass": 0.012641950510442257,
+     "cam_focus": 2.134079694747925,
+     "rho_loud": -0.11702295351140064,
+     "shift_in": 0.6352149844169617,
+     "shift_out": 0.14261478185653687
+    },
+    {
+     "layer": 4,
+     "cam_mass": 0.02688552439212799,
+     "cam_focus": 2.5336856842041016,
+     "rho_loud": -0.04118745819801831,
+     "shift_in": 1.317118763923645,
+     "shift_out": 0.2176072597503662
+    },
+    {
+     "layer": 5,
+     "cam_mass": 0.00046563625801354647,
+     "cam_focus": 2.6039602756500244,
+     "rho_loud": -0.05940325303038,
+     "shift_in": 1.2541234493255615,
+     "shift_out": 0.23182016611099243
+    },
+    {
+     "layer": 6,
+     "cam_mass": 0.1608627438545227,
+     "cam_focus": 1.663394570350647,
+     "rho_loud": -0.3221070743030898,
+     "shift_in": 1.0218219757080078,
+     "shift_out": 0.3211258053779602
+    }
+   ],
+   "figures": {
+    "main": "figures/ambiguous__2094-142345-0024__whisper-base__clean__aud-cam.png",
+    "cam": "figures/ambiguous__2094-142345-0024__whisper-base__clean__aud-cam-cam.png",
+    "spillover": "figures/ambiguous__2094-142345-0024__whisper-base__clean__aud-cam-spillover.png",
+    "layers": "figures/ambiguous__2094-142345-0024__whisper-base__clean__aud-cam-layers.png",
+    "tokens": "figures/ambiguous__2094-142345-0024__whisper-base__clean__aud-cam-tokens.png"
+   }
+  },
+  {
+   "model": "moonshine-base",
+   "cond": "clean",
+   "text": "Money, my earns, Trite told, These put it down to warm.",
+   "n_tokens": 18,
+   "degraded_share": 0.3840304182509506,
+   "per_layer": [
+    {
+     "layer": 0,
+     "cam_mass": 0.6352566357293785,
+     "cam_focus": 1.086718903048703,
+     "rho_loud": -0.4898327023929862,
+     "shift_in": 0.5071913453142077,
+     "shift_out": 0.11276670825015091
+    },
+    {
+     "layer": 1,
+     "cam_mass": 1.5122975998726427,
+     "cam_focus": 1.2484874998881947,
+     "rho_loud": 0.3751794636220965,
+     "shift_in": 0.45586592049017827,
+     "shift_out": 0.10382027122119472
+    },
+    {
+     "layer": 2,
+     "cam_mass": 0.6562890562076893,
+     "cam_focus": 1.2541300479865714,
+     "rho_loud": 0.4026592550665575,
+     "shift_in": 0.5044242175302052,
+     "shift_out": 0.12312354789661847
+    },
+    {
+     "layer": 3,
+     "cam_mass": 2.6885653372453726,
+     "cam_focus": 1.1980585245672082,
+     "rho_loud": 0.1943800488276353,
+     "shift_in": 0.5022421694186795,
+     "shift_out": 0.11887474960907086
+    },
+    {
+     "layer": 4,
+     "cam_mass": 1.2481714040845053,
+     "cam_focus": 1.269697126920462,
+     "rho_loud": 0.36294516468008586,
+     "shift_in": 0.548955472568943,
+     "shift_out": 0.12959855951116073
+    },
+    {
+     "layer": 5,
+     "cam_mass": 4.916229402874835,
+     "cam_focus": 1.0960548722302264,
+     "rho_loud": 0.33511221992888907,
+     "shift_in": 0.5928078693375016,
+     "shift_out": 0.1439391923439944
+    },
+    {
+     "layer": 6,
+     "cam_mass": 9.207622961047505,
+     "cam_focus": 1.0816760360414632,
+     "rho_loud": 0.47500811382040875,
+     "shift_in": 0.5950471362762398,
+     "shift_out": 0.16297887697376978
+    },
+    {
+     "layer": 7,
+     "cam_mass": 2.3027492497406596,
+     "cam_focus": 1.0487565642701255,
+     "rho_loud": 0.2119170227962832,
+     "shift_in": 0.6971507758060933,
+     "shift_out": 0.21007736319901868
+    },
+    {
+     "layer": 8,
+     "cam_mass": 2.454207216042662,
+     "cam_focus": 1.0444350310539685,
+     "rho_loud": 0.45363264749268783,
+     "shift_in": 0.9207039045820793,
+     "shift_out": 0.44054994714735995
+    }
+   ],
+   "figures": {
+    "main": "figures/ambiguous__2094-142345-0024__moonshine-base__clean__aud-cam.png",
+    "cam": "figures/ambiguous__2094-142345-0024__moonshine-base__clean__aud-cam-cam.png",
+    "spillover": "figures/ambiguous__2094-142345-0024__moonshine-base__clean__aud-cam-spillover.png",
+    "layers": "figures/ambiguous__2094-142345-0024__moonshine-base__clean__aud-cam-layers.png",
+    "tokens": "figures/ambiguous__2094-142345-0024__moonshine-base__clean__aud-cam-tokens.png"
+   }
+  }
+ ]
+}
