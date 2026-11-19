@@ -5,7 +5,7 @@
 - **experiments/ambiguous_wer.py**: the clean and the degraded transcript of each model on the
   ambiguous clip aligned to the gold, every word placed at its first-ranked erasure patch, the
   shared words joined; explains the WER change (and whisper-base's unchanged WER) through the noisy
-  window. Figure, a zoom on the noisy two seconds, and table in the Controlled damage section.
+  window. Figure and table in the README.
 
 ## 0.2.1
 
