@@ -336,6 +336,47 @@ survive the degradation unchanged. On clean LibriSpeech all three models sit at 
   <br><sub>LibriSpeech 2094-142345-0024 with pink noise at 0 dB inserted at 0.6 to 2.6 s (dashed). The clean twin is <code>figures/controlled_noise_clean__2094-142345-0024.png</code>.</sub>
 </p>
 
+Why the word error rate moved on this clip, and why for whisper-base it did not: the clean and the
+degraded transcript of each model aligned to the gold, every word placed where its erasure evidence
+ranks first, the words both transcripts share joined (`experiments/ambiguous_wer.py`, from the saved
+attributions).
+
+<p align="center">
+  <img src="figures/controlled_noise_wer__2094-142345-0024.png" width="860" alt="For each of the three models two rows of words, the clean and the degraded transcript, each word placed at the patch its erasure evidence ranks first, green when it matches the gold and red when not, with grey lines joining the words both transcripts share; the noisy two seconds are a blue band">
+  <br><sub>Green filled = right at its place in the sentence, red outline = substitution or insertion. Grey lines join the words both transcripts share.</sub>
+</p>
+
+* **The error rate moves only through the noisy two seconds.** After the noise, "put it down to
+  warm" is right in all six transcripts and the dialect word "pease" is wrong in all six, and the
+  shared words keep their evidence within 0 to 200 ms. Inside the noise the words change in every
+  model: whisper-tiny goes from "my iron's tright" to "clients quite", whisper-base from "my iron's
+  tried to hold" to "fire and sprite told", moonshine-base from "my earns, Trite" to "lions, fight".
+* **The evidence for the window words sinks into the noise.** Their erasure mass inside the window
+  rises from 0.71 to 0.76 on the clean recording to 0.88 to 0.90 on the degraded one, while the
+  words outside stay at about 0.2. The new words were built from the noisy audio, which is what the
+  per-token view below confirms.
+* **whisper-base stays at 45 % WER with different errors.** On the clean recording its five errors
+  are near misses on the dialect ("Money" for "munny", "tried to hold" for "twite told", "Please"
+  for "pease"). On the degraded one they are the same two dialect words plus three invented words
+  in the noise. The number did not move because one kind of error replaced another, and only the
+  placement shows that.
+
+<details>
+<summary><b>Stats for nerds</b> (the clean-to-degraded change per model)</summary>
+
+| model | WER clean -> degraded | words on the noisy stretch | right on it | right outside it | shared words | evidence in the noise, window words | evidence in the noise, outside words |
+|---|---|---|---|---|---|---|---|
+| whisper-tiny | 27% -> 45% | 4 -> 4 | 2 of 4 -> 1 of 4 | 6 of 7 -> 5 of 6 | 8 | 0.76 -> 0.89 | 0.21 -> 0.20 |
+| whisper-base | 45% -> 45% | 4 -> 6 | 2 of 4 -> 2 of 6 | 5 of 8 -> 4 of 5 | 6 | 0.72 -> 0.88 | 0.23 -> 0.26 |
+| moonshine-base | 36% -> 55% | 4 -> 3 | 1 of 4 -> 0 of 3 | 6 of 7 -> 5 of 7 | 7 | 0.71 -> 0.90 | 0.21 -> 0.36 |
+
+Words "on the noisy stretch" are those whose first-ranked erasure patch lies inside 0.6 to 2.6 s on
+that recording; "told" moves in or out of the window between the two recordings, which is why the
+outside counts are not the same size. Evidence in the noise is the mean share of a word's erasure
+mass inside the window.
+
+</details>
+
 ## One ambiguous clip, read in depth
 
 The clip above is the ambiguous case. Inside the noise whisper-base writes "fire and sprite told",
@@ -716,7 +757,7 @@ commands a workflow would run are `make test` and `make lint`.
 
 ## Status
 
-* Done (0.2.1): operator, three backends, scores, summaries, AADD context, the figure system, the
+* Done (0.2.2): operator, three backends, scores, summaries, AADD context, the figure system, the
   latent view, the tool framework with two registered tools and plug-in discovery, the per-token
   gradient view and the ambiguous-clip experiment, tests, the three datasets through three models,
   the detector-backbone check, clean-environment run, provenance.

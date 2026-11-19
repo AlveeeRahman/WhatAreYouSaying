@@ -14,3 +14,4 @@ done
 $PY experiments/controlled.py summarise 2>&1 | grep -v -E "torchao|Warning"
 echo "=== controlled all done $(date -u +%H:%M:%S)"
 $PY experiments/ambiguous_case.py 2>&1 | grep -v -E "torchao|Warning|logits processor|Loading weights"
+$PY experiments/ambiguous_wer.py 2>&1 | grep -v -E "Warning"
