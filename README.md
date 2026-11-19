@@ -5,15 +5,22 @@
 <p align="center"><sub>Which audio did the speech model use for each word it wrote, and was that audio clean?</sub></p>
 
 <p align="center">
-  <img src="figures/method_whisper_base.png" width="860" alt="Representation erasure on audio for whisper-base on one clip: the erasure grid over the spectrogram with one patch highlighted, the patch before and after erasure in the model's log-mel input, the surprisal change of every token for that patch, and the full map of the most affected token with the AADD-flagged frames marked above it">
-  <br><sub>The method on one clip (whisper-base). Erase one patch of the spectrogram, re-score the model's own transcript, note which token got less likely. Repeat for every patch.</sub>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a>
+  <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/python-3.12%2B-blue.svg" alt="Python 3.12+"></a>
+  <a href="requirements.txt"><img src="https://img.shields.io/badge/PyTorch-2.11-EE4C2C.svg" alt="PyTorch 2.11"></a>
+  <a href="https://github.com/gertelrina/aadd"><img src="https://img.shields.io/badge/AADD-v3.1-191919.svg" alt="AADD v3.1"></a>
+  <a href="tests/"><img src="https://img.shields.io/badge/tests-37%20passed-brightgreen.svg" alt="tests: 37 passed"></a>
+  <a href="provenance/clean_env_run.log"><img src="https://img.shields.io/badge/clean--env%20run-passed-brightgreen.svg" alt="clean-environment run: passed"></a>
+  <a href="#reproducibility"><img src="https://img.shields.io/badge/CI-not%20set%20up%20yet-lightgrey.svg" alt="CI: not set up yet"></a>
+</p>
+<p align="center">
+  <a href="#backends-local-weights-vllm-llamacpp"><img src="https://img.shields.io/badge/backends-Whisper%20%7C%20Moonshine%20%7C%20vLLM%20%7C%20llama.cpp-lightgrey.svg" alt="Backends: Whisper, Moonshine, vLLM, llama.cpp"></a>
+  <a href="#results-on-100-random-test-clips"><img src="https://img.shields.io/badge/datasets-VoxCeleb%20%7C%20LibriSpeech%20%7C%20VoiceBank--DEMAND-lightgrey.svg" alt="Datasets: VoxCeleb, LibriSpeech, VoiceBank-DEMAND"></a>
 </p>
 
 <p align="center">
-  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a>
-  <img src="https://img.shields.io/badge/python-3.12-blue.svg" alt="Python 3.12">
-  <img src="https://img.shields.io/badge/tests-37%20passed-brightgreen.svg" alt="tests: 37 passed">
-  <img src="https://img.shields.io/badge/CI-not%20set%20up%20yet-lightgrey.svg" alt="CI: not set up yet">
+  <img src="figures/method_whisper_base.png" width="860" alt="Representation erasure on audio for whisper-base on one clip: the erasure grid over the spectrogram with one patch highlighted, the patch before and after erasure in the model's log-mel input, the surprisal change of every token for that patch, and the full map of the most affected token with the AADD-flagged frames marked above it">
+  <br><sub>The method on one clip (whisper-base). Erase one patch of the spectrogram, re-score the model's own transcript, note which token got less likely. Repeat for every patch.</sub>
 </p>
 
 WhatAreYouSaying (WAYS) tells you, for every token a speech-to-text model wrote, which 100 ms of
