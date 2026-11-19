@@ -142,6 +142,14 @@ class LatentText:
     caption_tokens: str = ("One row per token of the model's own transcript. Grey = gradient times activation per frame (Grad-CAM without "
                            "the time pooling, which loses the where). Where the grey mass and the coloured tick agree, the two methods name "
                            "the same audio. A row smeared across the clip is a token the model wrote from context, not from any one sound.")
+    cross_spectrogram: str = "{name}{wer}  ·  erasure test: {verdict}"
+    cross_token_lane: str = ("The same tokens through the encoder: gradient saliency per token at the top layer (grey, row scaled to its own "
+                             "maximum). Coloured tick = the patch the erasure test ranked first, the box above.")
+    cross_counts: str = "On the degraded audio: {n_erase} of {K} tokens by the erasure test, {n_grad} by the gradient map, {n_both} by both"
+    caption_cross: str = ("Top: each token's most important 100 ms x band patch under erasure, dashed and underlined when it lies on degraded "
+                          "audio. Middle: where the encoder's gradient puts the same token. Bottom: the share of that gradient on the degraded "
+                          "audio per layer. Agreement means the token was built from that audio; a dashed box with a light row is a token the "
+                          "decoder changed because its context changed.")
 
 
 def _merge(cls, given):
@@ -780,6 +788,98 @@ def token_cam_figure(wav, sr, tcam, pieces, degraded, layer=-1, layer_hop=0.02, 
     share = np.array([[tcam[k, l][d].sum() if tcam[k, l].sum() > 0 else np.nan for l in range(L)] for k in range(K)])
     axl.imshow(np.nan_to_num(share), aspect="auto", cmap=BLUE, extent=[-0.5, L - 0.5, K, 0], interpolation="nearest", vmin=0, vmax=1)
     axl.axvline(-0.5, color=S.border, lw=0)
+    axl.set_xticks(np.arange(L)); axl.set_xticklabels([str(l) for l in range(L)], fontsize=S.label_size - 1)
+    axl.set_yticks(np.arange(K) + 0.5); axl.set_yticklabels(labels, fontsize=S.label_size - 1, fontweight="bold")
+    for k, lab in enumerate(axl.get_yticklabels()):
+        lab.set_color(C.col(k))
+    axl.set_ylabel(T.y_token, fontsize=S.label_size); axl.set_xlabel(T.x_layer, labelpad=2)
+    for sp in axl.spines.values():
+        sp.set_color(S.border)
+    axl.tick_params(colors=S.text_soft)
+    C.label(axl, T.token_layers_lane)
+    _settle(fig, gs, strict)
+    if out is not None:
+        _save(fig, out, S.dpi)
+    return fig
+
+
+def cross_check_figure(wav, sr, model, on, tcam, degraded, erase_t, quality=None, quality_hop=0.02, quality_classes=None, threshold=0.5,
+                       window=None, layer_hop=0.02, counts=None, title=None, out=None, text=None, style=None, strict=True):
+    """The erasure reading and the encoder reading of one model's tokens in one figure: the damage lane (when
+    quality is given), the spectrogram with each token's first-ranked erasure patch boxed (dashed when it lies on
+    degraded audio, `on`), one lane per token of gradient saliency at the top encoder layer with the erasure patch
+    as a tick, and the share of each token's saliency on the degraded frames per layer.
+
+    model is ways_figure's model entry (from_attribution); on is the per-token bool list the erasure test gives;
+    tcam is token_cam's [tokens, layers, frames]; degraded the [frames] bool; erase_t a time per token;
+    counts a dict(n_erase, n_grad, n_both) for the lane title; window an optional (start, end) drawn dashed."""
+    T, S, FT = _merge(LatentText, text), _merge(FigureStyle, style), FigureText()
+    _rc(S)
+    wav = np.asarray(wav, np.float32); dur = len(wav) / sr
+    tcam = np.asarray(tcam, np.float32); K, L, n = tcam.shape
+    d = np.asarray(degraded, bool)[:n]
+    spans = degraded_spans(quality, quality_hop, threshold) if quality is not None else degraded_spans(d.astype(np.float32), layer_hop, 0.5)
+    wins = [] if window is None else ([tuple(window)] if np.ndim(window) == 1 else [tuple(w) for w in window])
+    frac = float(d.mean())
+    C = _Canvas(S, dur, S.width_in, right=0.93)
+    Lm = logmel(wav, sr)
+    title = title if title is not None else (T.title or f"{model['name']}: the erasure test and the encoder's gradient, token by token")
+    row_in = S.label_size * 1.7 / 72
+    n_dmg_rows = 0
+    if quality is not None:
+        q = np.asarray(quality, np.float32); q = q[:, None] if q.ndim == 1 else q
+        n_dmg_rows = max(1, sum(int(q[:, j].max() >= threshold) for j in range(q.shape[1])) + (1 if q.shape[1] > 1 else 0))
+    hs = ([S.label_size * 1.6 / 72 * n_dmg_rows + 0.08] if quality is not None else []) + [2.4, row_in * K + 0.3, row_in * K + 0.3]
+    gap_in = S.font_size * 2.6 / 72
+    fig = plt.figure(figsize=(S.width_in, 1.0))
+    t_in, c_in = _title_and_caption(fig, C, title, T.caption_cross)
+    H = t_in + 0.45 + sum(hs) + gap_in * len(hs) + c_in + 0.7
+    fig.set_size_inches(S.width_in, H)
+    gs = fig.add_gridspec(len(hs), 1, height_ratios=hs, hspace=gap_in / (sum(hs) / len(hs)), left=C.left, right=C.right,
+                          top=1 - (t_in + 0.45) / H, bottom=(c_in + 0.7) / H)
+    C.mel_axis_in = 2.4
+    i = 0
+    if quality is not None:
+        axq = fig.add_subplot(gs[0]); i = 1
+        C.damage_lane(axq, quality, quality_hop, quality_classes, threshold, spans, FT.damage_clean.format(threshold=threshold), FT.damage_max_row)
+        C.label(axq, FT.damage_lane.format(hop_ms=quality_hop * 1000, threshold=threshold)); C.tidy(axq)
+    axm, axt, axl = fig.add_subplot(gs[i]), fig.add_subplot(gs[i + 1]), fig.add_subplot(gs[i + 2])
+    ps, B = model.get("patch_s", 0.1), model.get("n_bands", 8); mpb = 80 // B
+    C.mel(axm, Lm, T.y_mel, T.mel_ticks); C.bands(axm, spans)
+    items = []
+    for k, tp in enumerate(model["top"]):
+        if tp is None:
+            continue
+        b, t = tp
+        axm.add_patch(Rectangle((t * ps, b * mpb), ps, mpb, fill=False, edgecolor=C.col(k), lw=2.4 if on[k] else 2.0,
+                                ls=(0, (2.5, 1.5)) if on[k] else "-", zorder=4))
+        items.append((k, f"{k} {model['tokens'][k].strip() or '_'}", b, t, ps, mpb))
+    for k, lab, x, y, va in C.place_labels(items):
+        axm.text(x, y, lab, color=C.col(k), fontsize=S.label_size, ha="left", va=va, fontweight="bold", zorder=5, clip_on=True,
+                 bbox=dict(boxstyle="square,pad=0.08", fc=S.background, ec="none", alpha=0.75))
+    for a, b in wins:
+        for ax in (axm, axt):
+            ax.axvline(a, color=S.degraded, lw=1.2, ls="--", zorder=5); ax.axvline(b, color=S.degraded, lw=1.2, ls="--", zorder=5)
+    C.tidy(axm)
+    w = FT.wer.format(wer=model["wer"]) if model.get("wer") is not None and np.isfinite(model["wer"]) else ""
+    C.label(axm, T.cross_spectrogram.format(name=model["name"], wer=w, verdict=verdict(on, frac, replace(FT, verdict_mixed=FT.verdict_window) if wins else FT)))
+    labels = [f"{k} {str(pc).strip() or '_'}" for k, pc in enumerate(model["tokens"])]
+    M = tcam[:, -1, :]; M = M / np.maximum(M.max(1, keepdims=True), 1e-12)
+    axt.imshow(M, aspect="auto", cmap="Greys", extent=[0, n * layer_hop, K, 0], interpolation="nearest", vmin=0, vmax=1)
+    for k, x in enumerate(erase_t):
+        if x is not None and np.isfinite(x):
+            axt.plot([x, x], [k + 0.12, k + 0.88], color=C.col(k), lw=2.2, solid_capstyle="butt", zorder=4)
+    for a, b in spans:
+        axt.add_patch(Rectangle((a, 0), b - a, K, fill=False, edgecolor=S.degraded, lw=1.2, zorder=3))
+    axt.set_yticks(np.arange(K) + 0.5); axt.set_yticklabels(labels, fontsize=S.label_size - 1, fontweight="bold")
+    for k, lab in enumerate(axt.get_yticklabels()):
+        lab.set_color(C.col(k))
+    axt.set_ylabel(T.y_token, fontsize=S.label_size)
+    C.tidy(axt, True, T.x_time)
+    lane = T.cross_token_lane + ("  " + T.cross_counts.format(K=K, **counts) if counts else "")
+    C.label(axt, lane)
+    share = np.array([[tcam[k, l][d].sum() if tcam[k, l].sum() > 0 else np.nan for l in range(L)] for k in range(K)])
+    axl.imshow(np.nan_to_num(share), aspect="auto", cmap=BLUE, extent=[-0.5, L - 0.5, K, 0], interpolation="nearest", vmin=0, vmax=1)
     axl.set_xticks(np.arange(L)); axl.set_xticklabels([str(l) for l in range(L)], fontsize=S.label_size - 1)
     axl.set_yticks(np.arange(K) + 0.5); axl.set_yticklabels(labels, fontsize=S.label_size - 1, fontweight="bold")
     for k, lab in enumerate(axl.get_yticklabels()):

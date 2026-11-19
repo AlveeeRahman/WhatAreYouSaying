@@ -1,4 +1,4 @@
-"""The two tools as a callable surface: schemas, the registry, and the granular aud-cam figures drawn from arrays."""
+"""The tools as a callable surface: schemas, the registry, and the granular aud-cam figures drawn from arrays."""
 import hashlib
 import json
 
@@ -26,7 +26,7 @@ def _latent(n=100, layers=5, seed=4):
 
 def test_schema_names_match_registry_and_is_json():
     s = schema()
-    assert [t["name"] for t in s] == ["sound-token", "aud-cam"] == list(TOOLS)
+    assert [t["name"] for t in s] == ["sound-token", "aud-cam", "cross-check"] == list(TOOLS)
     for t in s:
         assert t["parameters"]["type"] == "object" and t["parameters"]["required"] == ["audio"]
         assert "audio" in t["parameters"]["properties"]
@@ -39,10 +39,10 @@ def test_call_rejects_unknown_tool():
         call("not-a-tool", audio="x.wav")
 
 
-def test_registry_lists_the_two_tools_with_their_contract():
-    assert names() == ["sound-token", "aud-cam"] and [t["name"] for t in schemas()] == names()
-    assert get("aud-cam").needs_white_box and not get("sound-token").needs_white_box
-    assert TOOLS["sound-token"] is get("sound-token").run and len(TOOLS) == 2
+def test_registry_lists_the_three_tools_with_their_contract():
+    assert names() == ["sound-token", "aud-cam", "cross-check"] and [t["name"] for t in schemas()] == names()
+    assert get("aud-cam").needs_white_box and get("cross-check").needs_white_box and not get("sound-token").needs_white_box
+    assert TOOLS["sound-token"] is get("sound-token").run and len(TOOLS) == 3
     with pytest.raises(KeyError):
         get("nope")
 
@@ -109,3 +109,28 @@ def test_aud_cam_schema_has_tokens_flag():
 
     props = get("aud-cam").parameters["properties"]
     assert props["tokens"]["type"] == "boolean" and props["tokens"]["default"] is False
+
+
+def test_cross_check_figure_and_table_from_arrays(tmp_path):
+    from ways.figure import cross_check_figure
+    from ways.tools.cross_check import table
+
+    rng = np.random.default_rng(5)
+    wav = _wav(3); n, K, L = 150, 4, 3
+    degraded = np.zeros(n, bool); degraded[30:80] = True
+    tcam = rng.random((K, L, n)).astype(np.float32); tcam[0, :, :30] = 0; tcam[0, :, 80:] = 0
+    tcam /= tcam.sum(2, keepdims=True)
+    model = dict(name="synthetic", tokens=[" a", " b", " c", "."], top=[(1, 10), (3, 20), (5, 24), None], patch_s=0.1, n_bands=8, wer=0.25)
+    on = [True, False, False, False]
+    out = tmp_path / "x.png"
+    cross_check_figure(wav, 16000, model, on, tcam, degraded, [1.05, 2.05, 2.45, None], window=(0.6, 1.6),
+                       counts=dict(n_erase=1, n_grad=1, n_both=1), out=out)
+    assert out.exists()
+    res = ToolResult(tool="cross-check", summary=dict(tokens=[dict(k=0, piece=" a", erase_t=1.05, erase_band=1, erase_in=0.9, cam_t=1.1, cam_width_s=0.4,
+                                                                 cam_in=0.95, cam_in_min_layers=0.8, reading="degraded", on_degraded_erasure=True,
+                                                                 on_degraded_gradient=True),
+                                                            dict(k=1, piece=" b", erase_t=2.05, erase_band=3, erase_in=0.1, cam_t=2.0, cam_width_s=0.5,
+                                                                 cam_in=0.05, cam_in_min_layers=0.0, reading="clean", on_degraded_erasure=False,
+                                                                 on_degraded_gradient=False)]))
+    t = table(res); t2 = table(res, only_degraded=True)
+    assert t.count("\n") == 4 and t2.count("\n") == 3 and "| 0 | a | 1.05 | 1 | 0.90 |" in t
