@@ -4,12 +4,18 @@ Three ways of placing each token in time. The tokens are in spoken order, so rho
 
 | model | recording | method | rho(order) | median width (s) | tokens placed in the window |
 |---|---|---|---|---|---|
+| whisper-tiny | degraded | erasure | 0.99 | 0.10 | 38% |
+| whisper-tiny | degraded | grad x act | 0.86 | 0.87 | 46% |
+| whisper-tiny | degraded | Grad-CAM | -0.30 | 1.78 | 54% |
 | whisper-base | degraded | erasure | 0.48 | 0.10 | 57% |
 | whisper-base | degraded | grad x act | 0.89 | 0.73 | 50% |
 | whisper-base | degraded | Grad-CAM | -0.35 | 1.76 | 64% |
 | moonshine-base | degraded | erasure | 0.70 | 0.10 | 50% |
 | moonshine-base | degraded | grad x act | 0.94 | 1.22 | 50% |
 | moonshine-base | degraded | Grad-CAM | 0.46 | 2.58 | 25% |
+| whisper-tiny | clean | erasure | 0.99 | 0.10 | 47% |
+| whisper-tiny | clean | grad x act | 0.90 | 0.65 | 59% |
+| whisper-tiny | clean | Grad-CAM | -0.25 | 1.53 | 41% |
 | whisper-base | clean | erasure | 0.95 | 0.10 | 38% |
 | whisper-base | clean | grad x act | 0.93 | 0.67 | 50% |
 | whisper-base | clean | Grad-CAM | 0.16 | 1.21 | 62% |
@@ -18,6 +24,24 @@ Three ways of placing each token in time. The tokens are in spoken order, so rho
 | moonshine-base | clean | Grad-CAM | -0.03 | 2.43 | 44% |
 
 Per token on the degraded recording (top layer). cam_t / width: where the gradient map sits and how spread it is; cam_in / erase_in: share of the gradient map / of the erasure mass on the noisy stretch; band: the frequency band (0 = lowest of 8) the erasure test ranked first.
+
+**whisper-tiny: 'Money, clients quite told. Please put it down to warm.'**
+
+| k | token | cam_t (s) | width (s) | cam_in | erase_t (s) | erase_in | band | reading |
+|---|---|---|---|---|---|---|---|---|
+| 0 | Money | 1.53 | 0.76 | 0.44 | 0.75 | 0.92 | 1 | split |
+| 1 | , | 1.76 | 0.77 | 0.79 | 1.85 | 0.93 | 4 | degraded |
+| 2 | clients | 1.74 | 0.76 | 0.84 | 1.55 | 0.95 | 1 | degraded |
+| 3 | quite | 2.13 | 1.15 | 0.76 | 2.15 | 0.93 | 1 | diffuse |
+| 4 | told | 2.29 | 1.14 | 0.64 | 2.45 | 0.93 | 4 | diffuse |
+| 5 | . | 2.28 | 0.87 | 0.38 | 2.75 | 0.47 | 1 | clean |
+| 6 | Please | 3.25 | 0.31 | 0.08 | 3.65 | 0.09 | 5 | clean |
+| 7 | put | 3.37 | 0.55 | 0.13 | 3.75 | 0.36 | 4 | clean |
+| 8 | it | 2.79 | 0.95 | 0.27 | 3.95 | 0.25 | 4 | clean |
+| 9 | down | 3.51 | 0.90 | 0.10 | 3.95 | 0.03 | 4 | clean |
+| 10 | to | 3.30 | 1.01 | 0.18 | 4.35 | 0.13 | 1 | diffuse |
+| 11 | warm | 3.77 | 0.66 | 0.11 | 4.65 | 0.11 | 3 | clean |
+| 12 | . | 3.03 | 1.59 | 0.24 | 4.45 | 0.48 | 1 | diffuse |
 
 **whisper-base: 'Money, fire and sprite told. Please put it down to warm.'**
 
@@ -63,6 +87,14 @@ Control: tokens that appear in both transcripts of a model, and how far the eras
 
 | model | token | erase_t clean | erase_t degraded | cam_t clean | cam_t degraded | moved (erasure, ms) | moved (gradient, ms) |
 |---|---|---|---|---|---|---|---|
+| whisper-tiny | Money | 0.95 | 0.75 | 1.33 | 1.53 | -200 | +208 |
+| whisper-tiny | told | 2.65 | 2.45 | 2.51 | 2.29 | -200 | -217 |
+| whisper-tiny | Please | 3.45 | 3.65 | 3.22 | 3.25 | +200 | +33 |
+| whisper-tiny | put | 3.75 | 3.75 | 3.22 | 3.37 | +0 | +145 |
+| whisper-tiny | it | 3.95 | 3.95 | 2.93 | 2.79 | +0 | -132 |
+| whisper-tiny | down | 3.95 | 3.95 | 3.55 | 3.51 | +0 | -44 |
+| whisper-tiny | to | 4.35 | 4.35 | 3.07 | 3.30 | +0 | +235 |
+| whisper-tiny | warm | 4.65 | 4.65 | 3.90 | 3.77 | +0 | -128 |
 | whisper-base | Money | 0.65 | 0.75 | 1.65 | 2.21 | +100 | +562 |
 | whisper-base | , | 1.55 | 1.85 | 1.89 | 1.89 | +300 | +5 |
 | whisper-base | Please | 3.35 | 3.45 | 3.24 | 3.36 | +100 | +116 |

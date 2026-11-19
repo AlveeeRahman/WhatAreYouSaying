@@ -12,7 +12,11 @@ gradient map are read against each other on the noisy stretch, and the clean rec
 words after the noise should keep their anchor.
 
 Usage: python experiments/ambiguous_case.py            (needs experiments/cache/controlled from controlled.py)
-       python experiments/ambiguous_case.py --summary  (tables only, from the saved results)
+       python experiments/ambiguous_case.py --summary  (tables and the three-model figure, from the saved results)
+
+Also writes figures/controlled_noise_audcam__<clip>.png: the aud-cam counterpart of the controlled figure
+figures/controlled_noise_deg__<clip>.png, the same three models on the same degraded recording, one lane
+of per-token saliency per model with the erasure test's first patch as a tick.
 """
 import json
 import sys
@@ -34,7 +38,8 @@ CACHE = HERE / "cache/controlled"
 OUT = HERE / "results/ambiguous"
 FIG = HERE.parent / "figures"
 CLIP = "2094-142345-0024"
-MODELS = {"whisper-base": ("hf-whisper", "openai/whisper-base"), "moonshine-base": ("hf-moonshine", "UsefulSensors/moonshine-base")}
+MODELS = {"whisper-tiny": ("hf-whisper", "openai/whisper-tiny"), "whisper-base": ("hf-whisper", "openai/whisper-base"),
+          "moonshine-base": ("hf-moonshine", "UsefulSensors/moonshine-base")}
 PROV = HERE / "results/controlled/provenance.json"
 REVISIONS = json.load(open(PROV)).get("models", {}) if PROV.exists() else {}
 HOP = 0.02
@@ -140,5 +145,60 @@ def summarise(df=None):
     print("\n".join(L))
 
 
+def three_model_figure():
+    """The aud-cam counterpart of the controlled figure: spectrogram of the degraded recording, then for each of
+    the three models one lane per token (per-frame gradient saliency at the top encoder layer, erasure tick)."""
+    import matplotlib.pyplot as plt
+    from matplotlib.patches import Rectangle
+
+    from ways.figure import FigureStyle, LatentText, _Canvas, _rc, _save, _settle, _title_and_caption, logmel
+
+    S, T = FigureStyle(), LatentText()
+    _rc(S)
+    info = json.load(open(OUT / "clips.json")); a, b = info["window"]
+    wav, sr = sf.read(CACHE / f"{CLIP}_deg.wav", dtype="float32"); dur = len(wav) / sr
+    maps = {m: np.load(OUT / f"token_maps__{m}__deg.npz", allow_pickle=True) for m in MODELS}
+    C = _Canvas(S, dur, S.width_in, right=0.93)
+    row_in = S.label_size * 1.7 / 72
+    hs = [1.7] + [row_in * len(maps[m]["pieces"]) + 0.3 for m in MODELS]
+    gap_in = S.font_size * 3.4 / 72
+    fig = plt.figure(figsize=(S.width_in, 1.0))
+    title = (f"The same clip and the same three models through aud-cam: each token's gradient saliency (grey) against the patch the "
+             f"erasure test ranked first (tick)\ngold: '{info['gold']}'")
+    t_in, c_in = _title_and_caption(fig, C, title, T.caption_tokens)
+    H = t_in + 0.45 + sum(hs) + gap_in * len(hs) + c_in + 0.7
+    fig.set_size_inches(S.width_in, H)
+    gs = fig.add_gridspec(len(hs), 1, height_ratios=hs, hspace=gap_in / (sum(hs) / len(hs)), left=C.left, right=C.right,
+                          top=1 - (t_in + 0.45) / H, bottom=(c_in + 0.7) / H)
+    axm = fig.add_subplot(gs[0])
+    C.mel(axm, logmel(wav, sr), T.y_mel, T.mel_ticks); C.bands(axm, [(a, b)]); C.tidy(axm)
+    C.label(axm, f"the degraded recording: pink noise at 0 dB over {a:.1f}-{b:.1f} s (blue)")
+    for i, m in enumerate(MODELS):
+        z = maps[m]; tc, pieces, erase_t = z["grad_x_act"], list(z["pieces"]), z["erase_t"]
+        K, n = tc.shape[0], tc.shape[2]
+        ax = fig.add_subplot(gs[1 + i])
+        M = tc[:, -1, :]; M = M / np.maximum(M.max(1, keepdims=True), 1e-12)
+        ax.imshow(M, aspect="auto", cmap="Greys", extent=[0, n * HOP, K, 0], interpolation="nearest", vmin=0, vmax=1)
+        for k, x in enumerate(erase_t):
+            if np.isfinite(x):
+                ax.plot([x, x], [k + 0.12, k + 0.88], color=C.col(k), lw=2.2, solid_capstyle="butt", zorder=4)
+        ax.add_patch(Rectangle((a, 0), b - a, K, fill=False, edgecolor=S.degraded, lw=1.2, zorder=3))
+        ax.set_yticks(np.arange(K) + 0.5); ax.set_yticklabels([f"{k} {str(pc).strip() or '_'}" for k, pc in enumerate(pieces)],
+                                                                fontsize=S.label_size - 1, fontweight="bold")
+        for k, lab in enumerate(ax.get_yticklabels()):
+            lab.set_color(C.col(k))
+        ax.set_ylabel(T.y_token, fontsize=S.label_size)
+        d = pd.read_csv(OUT / "tokens.csv"); d = d[(d.model == m) & (d.cond == "deg")]
+        both = int(((d.cam_in >= 0.5) & (d.erase_in >= 0.5)).sum()); er = int((d.erase_in >= 0.5).sum()); gr = int((d.cam_in >= 0.5).sum())
+        C.tidy(ax, bottom=(i == len(MODELS) - 1), x_label=T.x_time)
+        text = next(r["text"] for r in info["runs"] if r["model"] == m and r["cond"] == "deg")
+        C.label(ax, f"{m}: '{text}'  ·  erasure puts {er} of {K} tokens on the noise, the gradient map {gr}, both {both}")
+    _settle(fig, gs, True)
+    out = FIG / f"controlled_noise_audcam__{CLIP}.png"
+    _save(fig, out, S.dpi); plt.close(fig)
+    print(out)
+
+
 if __name__ == "__main__":
     summarise(None if (len(sys.argv) > 1 and sys.argv[1] == "--summary") else run())
+    three_model_figure()

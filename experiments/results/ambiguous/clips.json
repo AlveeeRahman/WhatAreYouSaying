@@ -7,6 +7,59 @@
  ],
  "runs": [
   {
+   "model": "whisper-tiny",
+   "cond": "deg",
+   "text": "Money, clients quite told. Please put it down to warm.",
+   "n_tokens": 13,
+   "degraded_share": 0.3840304182509506,
+   "per_layer": [
+    {
+     "layer": 0,
+     "cam_mass": 0.9789650440216064,
+     "cam_focus": 0.8286139965057373,
+     "rho_loud": -0.036226425261759766,
+     "shift_in": 0.2622682750225067,
+     "shift_out": 0.0029310432728379965
+    },
+    {
+     "layer": 1,
+     "cam_mass": 1.978714108467102,
+     "cam_focus": 0.9971829056739807,
+     "rho_loud": -0.09818332580783104,
+     "shift_in": 0.3489658534526825,
+     "shift_out": 0.03138872608542442
+    },
+    {
+     "layer": 2,
+     "cam_mass": 2.7064895629882812,
+     "cam_focus": 1.0722129344940186,
+     "rho_loud": 0.17574073243390861,
+     "shift_in": 0.514125645160675,
+     "shift_out": 0.0581713430583477
+    },
+    {
+     "layer": 3,
+     "cam_mass": 0.13591435551643372,
+     "cam_focus": 1.5821352005004883,
+     "rho_loud": 0.29519669644646385,
+     "shift_in": 1.0755150318145752,
+     "shift_out": 0.12290207296609879
+    },
+    {
+     "layer": 4,
+     "cam_mass": 0.5768337845802307,
+     "cam_focus": 0.9789924025535583,
+     "rho_loud": -0.0601735798450164,
+     "shift_in": 1.042338490486145,
+     "shift_out": 0.21947385370731354
+    }
+   ],
+   "figures": {
+    "main": "/home/cppesl/Desktop/Alve/e2eML_course/WhatAreYouSaying/figures/ambiguous__2094-142345-0024__whisper-tiny__deg__aud-cam.png",
+    "tokens": "/home/cppesl/Desktop/Alve/e2eML_course/WhatAreYouSaying/figures/ambiguous__2094-142345-0024__whisper-tiny__deg__aud-cam-tokens.png"
+   }
+  },
+  {
    "model": "whisper-base",
    "cond": "deg",
    "text": "Money, fire and sprite told. Please put it down to warm.",
@@ -72,9 +125,6 @@
    ],
    "figures": {
     "main": "/home/cppesl/Desktop/Alve/e2eML_course/WhatAreYouSaying/figures/ambiguous__2094-142345-0024__whisper-base__deg__aud-cam.png",
-    "cam": "/home/cppesl/Desktop/Alve/e2eML_course/WhatAreYouSaying/figures/ambiguous__2094-142345-0024__whisper-base__deg__aud-cam-cam.png",
-    "spillover": "/home/cppesl/Desktop/Alve/e2eML_course/WhatAreYouSaying/figures/ambiguous__2094-142345-0024__whisper-base__deg__aud-cam-spillover.png",
-    "layers": "/home/cppesl/Desktop/Alve/e2eML_course/WhatAreYouSaying/figures/ambiguous__2094-142345-0024__whisper-base__deg__aud-cam-layers.png",
     "tokens": "/home/cppesl/Desktop/Alve/e2eML_course/WhatAreYouSaying/figures/ambiguous__2094-142345-0024__whisper-base__deg__aud-cam-tokens.png"
    }
   },
@@ -87,72 +137,72 @@
    "per_layer": [
     {
      "layer": 0,
-     "cam_mass": 0.5831164555620585,
-     "cam_focus": 2.0292869555050617,
+     "cam_mass": 0.5831192452372158,
+     "cam_focus": 2.0292869513076646,
      "rho_loud": 0.4494714294618846,
      "shift_in": 0.7549123657596801,
      "shift_out": 0.20340905904839016
     },
     {
      "layer": 1,
-     "cam_mass": 0.08762615329570046,
-     "cam_focus": 0.9138110937990169,
+     "cam_mass": 0.08762617474086071,
+     "cam_focus": 0.9138113164896249,
      "rho_loud": 0.2749901979388413,
      "shift_in": 0.4961889260507411,
      "shift_out": 0.1364371533140052
     },
     {
      "layer": 2,
-     "cam_mass": 5.786436394017819,
-     "cam_focus": 1.5918087589237213,
+     "cam_mass": 5.786440962055199,
+     "cam_focus": 1.591808176812191,
      "rho_loud": 0.23323321611967046,
      "shift_in": 0.4727466857615154,
      "shift_out": 0.1409523017369866
     },
     {
      "layer": 3,
-     "cam_mass": 5.283170832458891,
-     "cam_focus": 1.0997829125932945,
+     "cam_mass": 5.2831692951969975,
+     "cam_focus": 1.0997829270923807,
      "rho_loud": 0.4713714300613414,
      "shift_in": 0.5056043048009953,
      "shift_out": 0.11493279561499024
     },
     {
      "layer": 4,
-     "cam_mass": 3.7822188932936376,
-     "cam_focus": 1.2343658456345787,
+     "cam_mass": 3.7822192890960125,
+     "cam_focus": 1.2343657937666035,
      "rho_loud": 0.28231511709849133,
      "shift_in": 0.5185808854379961,
      "shift_out": 0.12297358477657874
     },
     {
      "layer": 5,
-     "cam_mass": 7.7248046709024925,
-     "cam_focus": 1.1746736898113253,
+     "cam_mass": 7.724804103248129,
+     "cam_focus": 1.1746737200901707,
      "rho_loud": 0.2835760245727885,
      "shift_in": 0.5509206764712136,
      "shift_out": 0.1309673337598426
     },
     {
      "layer": 6,
-     "cam_mass": 7.692947812577219,
-     "cam_focus": 1.1931737507778508,
+     "cam_mass": 7.692947432294531,
+     "cam_focus": 1.1931737875644464,
      "rho_loud": 0.25654390181787334,
      "shift_in": 0.5726321372118349,
      "shift_out": 0.14442026230449104
     },
     {
      "layer": 7,
-     "cam_mass": 2.0871684944886275,
-     "cam_focus": 0.8440947847202296,
+     "cam_mass": 2.0871680024662282,
+     "cam_focus": 0.8440946234969745,
      "rho_loud": -0.1578035345840081,
      "shift_in": 0.6548580096544672,
      "shift_out": 0.1831531966396195
     },
     {
      "layer": 8,
-     "cam_mass": 6.160772317239353,
-     "cam_focus": 0.8674932069754407,
+     "cam_mass": 6.160767314321161,
+     "cam_focus": 0.8674930354924077,
      "rho_loud": -0.06035252204513827,
      "shift_in": 0.8894790102014082,
      "shift_out": 0.40712471859079385
@@ -160,10 +210,60 @@
    ],
    "figures": {
     "main": "/home/cppesl/Desktop/Alve/e2eML_course/WhatAreYouSaying/figures/ambiguous__2094-142345-0024__moonshine-base__deg__aud-cam.png",
-    "cam": "/home/cppesl/Desktop/Alve/e2eML_course/WhatAreYouSaying/figures/ambiguous__2094-142345-0024__moonshine-base__deg__aud-cam-cam.png",
-    "spillover": "/home/cppesl/Desktop/Alve/e2eML_course/WhatAreYouSaying/figures/ambiguous__2094-142345-0024__moonshine-base__deg__aud-cam-spillover.png",
-    "layers": "/home/cppesl/Desktop/Alve/e2eML_course/WhatAreYouSaying/figures/ambiguous__2094-142345-0024__moonshine-base__deg__aud-cam-layers.png",
     "tokens": "/home/cppesl/Desktop/Alve/e2eML_course/WhatAreYouSaying/figures/ambiguous__2094-142345-0024__moonshine-base__deg__aud-cam-tokens.png"
+   }
+  },
+  {
+   "model": "whisper-tiny",
+   "cond": "clean",
+   "text": "Money, my iron's, tright told. Please put it down to warm.",
+   "n_tokens": 17,
+   "degraded_share": 0.3840304182509506,
+   "per_layer": [
+    {
+     "layer": 0,
+     "cam_mass": 0.8750905394554138,
+     "cam_focus": 0.8904876112937927,
+     "rho_loud": -0.25009272714535574,
+     "shift_in": 0.2465653419494629,
+     "shift_out": 0.0029310393147170544
+    },
+    {
+     "layer": 1,
+     "cam_mass": 0.18036982417106628,
+     "cam_focus": 0.6927402019500732,
+     "rho_loud": -0.11879054612181802,
+     "shift_in": 0.4463439881801605,
+     "shift_out": 0.06778758019208908
+    },
+    {
+     "layer": 2,
+     "cam_mass": 1.7794444561004639,
+     "cam_focus": 0.864187479019165,
+     "rho_loud": 0.09652905449985119,
+     "shift_in": 0.5699138641357422,
+     "shift_out": 0.10119245946407318
+    },
+    {
+     "layer": 3,
+     "cam_mass": 1.762115716934204,
+     "cam_focus": 0.6861965656280518,
+     "rho_loud": 0.17389236456516516,
+     "shift_in": 1.0456924438476562,
+     "shift_out": 0.17608976364135742
+    },
+    {
+     "layer": 4,
+     "cam_mass": 0.2903904318809509,
+     "cam_focus": 0.5312806367874146,
+     "rho_loud": -0.15518128382220836,
+     "shift_in": 1.0293806791305542,
+     "shift_out": 0.29340648651123047
+    }
+   ],
+   "figures": {
+    "main": "/home/cppesl/Desktop/Alve/e2eML_course/WhatAreYouSaying/figures/ambiguous__2094-142345-0024__whisper-tiny__clean__aud-cam.png",
+    "tokens": "/home/cppesl/Desktop/Alve/e2eML_course/WhatAreYouSaying/figures/ambiguous__2094-142345-0024__whisper-tiny__clean__aud-cam-tokens.png"
    }
   },
   {
@@ -232,9 +332,6 @@
    ],
    "figures": {
     "main": "/home/cppesl/Desktop/Alve/e2eML_course/WhatAreYouSaying/figures/ambiguous__2094-142345-0024__whisper-base__clean__aud-cam.png",
-    "cam": "/home/cppesl/Desktop/Alve/e2eML_course/WhatAreYouSaying/figures/ambiguous__2094-142345-0024__whisper-base__clean__aud-cam-cam.png",
-    "spillover": "/home/cppesl/Desktop/Alve/e2eML_course/WhatAreYouSaying/figures/ambiguous__2094-142345-0024__whisper-base__clean__aud-cam-spillover.png",
-    "layers": "/home/cppesl/Desktop/Alve/e2eML_course/WhatAreYouSaying/figures/ambiguous__2094-142345-0024__whisper-base__clean__aud-cam-layers.png",
     "tokens": "/home/cppesl/Desktop/Alve/e2eML_course/WhatAreYouSaying/figures/ambiguous__2094-142345-0024__whisper-base__clean__aud-cam-tokens.png"
    }
   },
@@ -247,72 +344,72 @@
    "per_layer": [
     {
      "layer": 0,
-     "cam_mass": 0.6352566357293785,
-     "cam_focus": 1.086718903048703,
+     "cam_mass": 0.6352564811201115,
+     "cam_focus": 1.0867189598805258,
      "rho_loud": -0.4898327023929862,
      "shift_in": 0.5071913453142077,
      "shift_out": 0.11276670825015091
     },
     {
      "layer": 1,
-     "cam_mass": 1.5122975998726427,
-     "cam_focus": 1.2484874998881947,
+     "cam_mass": 1.5122984457454873,
+     "cam_focus": 1.248487626001998,
      "rho_loud": 0.3751794636220965,
      "shift_in": 0.45586592049017827,
      "shift_out": 0.10382027122119472
     },
     {
      "layer": 2,
-     "cam_mass": 0.6562890562076893,
-     "cam_focus": 1.2541300479865714,
+     "cam_mass": 0.6562884134046953,
+     "cam_focus": 1.2541302658648317,
      "rho_loud": 0.4026592550665575,
      "shift_in": 0.5044242175302052,
      "shift_out": 0.12312354789661847
     },
     {
      "layer": 3,
-     "cam_mass": 2.6885653372453726,
-     "cam_focus": 1.1980585245672082,
+     "cam_mass": 2.6885664315065427,
+     "cam_focus": 1.198058492778643,
      "rho_loud": 0.1943800488276353,
      "shift_in": 0.5022421694186795,
      "shift_out": 0.11887474960907086
     },
     {
      "layer": 4,
-     "cam_mass": 1.2481714040845053,
-     "cam_focus": 1.269697126920462,
+     "cam_mass": 1.248170449659785,
+     "cam_focus": 1.2696972251296788,
      "rho_loud": 0.36294516468008586,
      "shift_in": 0.548955472568943,
      "shift_out": 0.12959855951116073
     },
     {
      "layer": 5,
-     "cam_mass": 4.916229402874835,
-     "cam_focus": 1.0960548722302264,
+     "cam_mass": 4.916228540357029,
+     "cam_focus": 1.0960548786345414,
      "rho_loud": 0.33511221992888907,
      "shift_in": 0.5928078693375016,
      "shift_out": 0.1439391923439944
     },
     {
      "layer": 6,
-     "cam_mass": 9.207622961047505,
-     "cam_focus": 1.0816760360414632,
+     "cam_mass": 9.2076222931125,
+     "cam_focus": 1.081676037979022,
      "rho_loud": 0.47500811382040875,
      "shift_in": 0.5950471362762398,
      "shift_out": 0.16297887697376978
     },
     {
      "layer": 7,
-     "cam_mass": 2.3027492497406596,
-     "cam_focus": 1.0487565642701255,
+     "cam_mass": 2.302749511775202,
+     "cam_focus": 1.0487565360424402,
      "rho_loud": 0.2119170227962832,
      "shift_in": 0.6971507758060933,
      "shift_out": 0.21007736319901868
     },
     {
      "layer": 8,
-     "cam_mass": 2.454207216042662,
-     "cam_focus": 1.0444350310539685,
+     "cam_mass": 2.4542069833162836,
+     "cam_focus": 1.044435022526391,
      "rho_loud": 0.45363264749268783,
      "shift_in": 0.9207039045820793,
      "shift_out": 0.44054994714735995
@@ -320,9 +417,6 @@
    ],
    "figures": {
     "main": "/home/cppesl/Desktop/Alve/e2eML_course/WhatAreYouSaying/figures/ambiguous__2094-142345-0024__moonshine-base__clean__aud-cam.png",
-    "cam": "/home/cppesl/Desktop/Alve/e2eML_course/WhatAreYouSaying/figures/ambiguous__2094-142345-0024__moonshine-base__clean__aud-cam-cam.png",
-    "spillover": "/home/cppesl/Desktop/Alve/e2eML_course/WhatAreYouSaying/figures/ambiguous__2094-142345-0024__moonshine-base__clean__aud-cam-spillover.png",
-    "layers": "/home/cppesl/Desktop/Alve/e2eML_course/WhatAreYouSaying/figures/ambiguous__2094-142345-0024__moonshine-base__clean__aud-cam-layers.png",
     "tokens": "/home/cppesl/Desktop/Alve/e2eML_course/WhatAreYouSaying/figures/ambiguous__2094-142345-0024__moonshine-base__clean__aud-cam-tokens.png"
    }
   }
