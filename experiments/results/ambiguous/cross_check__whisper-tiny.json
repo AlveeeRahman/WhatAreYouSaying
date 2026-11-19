@@ -1,0 +1,292 @@
+{
+ "tool": "cross-check",
+ "summary": {
+  "model": "whisper-tiny",
+  "text": "Money, clients quite told. Please put it down to warm.",
+  "wer": 0.45454545454545453,
+  "n_tokens": 13,
+  "degraded_share": 0.3840304182509506,
+  "on_degraded": {
+   "n_erase": 5,
+   "n_grad": 4,
+   "n_both": 4
+  },
+  "tokens": [
+   {
+    "k": 0,
+    "piece": " Money",
+    "cam_t": 1.532845060971722,
+    "cam_width_s": 0.7600234746932983,
+    "cam_in": 0.43524035811424255,
+    "cam_in_layers": [
+     0.8167180418968201,
+     0.5476993918418884,
+     0.7182701826095581,
+     0.17211906611919403,
+     0.43524035811424255
+    ],
+    "erase_in": 0.9207944941524544,
+    "erase_t": 0.75,
+    "reading": "split",
+    "erase_band": 4,
+    "cam_in_min_layers": 0.17211906611919403,
+    "on_degraded_erasure": true,
+    "on_degraded_gradient": false
+   },
+   {
+    "k": 1,
+    "piece": ",",
+    "cam_t": 1.7621259412224664,
+    "cam_width_s": 0.7712746858596802,
+    "cam_in": 0.7918931245803833,
+    "cam_in_layers": [
+     0.7888889312744141,
+     0.703332781791687,
+     0.6756406426429749,
+     0.7264291048049927,
+     0.7918931245803833
+    ],
+    "erase_in": 0.9309142135617849,
+    "erase_t": 0.9500000000000001,
+    "reading": "degraded",
+    "erase_band": 5,
+    "cam_in_min_layers": 0.6756406426429749,
+    "on_degraded_erasure": true,
+    "on_degraded_gradient": true
+   },
+   {
+    "k": 2,
+    "piece": " clients",
+    "cam_t": 1.7443925707909331,
+    "cam_width_s": 0.757466733455658,
+    "cam_in": 0.8354005813598633,
+    "cam_in_layers": [
+     0.7264870405197144,
+     0.8047322034835815,
+     0.7614238262176514,
+     0.8626160025596619,
+     0.8354005813598633
+    ],
+    "erase_in": 0.9501222405926562,
+    "erase_t": 1.55,
+    "reading": "degraded",
+    "erase_band": 1,
+    "cam_in_min_layers": 0.7264870405197144,
+    "on_degraded_erasure": true,
+    "on_degraded_gradient": true
+   },
+   {
+    "k": 3,
+    "piece": " quite",
+    "cam_t": 2.131352399047059,
+    "cam_width_s": 1.1525417566299438,
+    "cam_in": 0.7569482922554016,
+    "cam_in_layers": [
+     0.7987816333770752,
+     0.8375665545463562,
+     0.7496830224990845,
+     0.8106555938720703,
+     0.7569482922554016
+    ],
+    "erase_in": 0.9291924121723026,
+    "erase_t": 2.25,
+    "reading": "diffuse",
+    "erase_band": 5,
+    "cam_in_min_layers": 0.7496830224990845,
+    "on_degraded_erasure": true,
+    "on_degraded_gradient": true
+   },
+   {
+    "k": 4,
+    "piece": " told",
+    "cam_t": 2.2899968310740184,
+    "cam_width_s": 1.140793800354004,
+    "cam_in": 0.6372365355491638,
+    "cam_in_layers": [
+     0.8428752422332764,
+     0.7249137759208679,
+     0.5381501913070679,
+     0.7627602815628052,
+     0.6372365355491638
+    ],
+    "erase_in": 0.9293282838306827,
+    "erase_t": 2.45,
+    "reading": "diffuse",
+    "erase_band": 5,
+    "cam_in_min_layers": 0.5381501913070679,
+    "on_degraded_erasure": true,
+    "on_degraded_gradient": true
+   },
+   {
+    "k": 5,
+    "piece": ".",
+    "cam_t": 2.2789060313610072,
+    "cam_width_s": 0.8732826113700867,
+    "cam_in": 0.3804818391799927,
+    "cam_in_layers": [
+     0.3673785626888275,
+     0.4298669099807739,
+     0.25969263911247253,
+     0.38687586784362793,
+     0.3804818391799927
+    ],
+    "erase_in": 0.4744644732864319,
+    "erase_t": 2.75,
+    "reading": "clean",
+    "erase_band": 1,
+    "cam_in_min_layers": 0.25969263911247253,
+    "on_degraded_erasure": false,
+    "on_degraded_gradient": false
+   },
+   {
+    "k": 6,
+    "piece": " Please",
+    "cam_t": 3.252338024724172,
+    "cam_width_s": 0.31099840998649597,
+    "cam_in": 0.0784667357802391,
+    "cam_in_layers": [
+     0.14357301592826843,
+     0.06999331712722778,
+     0.03471657633781433,
+     0.06702782213687897,
+     0.0784667357802391
+    ],
+    "erase_in": 0.08936221031745419,
+    "erase_t": 3.45,
+    "reading": "clean",
+    "erase_band": 5,
+    "cam_in_min_layers": 0.03471657633781433,
+    "on_degraded_erasure": false,
+    "on_degraded_gradient": false
+   },
+   {
+    "k": 7,
+    "piece": " put",
+    "cam_t": 3.367072083283156,
+    "cam_width_s": 0.5544267296791077,
+    "cam_in": 0.13054801523685455,
+    "cam_in_layers": [
+     0.3264974355697632,
+     0.12793469429016113,
+     0.29079392552375793,
+     0.17863956093788147,
+     0.13054801523685455
+    ],
+    "erase_in": 0.3649163899447837,
+    "erase_t": 3.75,
+    "reading": "clean",
+    "erase_band": 4,
+    "cam_in_min_layers": 0.12793469429016113,
+    "on_degraded_erasure": false,
+    "on_degraded_gradient": false
+   },
+   {
+    "k": 8,
+    "piece": " it",
+    "cam_t": 2.7930432599246338,
+    "cam_width_s": 0.952302098274231,
+    "cam_in": 0.2683079242706299,
+    "cam_in_layers": [
+     0.4535600543022156,
+     0.1998347043991089,
+     0.20181255042552948,
+     0.16593924164772034,
+     0.2683079242706299
+    ],
+    "erase_in": 0.25298413782236706,
+    "erase_t": 3.95,
+    "reading": "clean",
+    "erase_band": 4,
+    "cam_in_min_layers": 0.16593924164772034,
+    "on_degraded_erasure": false,
+    "on_degraded_gradient": false
+   },
+   {
+    "k": 9,
+    "piece": " down",
+    "cam_t": 3.5085676760999287,
+    "cam_width_s": 0.8985733389854431,
+    "cam_in": 0.09951356798410416,
+    "cam_in_layers": [
+     0.19465576112270355,
+     0.10585412383079529,
+     0.1369120329618454,
+     0.10821883380413055,
+     0.09951356798410416
+    ],
+    "erase_in": 0.03207111528535235,
+    "erase_t": 3.95,
+    "reading": "clean",
+    "erase_band": 4,
+    "cam_in_min_layers": 0.09951356798410416,
+    "on_degraded_erasure": false,
+    "on_degraded_gradient": false
+   },
+   {
+    "k": 10,
+    "piece": " to",
+    "cam_t": 3.3005905369473107,
+    "cam_width_s": 1.0097650289535522,
+    "cam_in": 0.1841142624616623,
+    "cam_in_layers": [
+     0.2564530074596405,
+     0.11822055280208588,
+     0.11598561704158783,
+     0.1511564552783966,
+     0.1841142624616623
+    ],
+    "erase_in": 0.12794307146183986,
+    "erase_t": 4.3500000000000005,
+    "reading": "diffuse",
+    "erase_band": 1,
+    "cam_in_min_layers": 0.11598561704158783,
+    "on_degraded_erasure": false,
+    "on_degraded_gradient": false
+   },
+   {
+    "k": 11,
+    "piece": " warm",
+    "cam_t": 3.7703131179100526,
+    "cam_width_s": 0.6617825031280518,
+    "cam_in": 0.10698358714580536,
+    "cam_in_layers": [
+     0.3022260367870331,
+     0.11779135465621948,
+     0.10246491432189941,
+     0.31570130586624146,
+     0.10698358714580536
+    ],
+    "erase_in": 0.10991442782583688,
+    "erase_t": 4.65,
+    "reading": "clean",
+    "erase_band": 3,
+    "cam_in_min_layers": 0.10246491432189941,
+    "on_degraded_erasure": false,
+    "on_degraded_gradient": false
+   },
+   {
+    "k": 12,
+    "piece": ".",
+    "cam_t": 3.0321305667398155,
+    "cam_width_s": 1.593974232673645,
+    "cam_in": 0.24213719367980957,
+    "cam_in_layers": [
+     0.3075082004070282,
+     0.2861703336238861,
+     0.34498006105422974,
+     0.27735963463783264,
+     0.24213719367980957
+    ],
+    "erase_in": 0.47567563542609564,
+    "erase_t": 4.45,
+    "reading": "diffuse",
+    "erase_band": 1,
+    "cam_in_min_layers": 0.24213719367980957,
+    "on_degraded_erasure": false,
+    "on_degraded_gradient": false
+   }
+  ]
+ },
+ "figure": "/home/cppesl/Desktop/Alve/e2eML_course/WhatAreYouSaying/figures/cross_check__2094-142345-0024__whisper-tiny__cross-check.png",
+ "figures": {}
+}
