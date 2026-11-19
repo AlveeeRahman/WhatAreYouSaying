@@ -23,6 +23,11 @@
   <br><sub>The method on one clip (whisper-base). One patch of the spectrogram is erased, the model's own transcript is re-scored, and the tokens that became less likely are recorded. This is repeated for every patch.</sub>
 </p>
 
+<p align="center">
+  <img src="docs/images/erase_sweep.gif" width="720" alt="Animation: a patch sweeps along one pitch band of the example clip's spectrogram; for each position the bars show how much less sure whisper-base became of every word, and the map of the word that reacts most builds up underneath">
+  <br><sub>One band of whisper-base's input, erased one patch at a time. The surprisal of the word "Ron" rises for one patch and barely changes for the others.</sub>
+</p>
+
 WhatAreYouSaying (WAYS) is an attribution tool for speech-to-text models. For every token a model
 wrote, it reports which 100 ms of audio in which frequency band the token depended on, and whether
 that audio was clean or degraded. It runs on local Whisper and Moonshine weights and on any
@@ -87,11 +92,6 @@ For each clip WAYS returns three things:
 
 <p align="center">
   <img src="docs/images/workflow_method.png" width="900" alt="Hand-drawn workflow for one clip, six numbered cards: the audio and its patch grid; erase one patch; ask the model again, with local weights or a server; score each word for each patch; sum it up per word and draw it; AADD rates the same audio">
-</p>
-
-<p align="center">
-  <img src="docs/images/erase_sweep.gif" width="720" alt="Animation: a patch sweeps along one pitch band of the example clip's spectrogram; for each position the bars show how much less sure whisper-base became of every word, and the map of the word that reacts most builds up underneath">
-  <br><sub>One band of whisper-base's input, erased one patch at a time. The surprisal of the word "Ron" rises for one patch and barely changes for the others.</sub>
 </p>
 
 Li et al. [[1]](#ref-1) erase one dimension of the input by setting it to zero, then measure the
