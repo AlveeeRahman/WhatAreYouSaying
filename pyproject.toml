@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ways"
-version = "0.3.1"
+version = "0.3.2"
 description = "WhatAreYouSaying: representation-erasure attribution from speech-to-text tokens back to the audio, with AADD degradation context"
 readme = "README.md"
 requires-python = ">=3.12"  # the pinned set in requirements.txt (numpy 2.5, scipy 1.18) needs 3.12; tested on 3.12.3

@@ -5,6 +5,21 @@
 - **docs/help-wanted.md**: the open work for contributors (CI workflow, a live vLLM or llama.cpp run, a
   larger model, other languages, new tools, reproduction reports), linked from the README.
 
+## 0.3.2
+
+- **Two checks of the method.** `experiments/check_timestamps.py` joins pairs of utterances and
+  confirms that a Whisper token timestamp is the token's start (23 of 23 pairs for whisper-base, 18 of
+  20 for whisper-tiny, whose timestamps run about 0.2 s late). `experiments/check_spillover_frontend.py`
+  holds Whisper's log-mel floor fixed and finds the spill-over changes by at most 0.002 at any layer.
+- **CUDA clean-environment run.** `TORCH_INDEX=cu128 scripts/reproduce_clean_env.sh` installs the CUDA
+  build in a fresh venv, runs all 50 tests on the GPU and writes `provenance/requirements-lock-cu128.txt`
+  (103 pinned distributions).
+- **`experiments/tool_examples.py`** regenerates the tool example figures, which had no script.
+- Every figure was regenerated from its script. Boxes, counts and numbers are unchanged. Titles
+  and row captions follow the current figure text.
+- The per-run `provenance.json` files of earlier runs are removed. They no longer described those runs.
+- `sound_token` takes one revision per model. README limitations shortened.
+
 ## 0.3.1
 
 An independent review of the code and of the experiment scripts, and what it changed.

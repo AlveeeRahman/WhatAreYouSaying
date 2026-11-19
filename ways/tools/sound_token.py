@@ -37,7 +37,7 @@ def sound_token(wav, sr=16000, backends=(("hf-whisper", "openai/whisper-base"),)
     probs = quality_frames(wav, quality, aadd, aadd_model)
     models, atts, summaries = [], [], []
     for kind, model in backends:
-        be = backend(kind, model, revision)
+        be = backend(kind, model, revision.get(model) if isinstance(revision, dict) else revision)
         att = explain(be, wav, patch_s=patch_s, n_bands=n_bands, batch=batch)
         w = wer(wer_reference, att.text)["wer"] if wer_reference else None
         name = model.split("/")[-1] if model else be.name

@@ -1,0 +1,28 @@
+clean venv at <tmp>/ways-clean-venv, Python 3.12.3, torch index cu128
+  <tmp>:354: BuildBackendWarning: Editable installation.
+  !!
+  
+          ********************************************************************************
+          Please be careful with folders in your working directory with the same
+          name as your package as they may take precedence during imports.
+          ********************************************************************************
+  
+  !!
+    with strategy, WheelFile(wheel_path, "w") as wheel_obj:
+No broken requirements found.
+torch 2.11.0+cu128 on NVIDIA RTX 4000 Ada Generation
+..................................................                       [100%]
+=============================== warnings summary ===============================
+tests/test_figure.py::test_strict_layout_error_is_raised_when_text_cannot_be_separated
+  ways/figure.py:569: UserWarning: figure has overlapping text: 'reverb' / 'page edge'; 'Damage per 20 ms frame (dark blue = sure). A boxed stretch r' / 'page edge'; '3.0' / 'page edge'; 'Hz (mel)' / 'page edge'; '1.9 k' / 'page edge'; '3.0' / 'page edge'
+    _settle(fig, gs, strict)
+
+tests/test_tools.py::test_granular_figures_with_many_layers_and_long_title
+  ways/figure.py:667: RuntimeWarning: More than 20 figures have been opened. Figures created through the pyplot interface (`matplotlib.pyplot.figure`) are retained until explicitly closed and may consume too much memory. (To control this warning, see the rcParam `figure.max_open_warning`). Consider using `matplotlib.pyplot.close()`.
+    fig = plt.figure(figsize=(S.width_in, 1.0))
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+50 passed, 2 warnings in 46.14s
+claimed 16 packages, runtime 63, multiplier 3.9x; not claimed: 48
+lock file: 103 pinned distributions in provenance/requirements-lock-cu128.txt
+clean-environment run passed

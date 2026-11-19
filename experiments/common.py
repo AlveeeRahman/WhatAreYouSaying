@@ -15,9 +15,8 @@ It is found, in this order, from the command-line argument a script documents, t
 environment variable, or a folder named ways-data next to this repository. If none exists the
 script stops with a message saying so.
 
-Model revisions: the snapshot commits recorded in experiments/results/<model>/provenance.json
-(`models` field). Passing them as `revision=` makes a re-run load the same weights even after the
-Hub repository moves on.
+Model revisions: the Hugging Face snapshot commits the results were produced with. Passing them as
+`revision=` makes a re-run load the same weights even after the Hub repository moves on.
 """
 import json
 import os

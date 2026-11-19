@@ -4,7 +4,7 @@ title: "WhatAreYouSaying: erasure attribution from speech-to-text tokens back to
 authors:
   - family-names: Rahman
     given-names: Alve
-version: 0.3.1
+version: 0.3.2
 date-released: 2026-11-19
 url: "https://github.com/AlveeeRahman/WhatAreYouSaying"
 license: MIT

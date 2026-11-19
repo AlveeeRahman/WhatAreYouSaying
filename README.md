@@ -192,7 +192,10 @@ over clips.
   [+0.029, +0.058]).
 * **Whisper's top patches fall close to the token's timestamp.** The median distance from a token's
   top patch to its cross-attention timestamp is 0.12 s for whisper-base (80 % within 0.3 s) and
-  0.31 s for whisper-tiny.
+  0.31 s for whisper-tiny. A check on joined pairs of utterances confirms that the timestamp is
+  the start of the token: the last word of the first utterance starts before that utterance ends
+  in 23 of 23 pairs for whisper-base and 18 of 20 for whisper-tiny, whose timestamps run about
+  0.2 s late (`experiments/check_timestamps.py`).
 * **Most of the evidence is in the low bands.** All three models put a quarter of each token's mass
   in the 0.4 to 0.7 kHz band and 14 to 16 % above 3.6 kHz. Erasing a single patch changes the
   model's choice for a minority of tokens: 45 %, 33 % and 29 % of tokens have at least one such
@@ -696,7 +699,10 @@ moonshine-base from 0.12 to 0.29. Moonshine's input embedding already moves outs
 because its encoder applies a GroupNorm with a single group right after its convolutions, which
 normalises over the whole clip. The Grad-CAM focus on the degraded stretch stays between 0.8 and
 1.2 in every layer of every model but one, and its correlation with loudness is weak. The gradients
-therefore do not single out loud or degraded frames, whereas the representation shift does.
+therefore do not single out loud or degraded frames, whereas the representation shift does. The
+spill-over is the encoder's doing and not the feature extractor's: with Whisper's log-mel floor
+held at the original clip's value, it changes by at most 0.002 at any layer
+(`experiments/check_spillover_frontend.py`).
 
 <details>
 <summary><b>Stats for nerds</b> (whisper-base per layer on the controlled set)</summary>
@@ -880,46 +886,31 @@ commands a workflow would run are `make test` and `make lint`.
 * `requirements.txt` pins every version. AADD is pinned to a git commit because it is not on PyPI.
   An earlier version of the file listed `aadd==3.1.0`, which is not on PyPI, and the clean-environment run caught it. Model weights are
   pinned to Hugging Face snapshot commits (`experiments/common.py`).
-* Every model pass writes `provenance.json` with the git commit, Python, torch and CUDA versions,
-  the GPU, input hashes, model commits, seeds, the claimed dependency list and the runtime
-  dependency list, plus the difference between the two.
-* `scripts/reproduce_clean_env.sh` builds a fresh venv, installs only `requirements.txt` (CPU
-  torch), runs the tests, imports every third-party module the code uses, and records what loaded:
-  passed, 16 claimed packages, 60 distributions loaded, 84 resolved versions in
-  `provenance/requirements-lock.txt`.
+* Every model pass writes `provenance.json` with the git commit and whether the tree was clean,
+  Python, torch and CUDA versions, the GPU, input hashes, model commits, seeds, the claimed
+  dependency list and the runtime dependency list, plus the difference between the two. The records
+  of the runs behind the current numbers were removed in 0.3.2 because they no longer described
+  those runs. The next run of each script writes a new one.
+* `scripts/reproduce_clean_env.sh` builds a fresh venv, installs only `requirements.txt`, runs the
+  tests, imports every third-party module the code uses, and records what loaded. It passed for
+  both torch builds. CPU: 48 tests, 16 claimed packages, 60 distributions loaded, 84 versions in
+  `provenance/requirements-lock.txt`. CUDA 12.8 on the GPU above: all 50 tests, 63 loaded, 103
+  versions in `provenance/requirements-lock-cu128.txt`.
 
 </details>
 
 ## Limitations and future work
 
-* **The erasure is not a hard zero** (33 to 36 dB down on average, 17 dB worst) because of the
-  window overlap, and a patch's two time neighbours lose up to about 10 % of its effect.
-* **Teacher forcing scores the model's own transcript.** Δ measures how much a patch supported what
-  the model wrote, not what it should have written. The WER column stays next to the maps for that
-  reason.
-* **AADD is a detector, not ground truth**, and its flags blur at boundaries. The noise-focus ratio
-  is reported on the clips where it is informative and under five detectors, and the main claims
-  rest on the two datasets with known damage.
-* **Moonshine has no timestamps**, so the distance-to-timestamp summary exists only for Whisper.
-* **Grad-CAM with time-pooled weights carries no per-token time information** on these encoders
-  (shown on the ambiguous clip). The per-layer CAM is therefore a hint about layers, and the token
-  view uses the per-frame gradient map, which is a saliency and not an erasure test.
-* **The per-token comparison of erasure and gradient is one clip.** It shows what the two methods
-  can separate. Why they disagree on some tokens is not established.
-* **In-window tokens are chosen by their evidence on the clean recording**, not by where the word
-  is spoken, and the in-window and out-of-window changes are not tested against each other.
-* **Whisper clips are limited to 30 s**, the model's input window. Longer clips are refused.
-* **The WER normaliser removes hyphens instead of splitting on them** and does not normalise
-  numbers, so "twenty-one" against "twenty one" counts as two errors.
-* **The per-layer tables count the embedding output as layer 0**, so whisper-base has seven rows
-  for six transformer layers.
-* **No live vLLM or llama.cpp run yet**, only the mock server.
-* **Scale.** The results cover three small models and 260 clips. That supports paired comparisons
-  with intervals, not claims about large models or other languages.
+* Erasure lowers a patch by tens of decibels, not to zero.
+* The scores describe what the model wrote, which is not always what was said.
+* The degradation detector is itself a model, and its boundaries are approximate.
+* The gradient views are saliency maps. The per-token comparison with erasure is a single clip.
+* Word error rate uses a simple text normaliser.
+* The results cover three small English models and 260 short clips. No live server run yet.
 
 ## Status
 
-* Done (0.3.1): operator, three backends, scores, summaries, AADD context, the figure system, the
+* Done (0.3.2): operator, three backends, scores, summaries, AADD context, the figure system, the
   latent view, the tool framework with three registered tools and plug-in discovery, the per-token
   gradient view and the ambiguous-clip experiment, tests, the three datasets through three models,
   the detector-backbone check, clean-environment run, provenance.
@@ -966,7 +957,7 @@ commands a workflow would run are `make test` and `make lint`.
 | `experiments/results/` | per-clip rows, per-token tables, summaries, provenance (npz maps are not committed) |
 | `figures/` | every figure in this README and its SVG twin |
 | `docs/` | backends, reproducibility checklist and audit; `docs/images/`: the icon, the hand-drawn workflow figures and the two charts (sources in `src/`, rendered by `render.py`), the GIFs |
-| `provenance/` | clean-environment run log, runtime dependency set, lock file |
+| `provenance/` | clean-environment run logs, runtime dependency sets and lock files, for the CPU and the CUDA 12.8 torch builds |
 | `scripts/reproduce_clean_env.sh` | the clean-environment execution test |
 | `Makefile`, `CHANGELOG.md`, `CONTRIBUTING.md`, `SECURITY.md`, `CITATION.cff` | day-to-day targets, release notes, how to add a tool, what the code does with the network, how to cite |
 

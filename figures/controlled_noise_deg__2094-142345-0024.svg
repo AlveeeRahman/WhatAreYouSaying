@@ -307,7 +307,7 @@ z
 " clip-path="url(#p583c2679f5)" style="fill: #0d366b"/>
    </g>
    <g id="text_14">
-    <text style="font-size: 12px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #52514e" x="103.68" y="126.334572" transform="rotate(-0 103.68 126.334572)">whisper-tiny · WER 45% · 5 of 13 words on degraded audio, 5 expected by chance (38% of the clip is degraded)</text>
+    <text style="font-size: 12px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #52514e" x="103.68" y="126.334572" transform="rotate(-0 103.68 126.334572)">whisper-tiny · WER 45% · 5 of 13 words on the known damaged audio, 5 expected by chance (38% of the clip)</text>
    </g>
    <g id="patch_17">
     <path d="M 201.228387 219.709673 
@@ -956,7 +956,7 @@ z
 " clip-path="url(#pbc372ac4a5)" style="fill: #0d366b"/>
    </g>
    <g id="text_51">
-    <text style="font-size: 12px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #52514e" x="103.68" y="425.741162" transform="rotate(-0 103.68 425.741162)">whisper-base · WER 45% · 7 of 14 words on degraded audio, 5 expected by chance (38% of the clip is degraded)</text>
+    <text style="font-size: 12px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #52514e" x="103.68" y="425.741162" transform="rotate(-0 103.68 425.741162)">whisper-base · WER 45% · 7 of 14 words on the known damaged audio, 5 expected by chance (38% of the clip)</text>
    </g>
    <g id="patch_70">
     <path d="M 201.228387 496.772488 
@@ -1657,7 +1657,7 @@ z
 " clip-path="url(#p440b194fb0)" style="fill: #0d366b"/>
    </g>
    <g id="text_91">
-    <text style="font-size: 12px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #52514e" x="103.68" y="725.147752" transform="rotate(-0 103.68 725.147752)">moonshine-base · WER 55% · 8 of 16 words on degraded audio, 6 expected by chance (38% of the clip is degraded)</text>
+    <text style="font-size: 12px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #52514e" x="103.68" y="725.147752" transform="rotate(-0 103.68 725.147752)">moonshine-base · WER 55% · 8 of 16 words on the known damaged audio, 6 expected by chance (38% of the clip)</text>
    </g>
    <g id="patch_128">
     <path d="M 215.163871 907.897955 

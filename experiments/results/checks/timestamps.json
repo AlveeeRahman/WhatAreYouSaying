@@ -1,0 +1,56 @@
+{
+ "gap_s": 1.0,
+ "n_pairs": 30,
+ "models": {
+  "whisper-tiny": {
+   "pairs_used": 20,
+   "last_a_word_after_end_of_a": 2,
+   "first_b_token_inside_b": 20,
+   "last_a_word_minus_end_of_a_s": [
+    -0.35000014305114746,
+    -0.22000005722045923,
+    -0.09500004768371584
+   ],
+   "final_stop_of_a_minus_end_of_a_s": [
+    1.3337498331069946,
+    1.4475000572204593,
+    1.6012499237060545
+   ],
+   "first_b_minus_onset_of_b_s": [
+    0.20250002384185795,
+    0.2449999427795408,
+    0.37874997138977073
+   ],
+   "first_a_minus_onset_of_a_s": [
+    -0.51,
+    -0.30000000000000004,
+    -0.145
+   ]
+  },
+  "whisper-base": {
+   "pairs_used": 23,
+   "last_a_word_after_end_of_a": 0,
+   "first_b_token_inside_b": 23,
+   "last_a_word_minus_end_of_a_s": [
+    -0.6100001621246336,
+    -0.5049998664855959,
+    -0.36750002861022946
+   ],
+   "final_stop_of_a_minus_end_of_a_s": [
+    0.30750004768371575,
+    0.7349999046325681,
+    0.9825000000000004
+   ],
+   "first_b_minus_onset_of_b_s": [
+    0.08999988555908198,
+    0.1250001525878904,
+    0.21749999999999986
+   ],
+   "first_a_minus_onset_of_a_s": [
+    -0.47,
+    -0.28,
+    -0.10999999999999999
+   ]
+  }
+ }
+}
