@@ -1,0 +1,37 @@
+{
+ "python": "3.12.3",
+ "n_claimed": 14,
+ "n_runtime": 16,
+ "runtime_not_claimed": [
+  "cffi",
+  "cycler",
+  "fonttools",
+  "kiwisolver",
+  "packaging",
+  "pillow",
+  "pyparsing",
+  "python-dateutil",
+  "setuptools",
+  "tqdm",
+  "typing_extensions",
+  "ways"
+ ],
+ "runtime": {
+  "cffi": "2.1.1",
+  "cycler": "0.12.1",
+  "fonttools": "4.68.0",
+  "kiwisolver": "1.5.1",
+  "matplotlib": "3.11.2",
+  "numpy": "2.5.2",
+  "packaging": "26.3",
+  "pillow": "13.0.0",
+  "pyparsing": "3.3.3",
+  "python-dateutil": "4.0.0",
+  "setuptools": "81.0.0",
+  "soundfile": "0.13.1",
+  "torch": "2.11.0+cpu",
+  "tqdm": "4.70.1",
+  "typing_extensions": "4.16.0",
+  "ways": "0.1.0"
+ }
+}

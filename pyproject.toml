@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ways"
+version = "0.1.0"
+description = "WhatAreYouSaying: representation-erasure attribution from speech-to-text tokens back to the audio, with AADD degradation context"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+dependencies = [
+  "numpy>=2.0",
+  "torch>=2.4",
+  "transformers>=4.48",
+  "huggingface_hub>=0.26",
+  "soundfile>=0.12",
+  "librosa>=0.10",
+  "jiwer>=3.0",
+  "pandas>=2.2",
+  "matplotlib>=3.8",
+  "aadd @ git+https://github.com/gertelrina/aadd@c6a2debc706b55d940426dffcc4ac31c85e875be",
+  "openai>=1.50",
+]
+
+[project.optional-dependencies]
+test = ["pytest>=8"]
+
+[project.scripts]
+ways = "ways.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["ways*"]
+
+[tool.pytest.ini_options]
+markers = ["gpu: needs a CUDA device and the cached Hugging Face weights", "slow: minutes, not seconds"]

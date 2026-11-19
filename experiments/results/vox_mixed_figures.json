@@ -1,0 +1,32 @@
+{
+ "clean": {
+  "clip": "id10271_gO805KoL2RM_00006",
+  "frac_flagged": 0.0,
+  "wer": {
+   "whisper-tiny": 0.32,
+   "whisper-base": 0.08,
+   "moonshine-base": 0.08
+  },
+  "gold": "i didn't really see a way to kind of make it a career or or way to to make it your living you know so",
+  "text": {
+   "whisper-tiny": "I didn't really see a way to make a career or a way to make it your living.",
+   "whisper-base": "I didn't really see a way to kind of make it a career or a way to make it your living, you know, so",
+   "moonshine-base": "I didn't really see a way to kind of make it a career or a way to make it your living, you know? So..."
+  }
+ },
+ "degraded": {
+  "clip": "id10295_K1gPy1UKmBE_00007",
+  "frac_flagged": 1.0,
+  "wer": {
+   "whisper-tiny": 0.0476190476190476,
+   "whisper-base": 0.0476190476190476,
+   "moonshine-base": 0.0476190476190476
+  },
+  "gold": "cause the doctors at the hospital are so ugly we have to bring in gorgeous guest stars to create a balance",
+  "text": {
+   "whisper-tiny": "because the doctors at the hospital are so ugly we have to bring in gorgeous guest stars to create a balance.",
+   "whisper-base": "because the doctors at the hospital are so ugly we have to bring in gorgeous guest stars to create a balance.",
+   "moonshine-base": "Because the doctors at the hospital are so ugly we have to bring in gorgeous guest stars to create a balance."
+  }
+ }
+}

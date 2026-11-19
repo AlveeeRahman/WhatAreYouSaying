@@ -1,0 +1,67 @@
+{
+ "v3": {
+  "classes": [
+   "noise",
+   "music",
+   "reverb",
+   "clipping",
+   "lowpass",
+   "highpass",
+   "codec",
+   "packet_loss",
+   "hum",
+   "clicks",
+   "pitch_shift",
+   "time_stretch"
+  ],
+  "resolution_s": 0.02,
+  "checkpoint": "v3",
+  "n_params": 88625177,
+  "seconds": 1.5
+ },
+ "v3-lite": {
+  "classes": [
+   "noise",
+   "music",
+   "reverb",
+   "clipping",
+   "lowpass",
+   "highpass",
+   "codec",
+   "packet_loss",
+   "hum",
+   "clicks",
+   "pitch_shift",
+   "time_stretch"
+  ],
+  "resolution_s": 0.02,
+  "checkpoint": "v3-lite",
+  "n_params": 1347916,
+  "seconds": 0.6
+ },
+ "v2": {
+  "classes": [
+   "AddGaussianNoise",
+   "PitchShift",
+   "TimeStretch",
+   "Shift",
+   "ClippingDistortion",
+   "LowPassFilter",
+   "HighPassFilter",
+   "None"
+  ],
+  "resolution_s": 1.0,
+  "checkpoint": "v2",
+  "n_params": 4017220,
+  "seconds": 3.4
+ },
+ "v3_vs_pipeline_csv": {
+  "clip": "id10276_HrA2BLcLApA_00017",
+  "n_frames": [
+   1037,
+   1037
+  ],
+  "max_abs_diff": 4.999771772418171e-05,
+  "flag_agreement": 1.0
+ }
+}

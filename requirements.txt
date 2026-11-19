@@ -1,0 +1,16 @@
+# Claimed dependencies (D_c in Vangala, Adibifar, Gehani and Malik, 2026), pinned to the versions the
+# results in this repository were produced with. provenance/*.json records the runtime set (D_r).
+numpy==2.5.2
+torch==2.11.0
+torchaudio==2.11.0
+transformers==5.5.4
+huggingface_hub==1.27.0
+soundfile==0.13.1
+librosa==0.11.0
+jiwer==4.0.0
+pandas==3.0.3
+scipy==1.18.0
+matplotlib==3.11.2
+aadd @ git+https://github.com/gertelrina/aadd@c6a2debc706b55d940426dffcc4ac31c85e875be   # 3.1.0; not on PyPI
+openai==2.29.0
+pytest==8.4.2
