@@ -475,7 +475,11 @@ pip install --no-deps -e .
 pytest tests -q
 ```
 
-Python 3.12. A GPU is optional for one clip (the backends fall back to the CPU). The first call
+Python 3.12 in any virtual environment: the scripts call whatever `python` is on the path (set `PY=` to
+choose one), and nothing in the repository assumes a home directory or a machine layout. The
+experiments find the data folder through `WAYS_PIPELINE=/path/to/it` (default: a
+sibling folder), and every path in a provenance file is written relative to this repository or as
+`$WAYS_PIPELINE/...`. A GPU is optional for one clip (the backends fall back to the CPU). The first call
 downloads the model from the Hugging Face Hub and, with `--aadd` or `ways quality`, the AADD
 checkpoint (about 180 MB for v3), so it needs internet once. Add `--revision <commit>` to pin
 the model snapshot. Re-running the experiments needs more (the pipeline repository, LibriSpeech, a

@@ -16,7 +16,7 @@
  },
  "input_paths": {
   "sample100.csv": "experiments/sample100.csv",
-  "aadd_seg20ms_csv": "<data>/aadd_frames_20ms.csv",
+  "aadd_seg20ms_csv": "$WAYS_DATA/aadd_frames_20ms.csv",
   "controlled_manifest.csv": "experiments/results/controlled/manifest.csv"
  },
  "models": {

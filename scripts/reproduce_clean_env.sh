@@ -6,10 +6,10 @@
 # dependency set it observed next to the claimed one.
 set -euo pipefail
 cd "$(dirname "$0")/.."
-exec > >(sed -u "s|$PWD/||g; s|$HOME|~|g" | tee provenance/clean_env_run.log) 2>&1   # no absolute paths or user name in the public log
+exec > >(sed -u -E "s|$PWD/||g; s|$HOME|~|g; s|/tmp/[^ :,]*|<tmp>|g" | tee provenance/clean_env_run.log) 2>&1   # no absolute, home or temporary paths in the public log
 VENV=${VENV:-$(mktemp -d)/ways-clean-venv}
 PYTHON=${PYTHON:-python3}
-echo "clean venv at $VENV, $($PYTHON --version)"
+echo "clean venv at <tmp>/${VENV##*/}, $($PYTHON --version)"
 $PYTHON -m venv "$VENV"
 "$VENV/bin/pip" install -q --upgrade pip
 "$VENV/bin/pip" install -q --extra-index-url https://download.pytorch.org/whl/cpu -r requirements.txt

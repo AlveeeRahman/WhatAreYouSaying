@@ -16,8 +16,8 @@
  },
  "input_paths": {
   "sample100.csv": "experiments/sample100.csv",
-  "gold_tsv": "<data>/transcripts.tsv",
-  "aadd_seg20ms_csv": "<data>/aadd_frames_20ms.csv"
+  "gold_tsv": "$WAYS_DATA/transcripts.tsv",
+  "aadd_seg20ms_csv": "$WAYS_DATA/aadd_frames_20ms.csv"
  },
  "models": {
   "openai/whisper-base": "e37978b90ca9030d5170a5c07aadb050351a65bb"

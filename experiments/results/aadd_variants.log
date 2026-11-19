@@ -1,8 +1,6 @@
-Failed to load <venv>/lib/python3.12/site-packages/torchao/_C_cutlass_90a.abi3.so: Could not load this library: <venv>/lib/python3.12/site-packages/torchao/_C_cutlass_90a.abi3.so
-Failed to load <venv>/lib/python3.12/site-packages/torchao/_C_mxfp8.cpython-310-x86_64-linux-gnu.so: Could not load this library: <venv>/lib/python3.12/site-packages/torchao/_C_mxfp8.cpython-310-x86_64-linux-gnu.so
 v3 {'classes': ['noise', 'music', 'reverb', 'clipping', 'lowpass', 'highpass', 'codec', 'packet_loss', 'hum', 'clicks', 'pitch_shift', 'time_stretch'], 'resolution_s': 0.02, 'checkpoint': 'v3', 'n_params': 88625177, 'seconds': 1.5}
-downloading https://huggingface.co/gertelrina/aadd/resolve/main/aadd_v3_1_lite_crnn_frames.pt -> ~/.cache/aadd/aadd_v3_1_lite_crnn_frames.pt
+downloading https://huggingface.co/gertelrina/aadd/resolve/main/aadd_v3_1_lite_crnn_frames.pt -> the AADD cache
 v3-lite {'classes': ['noise', 'music', 'reverb', 'clipping', 'lowpass', 'highpass', 'codec', 'packet_loss', 'hum', 'clicks', 'pitch_shift', 'time_stretch'], 'resolution_s': 0.02, 'checkpoint': 'v3-lite', 'n_params': 1347916, 'seconds': 0.6}
-downloading https://huggingface.co/gertelrina/aadd/resolve/main/aadd_v2_efficientnet_b0_mel.pt -> ~/.cache/aadd/aadd_v2_efficientnet_b0_mel.pt
+downloading https://huggingface.co/gertelrina/aadd/resolve/main/aadd_v2_efficientnet_b0_mel.pt -> the AADD cache
 v2 {'classes': ['AddGaussianNoise', 'PitchShift', 'TimeStretch', 'Shift', 'ClippingDistortion', 'LowPassFilter', 'HighPassFilter', 'None'], 'resolution_s': 1.0, 'checkpoint': 'v2', 'n_params': 4017220, 'seconds': 3.4}
 {"clip": "id10276_HrA2BLcLApA_00017", "n_frames": [1037, 1037], "max_abs_diff": 4.999771772418171e-05, "flag_agreement": 1.0}

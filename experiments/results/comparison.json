@@ -3,7 +3,7 @@
   "rule": "numpy.random.default_rng(8001).choice(len(test), 100, replace=False), rows sorted by position",
   "seed": 8001,
   "n": 100,
-  "test_csv": "<data>/test.csv",
+  "test_csv": "$WAYS_DATA/test.csv",
   "test_csv_sha256": "dfb0451d8ea3ed486a07a659fa318b568cab9f4303d7b313bd796d0148e95515",
   "test_rows": 1500,
   "development_rows": 500,

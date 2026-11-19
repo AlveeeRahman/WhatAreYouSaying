@@ -1,5 +1,5 @@
 clean venv at <tmp>/ways-clean-venv, Python 3.12.3
-  <tmp>/pip-build-env/overlay/lib/python3.12/site-packages/setuptools/command/editable_wheel.py:354: BuildBackendWarning: Editable installation.
+  <tmp>:354: BuildBackendWarning: Editable installation.
   !!
   
           ********************************************************************************
