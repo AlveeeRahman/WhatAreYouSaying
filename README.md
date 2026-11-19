@@ -15,29 +15,30 @@
 </p>
 <p align="center">
   <a href="#backends-local-weights-vllm-llamacpp"><img src="https://img.shields.io/badge/backends-Whisper%20%7C%20Moonshine%20%7C%20vLLM%20%7C%20llama.cpp-lightgrey.svg" alt="Backends: Whisper, Moonshine, vLLM, llama.cpp"></a>
-  <a href="#results-on-100-random-test-clips"><img src="https://img.shields.io/badge/datasets-VoxCeleb%20%7C%20LibriSpeech%20%7C%20VoiceBank--DEMAND-lightgrey.svg" alt="Datasets: VoxCeleb, LibriSpeech, VoiceBank-DEMAND"></a>
+  <a href="#100-voxceleb-clips-three-models"><img src="https://img.shields.io/badge/datasets-VoxCeleb%20%7C%20LibriSpeech%20%7C%20VoiceBank--DEMAND-lightgrey.svg" alt="Datasets: VoxCeleb, LibriSpeech, VoiceBank-DEMAND"></a>
 </p>
 
 <p align="center">
   <img src="figures/method_whisper_base.png" width="860" alt="Representation erasure on audio for whisper-base on one clip: the erasure grid over the spectrogram with one patch highlighted, the patch before and after erasure in the model's log-mel input, the surprisal change of every token for that patch, and the full map of the most affected token with the AADD-flagged frames marked above it">
-  <br><sub>The method on one clip (whisper-base). Erase one patch of the spectrogram, re-score the model's own transcript, note which token got less likely. Repeat for every patch.</sub>
+  <br><sub>The method on one clip (whisper-base). One patch of the spectrogram is erased, the model's own transcript is re-scored, and the tokens that became less likely are recorded. This is repeated for every patch.</sub>
 </p>
 
-WhatAreYouSaying (WAYS) tells you, for every token a speech-to-text model wrote, which 100 ms of
-audio in which frequency band it leaned on, and whether that audio was clean or degraded. It works
-with local Whisper and Moonshine weights, and with any OpenAI-compatible speech server such as vLLM
-or llama.cpp. No training, no labels, one forward pass per erased patch.
+WhatAreYouSaying (WAYS) is an attribution tool for speech-to-text models. For every token a model
+wrote, it reports which 100 ms of audio in which frequency band the token depended on, and whether
+that audio was clean or degraded. It runs on local Whisper and Moonshine weights and on any
+OpenAI-compatible speech server such as vLLM or llama.cpp. It needs no training and no labels. The
+cost is one forward pass per erased patch.
 
-It builds on two works and nothing else: representation erasure by Li, Monroe and Jurafsky
-[[1]](#ref-1), which measures what a neural network uses by deleting parts of its input and
-watching the likelihood of the right answer, and AADD by Arina Gertel [[2]](#ref-2), which says
-what is wrong with a recording and where, every 20 ms. The speech models are Whisper
-[[3]](#ref-3) and Moonshine [[4]](#ref-4). The reproducibility steps follow two works on
-re-executable research [[5]](#ref-5) [[6]](#ref-6), drawn in [Reproducibility](#reproducibility).
-MIT licence. Changes are in [CHANGELOG.md](CHANGELOG.md).
+The method combines two prior works. Representation erasure by Li, Monroe and Jurafsky
+[[1]](#ref-1) measures what a neural network uses by deleting parts of its input and recording the
+change in the likelihood of the correct label. AADD by Arina Gertel [[2]](#ref-2) labels what is
+wrong with a recording and where, every 20 ms. The speech models are Whisper [[3]](#ref-3) and
+Moonshine [[4]](#ref-4). The reproducibility steps follow two works on re-executable research
+[[5]](#ref-5) [[6]](#ref-6) and are summarised under [Reproducibility](#reproducibility). The code
+is MIT licensed, and changes are listed in [CHANGELOG.md](CHANGELOG.md).
 
-**Help build WAYS.** It is looking for contributors: a CI workflow, a live vLLM or llama.cpp run, a
-larger model, other languages and new tools. The open work is in [docs/help-wanted.md](docs/help-wanted.md),
+**Contributions are welcome.** Open items are a CI workflow, a live vLLM or llama.cpp run, a larger
+model, other languages and new tools. They are listed in [docs/help-wanted.md](docs/help-wanted.md),
 and [CONTRIBUTING.md](CONTRIBUTING.md) covers setup and tests.
 
 **Contents:** [What it answers](#what-it-answers) · [How it works](#how-it-works) · [What I verified](#what-i-verified) · [100 VoxCeleb clips](#100-voxceleb-clips-three-models) · [Detector backbones](#does-the-detectors-backbone-matter) · [Controlled damage](#controlled-damage-on-librispeech) · [One ambiguous clip](#one-ambiguous-clip-read-in-depth) · [Noise on and off](#real-noise-that-comes-and-goes-voicebank-demand) · [Latent space](#noise-in-the-latent-space) · [Install and use](#install-and-use) · [The tool framework](#the-tool-framework-sound-token-aud-cam-and-cross-check) · [The figure](#the-figure-plug-and-play) · [Backends](#backends-local-weights-vllm-llamacpp) · [Reproducibility](#reproducibility) · [Limitations](#limitations-and-future-work) · [Status](#status) · [References](#references) · [Layout](#repository-layout) · [Credits and licence](#credits-and-licence)
@@ -61,19 +62,25 @@ and [CONTRIBUTING.md](CONTRIBUTING.md) covers setup and tests.
 
 ## What it answers
 
-A speech model turns a waveform into tokens. When it gets a word wrong, or right against the odds,
-I want to know which part of the sound it was listening to, and whether that part was speech or
-noise. Attention maps and gradients answer this loosely: in an earlier study of mine, gradient x
-input on whisper-tiny kept 92 % of its ranking after the decoder was re-initialised, so it was
-mostly reflecting input energy, not the model. Erasure answers it directly: remove the audio, see
-what changes. Per clip WAYS gives a map per token over time and frequency, the top patch per token
-drawn on the spectrogram with the transcript below it in the same colours, and a noise-focus ratio
-per token and per clip: how much of the evidence sits in audio that AADD flags as degraded,
-relative to how much of the clip is flagged (1 means no preference).
+A speech model turns a waveform into tokens. When it gets a word wrong, or gets a hard word right,
+I want to know which part of the sound that word depended on, and whether that part was speech or
+noise. Attention maps and gradients give only a loose answer. In an earlier study of mine, gradient
+x input on whisper-tiny kept 92 % of its ranking after the decoder was re-initialised, which means
+it mostly reflected input energy and not the model. Erasure tests the question directly by removing
+a piece of audio and measuring what changes in the output.
+
+For each clip WAYS returns three things:
+
+* a map over time and frequency for every token,
+* the top patch of every token drawn on the spectrogram, with the transcript below it in the same
+  colours,
+* a noise-focus ratio per token and per clip. It is the share of a token's evidence in audio that
+  AADD flags as degraded, divided by the share of the clip that is flagged. A ratio of 1 means no
+  preference.
 
 <p align="center">
   <img src="figures/three_models__id10288_FIxC_PNJNkc_00003.png" width="860" alt="The same clip through whisper-tiny, whisper-base and moonshine-base: for each model the spectrogram with each token's most important patch boxed in the token's colour, and the tokens placed on the audio segment they used most">
-  <br><sub>One clip, three models. The spectrogram and the AADD strip are identical in every row. Only the boxes and the transcript strip change. Same colour and number = same token.</sub>
+  <br><sub>One clip through three models. The spectrogram and the AADD strip are the same in every row, and only the boxes and the transcript strip differ. A colour and number identify one token.</sub>
 </p>
 
 ## How it works
@@ -84,7 +91,7 @@ relative to how much of the clip is flagged (1 means no preference).
 
 <p align="center">
   <img src="docs/images/erase_sweep.gif" width="720" alt="Animation: a patch sweeps along one pitch band of the example clip's spectrogram; for each position the bars show how much less sure whisper-base became of every word, and the map of the word that reacts most builds up underneath">
-  <br><sub>One band of whisper-base's input, one patch at a time. The word "Ron" reacts to one patch and to almost nothing else.</sub>
+  <br><sub>One band of whisper-base's input, erased one patch at a time. The surprisal of the word "Ron" rises for one patch and barely changes for the others.</sub>
 </p>
 
 Li et al. [[1]](#ref-1) erase one dimension of the input by setting it to zero, then measure the
@@ -109,9 +116,10 @@ r_k(P) = \frac{\Delta_k(P)}{S_k(x)}, \qquad
 $$
 
 Δ is in nats and positive when the patch supported the token. r is Li et al.'s equation 1 with the
-sign flipped. flip is their discrete question, "does the decision change". The non-negative mass
-m_k(P) = max(Δ_k(P), 0) / Σ max(Δ_k, 0) gives the time profile, the band shares, the top patch, and
-the noise-focus ratio against the AADD flags f(t) with clip mean f̄:
+sign flipped. flip is their discrete criterion, whether the decision changes. The non-negative mass
+m_k(P) = max(Δ_k(P), 0) / Σ max(Δ_k, 0) gives the time profile, the band shares and the top patch
+of a token. In the rest of this README a token's evidence means this mass. The noise-focus ratio
+compares it with the AADD flags f(t), whose clip mean is f̄:
 
 $$
 \mathrm{NFR}_k = \frac{\sum_t \big(\sum_b m_k(b, t)\big)\, f(t)}{\bar{f}}
@@ -125,7 +133,7 @@ $$
   applies the projection three times (zero, resynthesise, re-analyse). Measured in Whisper's log-mel
   on three real clips, the patch falls by 33 to 36 dB on average and by at least 17 dB in the worst
   case, below the clip's own 10th-percentile background. Without resynthesis the drop would be
-  56 dB. The residual is the price of staying in the waveform domain. The waveform outside the
+  56 dB. The residual is the cost of resynthesising a waveform, which every backend takes as input. The waveform outside the
   patch's time span is unchanged to 1e-5, and only the two patches that share a window edge with P
   lose a little of their own energy (up to about 10 % of P's effect).
 * Dividing by S_k(x) is a per-token constant, so every within-token summary is the same from Δ or
@@ -133,8 +141,8 @@ $$
   (S_k ≈ 0), so the summaries use Δ.
 * A server that returns only text cannot give S_k. There WAYS re-decodes x\P, aligns the new
   transcript to y word by word with jiwer, and marks each original word that is not inside an
-  "equal" alignment chunk: the "relative change in evaluation metric" form of erasure from the same
-  paper, at word level, 0 or 1 per patch.
+  "equal" alignment chunk. This is the "relative change in evaluation metric" form of erasure from
+  the same paper, applied at word level with a value of 0 or 1 per patch.
 * NFR is 1 when a token spreads its evidence without regard to the flags, above 1 when it leans on
   flagged audio, below 1 when it avoids it. It is undefined with no flagged frames and trivially 1
   when every frame is flagged, so the tables report it on the clips with 5 to 95 % of frames flagged
@@ -145,8 +153,9 @@ $$
 
 ## What I verified
 
-Every formula above has a test in `tests/`, and the numbers are what those tests and the smoke runs
-measured on this machine. `pytest tests -q` runs the CPU checks in about half a minute.
+Every formula above has a test in `tests/`. The numbers in the table are the values those tests and
+the smoke runs measured on the hardware listed under [Reproducibility](#reproducibility).
+`pytest tests -q` runs the CPU checks in about half a minute.
 
 <details>
 <summary><b>Stats for nerds</b> (every check and its result)</summary>
@@ -172,28 +181,33 @@ measured on this machine. `pytest tests -q` runs the CPU checks in about half a 
 
 ## 100 VoxCeleb clips, three models
 
-Three small models, the same 100 clips: a simple random sample (seed 8001) from a fixed 1 500-clip
-VoxCeleb test slice, 862 s of interview audio with human transcripts as reference. Every patch of
-every clip was erased once per model: 695 patches per clip on average, 69 456 teacher-forced
-forward passes per model. Brackets are 95 % bootstrap intervals over clips.
+The three models were run on the same 100 clips, a simple random sample (seed 8001) from a fixed
+1 500-clip VoxCeleb test slice. The sample is 862 s of interview audio with human reference
+transcripts. Every patch of every clip was erased once per model, which is 695 patches per clip on
+average and 69 456 teacher-forced forward passes per model. Brackets are 95 % bootstrap intervals
+over clips.
 
 <p align="center">
   <img src="figures/comparison_100clips.png" width="860" alt="Three panels: word error rate per clip for the three models; the noise-focus ratio per clip on the informative clips, centred on 1; the mean share of each token's evidence in each of the eight frequency bands">
 </p>
 
-* **The maps are concentrated and model-specific.** A token's single most important patch carries
-  30 % (whisper-tiny), 26 % (whisper-base) and 31 % (moonshine-base) of its mass on average, out of
-  about 700 patches. The smaller Whisper leans harder on single patches (paired +0.043 [+0.029, +0.058]).
-* **Whisper's maps land on the token's own time.** Median distance from a token's top patch to its
-  cross-attention timestamp: 0.12 s for whisper-base (80 % within 0.3 s), 0.31 s for whisper-tiny.
-* **Evidence sits where the voice is.** All three models put a quarter of each token's mass in the
-  0.4 to 0.7 kHz band and almost nothing above 3.6 kHz. Erasing one patch flips a token's choice in
-  a minority of cases (45 %, 33 % and 29 % of tokens have any such patch).
-* **On this data no model prefers degraded audio.** The noise-focus ratio is 0.93, 1.04 and 1.04 on
-  the 22 informative clips, every interval containing 1. The reason is the data as much as the
-  models: AADD flags 59 % of all frames, every frame in 32 clips and none in 22, so the flag carries
-  little within-clip information here. That is why the two datasets below exist.
-* **WER.** whisper-base 0.182 corpus WER, moonshine-base 0.256, whisper-tiny 0.383.
+* **The maps are concentrated and differ between models.** A token's top patch carries 30 %
+  (whisper-tiny), 26 % (whisper-base) and 31 % (moonshine-base) of its mass on average, out of
+  about 700 patches. whisper-tiny concentrates more than whisper-base (paired difference +0.043
+  [+0.029, +0.058]).
+* **Whisper's top patches fall close to the token's timestamp.** The median distance from a token's
+  top patch to its cross-attention timestamp is 0.12 s for whisper-base (80 % within 0.3 s) and
+  0.31 s for whisper-tiny.
+* **Most of the evidence is in the low bands.** All three models put a quarter of each token's mass
+  in the 0.4 to 0.7 kHz band and 14 to 16 % above 3.6 kHz. Erasing a single patch changes the
+  model's choice for a minority of tokens: 45 %, 33 % and 29 % of tokens have at least one such
+  patch.
+* **No model shows a preference for degraded audio on this data.** The noise-focus ratio is 0.93,
+  1.04 and 1.04 on the 22 informative clips, and every interval contains 1. This reflects the data
+  as much as the models. AADD flags 59 % of all frames, every frame in 32 clips and none in 22, so
+  the flag varies little within a clip. The two datasets below were added for that reason.
+* **Word error rate.** Corpus WER is 0.182 for whisper-base, 0.256 for moonshine-base and 0.383 for
+  whisper-tiny.
 
 <details>
 <summary><b>Stats for nerds</b> (the tables, the paired differences, the band shares, two more clips)</summary>
@@ -228,30 +242,32 @@ three models get it with one error, and the boxes still sit on the voiced harmon
 
 <p align="center">
   <img src="figures/vox_mixed__id10274_89UnsytX6Y8_00006.png" width="860" alt="A VoxCeleb clip that AADD rates degraded from 1.5 to 3.8 s, through whisper-tiny, whisper-base and moonshine-base: the degraded stretch is a blue band over the spectrogram, words whose evidence sits in it have dashed boxes and underlines, and each row counts them against chance">
-  <br><sub>How to read the clip figures. Orange is loud and pale is quiet: sound energy, not damage. The blue band is the audio AADD flags as degraded (here noise from 1.5 to 3.8 s, 43 % of the clip). A dashed box and an underlined word mean that word's evidence sits on degraded audio; the row title counts those words against chance. All three models sit at or just above chance here.</sub>
+  <br><sub>How to read the clip figures. Colour in the spectrogram is sound energy (orange is loud, pale is quiet) and does not indicate damage. The blue band marks the audio AADD flags as degraded, here noise from 1.5 to 3.8 s, 43 % of the clip. A dashed box and an underlined word mean that the word's top patch lies on degraded audio. The row title compares the number of such words with the number expected by chance. All three models are at or just above chance here.</sub>
 </p>
 
 ## Does the detector's backbone matter
 
-AADD v3.1 has a whisper-small encoder inside it, so when it judges the audio that a Whisper model
-is explained on, detector and model share a family. To check that the result does not hang on
-that, I built two more detectors with AADD's own recipe and head (`experiments/train_detectors.py`),
-one on the whisper-base encoder and one on the Moonshine encoder, trained on LibriSpeech dev-clean
-in under three minutes apiece (validation frame AUC 0.982 and 0.967). The attribution maps never
-change in this check. Only the flags the noise-focus ratio is computed against do.
+AADD v3.1 contains a whisper-small encoder, so when it rates the audio that a Whisper model is
+explained on, the detector and the model share a family. To check that the result does not depend
+on this, I built two more detectors with AADD's own recipe and head
+(`experiments/train_detectors.py`), one on the whisper-base encoder and one on the Moonshine
+encoder. Each was trained on LibriSpeech dev-clean in under three minutes (validation frame AUC
+0.982 and 0.967). The attribution maps are the same in this check. Only the flags that the
+noise-focus ratio is computed against change.
 
 <p align="center">
   <img src="figures/detector_backbones.png" width="860" alt="Two panels: how often each of the three detectors flags frames inside and outside the known damaged window on the 60 LibriSpeech clips, and the noise-focus ratio of each speech-to-text model under each detector on the 100 VoxCeleb clips with 95 percent intervals">
 </p>
 
 * On the controlled clips, where the damaged 2 s is known, AADD's own detector is the best of the
-  three (92 % of frames flagged inside the window, 12 % outside), the whisper-base detector is close
-  (83 % and 17 %), the Moonshine one the weakest (74 % and 20 %).
-* Under the two detectors that find the damage, every model's noise-focus ratio sits at 1 with
-  intervals containing 1. The Whisper-family overlap does not create a preference for degraded audio.
-* Under the weakest detector the ratios drop to 0.84 to 0.90: a detector that is wrong about where
-  the damage is flags frames the models do not lean on. Detector quality sets a floor for this
-  measure, which is why the two datasets with known damage carry the main claim.
+  three (92 % of frames flagged inside the window, 12 % outside). The whisper-base detector is
+  close (83 % and 17 %) and the Moonshine detector is the weakest (74 % and 20 %).
+* Under the two detectors that find the damage, every model's noise-focus ratio is at 1 with an
+  interval that contains 1. Sharing the Whisper family does not produce a preference for degraded
+  audio.
+* Under the weakest detector the ratios drop to 0.84 to 0.90, because a detector that misplaces the
+  damage flags frames the models do not depend on. The measure is only as reliable as the detector,
+  so the main claim rests on the two datasets with known damage.
 
 <details>
 <summary><b>Stats for nerds</b> (the detectors, and the ratio under each of five)</summary>
@@ -278,32 +294,32 @@ test-clean (which the controlled set uses).
 
 ## Controlled damage on LibriSpeech
 
-The VoxCeleb flags cover too much of every clip to say whether a model leans on damaged audio, so
-the second dataset has ground truth instead of a detector's opinion: 60 LibriSpeech test-clean
-utterances (5 to 10 s, seed 8001), each with one degradation inserted into one 2 s window at a
-random position with AADD's own v3 synthesiser, ten clips per class: pink noise at 0 dB SNR,
-reverberation, clipping, low-pass, mains hum, clicks. The audio outside the window is bit-identical
-to the clean twin. Each clip was scored clean and degraded by each model and tokens were matched
-between the two transcripts. "In-window tokens" drew at least half their evidence from the window
-when the audio was clean.
+The VoxCeleb flags cover too much of every clip to show whether a model depends on damaged audio.
+The second dataset therefore has known damage instead of a detector's estimate. It is 60
+LibriSpeech test-clean utterances (5 to 10 s, seed 8001), each with one degradation inserted into
+one 2 s window at a random position by AADD's v3 synthesiser. There are ten clips per class: pink
+noise at 0 dB SNR, reverberation, clipping, low-pass, mains hum and clicks. The audio outside the
+window is bit-identical to the clean twin. Each model scored every clip clean and degraded, and
+tokens were matched between the two transcripts. "In-window tokens" are those that drew at least
+half their evidence from the window when the audio was clean.
 
 <p align="center">
   <img src="figures/controlled_summary.png" width="860" alt="Three panels per degradation class and model: the rise in word error rate from clean to degraded, the change in the share of an in-window token's evidence that sits inside the window, and the rise in surprisal of in-window tokens">
 </p>
 
-* **Damage pulls evidence into the damaged window, it does not push it away.** For tokens spoken
-  inside the window, the share of evidence inside it rises from 0.73 to 0.82 for whisper-base
-  (paired +0.088 [+0.067, +0.110]), 0.76 to 0.83 for whisper-tiny and 0.76 to 0.84 for
-  moonshine-base. Tokens spoken outside the window also lean on it a little more (paired +0.056
-  [+0.041, +0.074] for whisper-base). The damaged stretch is where the transcript is fragile, so
-  that is where the evidence concentrates. In-window tokens become 0.10 nats more surprising to
-  whisper-base, out-of-window tokens 0.02.
-* **AADD finds the inserted damage**: 100 % of frames inside a noise or reverb window, 3 to 20 %
-  outside, with the right class. Clicks are the hardest (70 % inside).
-* **Noise and reverberation cost words, the other four barely do.** whisper-tiny goes from 0.09 to
-  0.24 WER under noise and 0.15 to 0.37 under reverb. whisper-base loses about half as much. Hum and
-  clicks move WER by at most 0.03 and the evidence shares by at most 0.04: a degradation the model
-  barely notices barely moves the maps.
+* **Damage increases the share of evidence inside the damaged window.** For in-window tokens the
+  share inside the window rises from 0.73 to 0.82 for whisper-base (paired +0.088 [+0.067,
+  +0.110]), from 0.76 to 0.83 for whisper-tiny and from 0.76 to 0.84 for moonshine-base. Tokens
+  spoken outside the window also draw slightly more from it (paired +0.056 [+0.041, +0.074] for
+  whisper-base). In-window tokens become 0.10 nats more surprising to whisper-base and
+  out-of-window tokens 0.02, so the evidence concentrates where the transcript is least certain.
+* **AADD finds the inserted damage.** It flags 100 % of frames inside a noise or reverb window and
+  3 to 20 % outside, with the right class. Clicks are the hardest class (70 % inside).
+* **Noise and reverberation raise the word error rate, and the other four classes barely do.**
+  whisper-tiny goes from 0.09 to 0.24 WER under noise and from 0.15 to 0.37 under reverb.
+  whisper-base loses about half as much. Hum and clicks move WER by at most 0.03 and the evidence
+  shares by at most 0.04. A degradation that does not change the transcript also leaves the maps
+  almost unchanged.
 
 <details>
 <summary><b>Stats for nerds</b> (per model and per kind of damage)</summary>
@@ -335,58 +351,61 @@ survive the degradation unchanged. On clean LibriSpeech all three models sit at 
 
 ## One ambiguous clip, read in depth
 
-The clip above is the ambiguous case. Inside the noise whisper-tiny writes "clients quite told",
-whisper-base "fire and sprite told", moonshine-base "lions, fight cold", and the gold is "my iron's
-twite told". The sound-token figure places each word by the erasure test and counts the words on the
-noise. This is the same clip and the same three models through `aud-cam` with `tokens=True`: one
-backward pass per token through the encoder gives every token a gradient map, drawn in grey, with
-the erasure test's first patch as a tick in the token's colour (`experiments/ambiguous_case.py`,
-which also runs the clean twin).
+The clip above is ambiguous: the three models write different words for the same noisy two seconds.
+Inside the noise whisper-tiny writes "clients quite told", whisper-base "fire and sprite told" and
+moonshine-base "lions, fight cold", where the gold is "my iron's twite told". The sound-token
+figure places each word by the erasure test and counts the words on the noise. The figure below
+shows the same clip and the same three models through `aud-cam` with `tokens=True`. One backward
+pass per token through the encoder gives each token a gradient map, drawn in grey, and the erasure
+test's first patch is a tick in the token's colour. The script is `experiments/ambiguous_case.py`,
+which also runs the clean twin.
 
 <p align="center">
   <img src="figures/controlled_noise_audcam__2094-142345-0024.png" width="860" alt="The aud-cam counterpart of the figure above: the degraded spectrogram, then for whisper-tiny, whisper-base and moonshine-base one lane per token with its gradient saliency in grey and the erasure test's first patch as a coloured tick, the noisy window boxed">
 </p>
 
-* **The words of the noisy stretch sit there under both readings.** "clients quite told", "fire and
-  sprite told", "lions, fight" carry 93 to 95 % of their erasure mass and 57 to 90 % of their
-  gradient mass on the noise. Of the tokens the gradient map puts on the noise, the erasure test
-  puts 4 of 4 there for whisper-tiny, 5 of 5 for whisper-base and 6 of 7 for moonshine-base. The
-  odd one is moonshine's "cold", whose first-ranked patch lies 20 ms past the end of the window
-  with 59 % of its mass inside.
-* **The erasure test counts more tokens on the noise than the gradient map does**, 5, 7 and 8
-  against 4, 5 and 7. The extra ones are "Money" in both Whisper models (92 to 98 % of its erasure
-  mass on the noise, 44 to 46 % of its gradient mass), whisper-base's "it" (62 % against 11 %) and
-  moonshine's "M" and final full stop. Erasing the noise changes these tokens because the sentence
-  around them changes, while the encoder frames they read sit elsewhere. The sound-token count is
-  the decoder's view, the aud-cam lane the encoder's.
-* **The models differ in how wide their evidence is.** whisper-base's maps are 0.5 to 0.8 s wide,
-  whisper-tiny's 0.8 to 1.1 s, moonshine-base's 1.2 to 1.6 s. In all three the gradient maps follow
-  the spoken order (rank correlation 0.86 to 0.94 with the token index). So does the erasure
-  placement, except where it puts "it" into the noise for whisper-base.
+* **Both methods place the words of the noisy stretch on the noise.** "clients quite told", "fire
+  and sprite told" and "lions, fight" carry 93 to 95 % of their erasure mass and 57 to 90 % of
+  their gradient mass on the noise. Of the tokens the gradient map places on the noise, the erasure
+  test places 4 of 4 there for whisper-tiny, 5 of 5 for whisper-base and 6 of 7 for moonshine-base.
+  The exception is moonshine's "cold", whose first-ranked patch lies 20 ms past the end of the
+  window with 59 % of its mass inside.
+* **The erasure test places more tokens on the noise than the gradient map does**, 5, 7 and 8
+  against 4, 5 and 7. The additional tokens are "Money" in both Whisper models (92 to 98 % of its
+  erasure mass on the noise, 44 to 46 % of its gradient mass), whisper-base's "it" (62 % against
+  11 %) and moonshine's "M" and final full stop. These tokens react when the noise is erased, but
+  their encoder gradient lies elsewhere. The scores use a fixed transcript prefix, so the
+  difference arises in the encoder: erasure measures the effect of a finite change to the input,
+  which the encoder spreads over frames, and the gradient measures local sensitivity at each frame.
+* **The models differ in how wide their gradient maps are.** whisper-base's maps are 0.5 to 0.8 s
+  wide, whisper-tiny's 0.8 to 1.1 s and moonshine-base's 1.2 to 1.6 s. In all three the gradient
+  maps follow the spoken order (rank correlation 0.86 to 0.94 with the token index). The erasure
+  placement does too, except where it places "it" in the noise for whisper-base.
 
-Why the word error rate moved on this clip, and why for whisper-base it did not: the clean and the
-degraded transcript of each model aligned to the gold, every word placed where its erasure evidence
-ranks first (`experiments/ambiguous_wer.py`, from the saved attributions).
+The next figure shows why the word error rate changed on this clip, and why it did not for
+whisper-base. The clean and the degraded transcript of each model are aligned to the gold, and
+every word is placed where its erasure evidence ranks first (`experiments/ambiguous_wer.py`, from
+the saved attributions).
 
 <p align="center">
   <img src="figures/controlled_noise_wer__2094-142345-0024.png" width="860" alt="For each of the three models two rows of words, the clean and the degraded transcript, each word placed at the patch its erasure evidence ranks first, green when it matches the gold and red when not; the noisy two seconds are a blue band">
-  <br><sub>Green filled = right at its place in the sentence, red outline = substitution or insertion.</sub>
+  <br><sub>Filled green marks a word that is right at its place in the sentence. A red outline marks a substitution or an insertion.</sub>
 </p>
 
-* **The error rate moves only through the noisy two seconds.** After the noise, "put it down to
+* **The error rate changes only through the noisy two seconds.** After the noise, "put it down to
   warm" is right in all six transcripts and the dialect word "pease" is wrong in all six, and the
   shared words keep their evidence within 0 to 200 ms. Inside the noise the words change in every
   model: whisper-tiny goes from "my iron's tright" to "clients quite", whisper-base from "my iron's
   tried to hold" to "fire and sprite told", moonshine-base from "my earns, Trite" to "lions, fight".
-* **The evidence for the window words sinks into the noise.** Their erasure mass inside the window
-  rises from 0.71 to 0.76 on the clean recording to 0.88 to 0.90 on the degraded one, while the
-  words outside stay at about 0.2. The new words were built from the noisy audio, which is what the
-  per-token view below confirms.
+* **The window words draw more of their evidence from the noise.** Their erasure mass inside the
+  window rises from 0.71 to 0.76 on the clean recording to 0.88 to 0.90 on the degraded one. The
+  words outside the window are at 0.20 to 0.36. The per-token comparison below tests whether the
+  new words depend on the noisy audio itself.
 * **whisper-base stays at 45 % WER with different errors.** On the clean recording its five errors
   are near misses on the dialect ("Money" for "munny", "tried to hold" for "twite told", "Please"
   for "pease"). On the degraded one they are the same two dialect words plus three invented words
-  in the noise. The number did not move because one kind of error replaced another, and only the
-  placement shows that.
+  in the noise. The rate is unchanged because one kind of error replaced another, which the rate
+  alone does not show.
 
 <details>
 <summary><b>Stats for nerds</b> (the clean-to-degraded change per model)</summary>
@@ -404,15 +423,16 @@ mass inside the window.
 
 </details>
 
-### Five tokens in the noise: the erasure reading, and the encoder reading that explains it
+### Five tokens in the noise: erasure and encoder gradient compared
 
-**Setting.** whisper-base writes five tokens on the noisy stretch of the degraded recording, "Money",
-"fire", "and", "sprite", "told", where the gold has "munny my iron's twite told", and one of the five
-is right. On the clean recording the same stretch gives "Money", "my", "iron's", "tried", "to",
-"hold", three of six right. The question is what each token was built from: the noise, the surviving speech
-under it, or the sentence around it. The erasure test alone cannot settle that, because a token moves
-under erasure of a patch whether the encoder read that patch for it or the decoder changed its mind
-when a neighbouring word changed. The second reading, the encoder's gradient for the same token, can.
+**Setting.** On the degraded recording whisper-base writes five tokens in the noisy stretch,
+"Money", "fire", "and", "sprite", "told", where the gold has "munny my iron's twite told". One of
+the five is right. On the clean recording the same stretch gives "Money", "my", "iron's", "tried",
+"to", "hold", with three of six right. The question is which audio each token depended on: the
+noise, the speech under it, or audio elsewhere in the clip. The erasure test alone does not settle
+this. It measures how a token's surprisal responds when a patch is removed, and the encoder spreads
+that change over frames, so a token can react to a patch it is not localised on. The encoder's
+gradient for the same token is a second measurement of where the dependence lies.
 
 **Reading 1, erasure (sound-token).** Each token's first-ranked 100 ms x band patch and the share
 of its erasure mass inside the noisy 0.6 to 2.6 s.
@@ -425,12 +445,12 @@ of its erasure mass inside the noisy 0.6 to 2.6 s.
 | sprite | twite | 2.25 | 4 | 0.95 |
 | told | told | 2.55 | 1 | 0.95 |
 
-All five sit on the noise, 93 to 98 % of their mass, and the three invented words sit within 0.2 s
-of the patches their clean-recording counterparts use ("my" 1.35 s, "iron's" 1.65 and 1.85 s,
-"tried" 2.15 s). The erasure test says the words are made of what lies under those patches. It
-cannot say whether that is the noise or the speech under it, and it cannot separate "told", which
-is right, from "fire", which is not. These patches are the ones the controlled figure above draws,
-and a second run of the tool found the same five.
+All five are on the noise with 93 to 98 % of their mass, and the three invented words lie within
+0.2 s of the patches their clean-recording counterparts use ("my" 1.35 s, "iron's" 1.65 and 1.85 s,
+"tried" 2.15 s). The erasure test shows that the words depend on what lies under those patches. It
+cannot separate the noise from the speech under it, and it does not distinguish "told", which is
+right, from "fire", which is not. These patches are the ones the controlled figure above draws, and
+a second run of the tool returned the same five.
 
 **Reading 2, the encoder's gradient (aud-cam, `tokens=True`).** For the same tokens, where the
 per-frame gradient map sits at the top encoder layer, how wide it is, how much of it lies on the
@@ -451,33 +471,35 @@ noise, and the lowest that share gets over the seven layers.
 
 **Interpretation.**
 
-1. *The three invented words were heard.* "fire", "and", "sprite" keep 86 to 90 % of their gradient
-   on the noise at the top layer and never fall below 0.60 at any layer, in maps 0.6 to 0.8 s wide,
-   centred within 0.35 s of their erasure patch. Encoder and decoder agree on the audio, so these are
-   words the model built from the noisy signal. The other two models hear the same two seconds and
-   build different words from it ("clients quite" for whisper-tiny, "lions, fight" for
-   moonshine-base). The ambiguity is in the audio.
-2. *The right word is the one whose evidence leaves the noise.* "told" is the only window token whose
-   gradient share dips below 0.4 (0.39 at layer 3) and ends at 0.70: a third of its evidence lies
-   past 2.63 s, where the noise ends and the last syllable comes through. The erasure test put it on
-   the noise like the others (0.95). Only the encoder reading separates it, and it is the one right
-   word. For moonshine-base the same patch gives "cold", and there the gradient stays inside the
-   noise (0.63 at the top layer, centred at 2.09 s): wrong word, evidence inside.
-3. *"Money" is a context word.* Its erasure mass is on the noise (0.98) but its gradient is diffuse
-   (1.05 s wide, 0.46 on the noise at every layer, centred at 2.2 s instead of 0.75 s). It is the
-   dialect word "munny", wrong on the clean recording too. The decoder writes it from the start of
-   the sentence, and the noise has nothing to do with it.
-4. *The count changes meaning.* The controlled figure above counts 7 of 14 words on degraded audio
-   against 5 by chance. Under both readings it is 5 of 14: the comma and the four content words. The
-   two extra, "it" and "Money", are the decoder's view, tokens whose erasure evidence lies on the
-   noise because the sentence around them changed. Across the three models the erasure test agrees
-   with the gradient map on 4 of 4, 5 of 5 and 6 of 7 tokens and adds one or two decoder tokens each
-   time.
-5. *The clean recording is the control.* After the noise, "put", "down", "to", "warm" keep the same
-   erasure patch on both recordings (0 ms moved) and their gradient share on the noise falls from
-   0.3 to 0.6 at the input embedding to 0.1 to 0.2 at the top layer. The encoder separates clean words
-   from the noise as it goes deeper, which is the spill-over result of the latent section seen per
-   token.
+1. *Both methods localise the three invented words on the noise.* "fire", "and", "sprite" keep 86
+   to 90 % of their gradient on the noise at the top layer and never fall below 0.60 at any layer,
+   in maps 0.6 to 0.8 s wide, centred within 0.35 s of their erasure patch. Both methods therefore
+   attribute these words to the noisy audio itself. The other two models write different words for
+   the same two seconds ("clients quite" for whisper-tiny, "lions, fight" for moonshine-base),
+   which is consistent with the signal being ambiguous there.
+2. *The one correct word has gradient outside the noise.* "told" is the only window token whose
+   gradient share falls below 0.4 (0.39 at layer 3), and it ends at 0.70. A third of its gradient
+   lies past 2.63 s, where the noise ends and the last syllable is audible. The erasure test places
+   it on the noise like the others (0.95), so only the gradient separates it. For moonshine-base
+   the same patch gives "cold", and its gradient stays inside the noise (0.63 at the top layer,
+   centred at 2.09 s).
+3. *The two methods place "Money" differently.* Its erasure mass is on the noise (0.98, first patch
+   at 0.75 s), but its gradient is diffuse (1.05 s wide, 0.46 on the noise at every layer, centred
+   at 2.2 s). It stands for the dialect word "munny", and the model writes "Money" on the clean
+   recording too, so the noise is not what makes it wrong.
+4. *The count depends on the method.* The controlled figure above counts 7 of 14 words on degraded
+   audio against 5 expected by chance. Requiring both methods to agree gives 5 of 14, the comma and
+   the four content words. The two additional tokens, "it" and "Money", have their erasure evidence
+   on the noise and their gradient elsewhere. Across the three models the erasure test agrees with
+   the gradient map on 4 of 4, 5 of 5 and 6 of 7 tokens and adds one or two erasure-only tokens
+   each time.
+5. *The clean recording serves as the control.* After the noise, "put", "down", "to", "warm" keep
+   the same erasure patch on both recordings (0 ms moved), and their gradient share on the noise
+   falls from 0.3 to 0.6 at the input embedding to 0.1 to 0.2 at the top layer. At deeper layers
+   the gradient for these words is concentrated on their own clean frames.
+
+These are observations on one clip and three models. They show what the comparison can separate,
+and they are not a general result about noisy speech.
 
 The same comparison for any clip and any white-box model is one command:
 
@@ -618,33 +640,36 @@ Control: tokens that appear in both transcripts of a model, and how far the eras
 
 ## Real noise that comes and goes: VoiceBank-DEMAND
 
-When the noise comes and goes inside a sentence, does each word's evidence follow the word, or
-drift into the noise? The third dataset is the VoiceBank-DEMAND test set [[7]](#ref-7), CC BY 4.0,
-downloaded from Edinburgh DataShare with the archives' SHA-256 checked in `experiments/demand.py`:
-VCTK sentences from two speakers, each released clean and with one real DEMAND recording (bus,
-cafe, living room, office, public square) mixed in at 2.5 to 17.5 dB, sample-aligned. I cut each
-sentence into 4 to 7 segments and took each from the clean or the noisy twin in a random pattern
-with at least two noisy runs and two clean runs, so "noisy, clean, noisy, clean, clean, noisy" inside
-one sentence with real noise and known boundaries. 100 clips (seed 8001), three conditions each:
-clean, noisy throughout, on and off. The truth for where a word is spoken is whisper-base's word
-timestamp on the clean recording, matched to each model's words by string alignment.
+This dataset tests whether each word's evidence stays with the word when noise comes and goes
+inside a sentence. It is the VoiceBank-DEMAND test set [[7]](#ref-7), CC BY 4.0, downloaded from
+Edinburgh DataShare with the archives' SHA-256 checked in `experiments/demand.py`. It holds VCTK
+sentences from two speakers, each released clean and with one real DEMAND recording (bus, cafe,
+living room, office, public square) mixed in at 2.5 to 17.5 dB, sample-aligned. I cut each sentence
+into 4 to 7 segments and took each segment from the clean or the noisy twin in a random pattern
+with at least two noisy runs and two clean runs. A sentence then reads, for example, noisy, clean,
+noisy, clean, clean, noisy, with real noise and known boundaries. There are 100 clips (seed 8001)
+in three conditions each: clean, noisy throughout, and on and off. The reference position of a word
+is whisper-base's word timestamp on the clean recording, matched to each model's words by string
+alignment.
 
 <p align="center">
   <img src="figures/demand_tracking.png" width="860" alt="Two panels: share of words whose evidence sits on the right kind of audio and in the right segment, per model with intervals and chance lines; and dumbbells of evidence mass in noisy audio for words spoken in noise versus clean, plus AADD flags in noisy versus clean segments and the word error rates per condition">
 </p>
 
-* **The evidence follows the word, not the noise.** 78 to 79 % of words land on the same kind of
+* **The evidence stays with the word.** 78 to 79 % of words have their evidence on the same kind of
   audio they were spoken on (chance 52 %), and 74 to 76 % in the segment they were spoken in
-  (chance 23 %), for all three models. Intervals: `experiments/results/demand/summary.md`.
-* **A word spoken in noise draws about 70 % of its evidence from the noisy segments, a word spoken
-  in clean audio 36 to 37 %**, below the 51 % of the clip that is noisy. Clean words are not
-  pulled into the noise next to them.
-* **AADD sees the pattern but blurs its edges.** It flags no frame of the clean recordings, 69 % of
-  frames when the noise runs throughout, and on the on-and-off clips 77 % of the noisy frames but
-  also 42 % of the clean ones, merging 2.4 noisy runs per clip into 1.5 spans. That is why the
-  counts here use the known boundaries, and why the VoxCeleb flags should be read as coarse.
-* **The words survive.** WER on the on-and-off clips is 0.09 for the Whisper models and 0.05 for
-  moonshine-base, within 0.02 of clean. Each model ran under a 30 minute cap (24, 12 and 2 minutes).
+  (chance 23 %), for all three models. Intervals are in `experiments/results/demand/summary.md`.
+* **Words spoken in noise draw on the noise, and words spoken in clean audio do not.** A word
+  spoken in noise draws about 70 % of its evidence from the noisy segments. A word spoken in clean
+  audio draws 36 to 37 %, below the 51 % of the clip that is noisy.
+* **AADD detects the pattern with blurred boundaries.** It flags no frame of the clean recordings
+  and 69 % of frames when the noise runs throughout. On the on-and-off clips it flags 77 % of the
+  noisy frames but also 42 % of the clean ones, and it merges 2.4 noisy runs per clip into 1.5
+  spans. The counts here therefore use the known boundaries, and the VoxCeleb flags should be read
+  as coarse.
+* **Word error rate is barely affected.** WER on the on-and-off clips is 0.09 for the Whisper
+  models and 0.05 for moonshine-base, within 0.02 of clean. Each model ran under a 30 minute cap
+  (24, 12 and 2 minutes).
 
 <p align="center">
   <img src="figures/demand_alt__p257_003.png" width="860" alt="VoiceBank-DEMAND sentence p257_003 with bus noise switched on and off, through the three models: the dashed windows mark the noisy segments and the boxes of the words spoken inside them sit inside them">
@@ -653,17 +678,18 @@ timestamp on the clean recording, matched to each model's words by string alignm
 
 ## Noise in the latent space
 
-The attribution says which audio each word used. This view asks what the degraded audio does to
-the model's own representation, layer by layer (`ways/latent.py`, `ways aud-cam`). **Spill-over**:
-erase the degraded stretch with the same operator, run the encoder on both signals, and measure
-how much each layer's representation of each clean frame moves. It should not move if the layer
-kept clean speech apart from the noise. **Grad-CAM per layer**: the gradient of the transcript's
-summed surprisal with respect to every encoder layer, pooled the Grad-CAM way, every layer shown as
-in AADD's own reading of a Whisper encoder, labelled as a hint next to the spill-over.
+The attribution shows which audio each word used. The latent view measures what the degraded audio
+does to the model's internal representation, layer by layer (`ways/latent.py`, `ways aud-cam`). It
+has two parts. **Spill-over** erases the degraded stretch with the same operator, runs the encoder
+on both signals, and measures how far each layer's representation of each clean frame moves. A
+layer that kept clean speech separate from the noise would not move. **Grad-CAM per layer** is the
+gradient of the transcript's summed surprisal with respect to every encoder layer, pooled as in
+Grad-CAM. Every layer is shown, as in AADD's own analysis of a Whisper encoder, and the figure
+labels it a hint next to the spill-over.
 
 <p align="center">
   <img src="figures/latent__whisper-base__id10274_89UnsytX6Y8_00006.png" width="860" alt="whisper-base on the partly degraded clip: damage rows, spectrogram with the degraded band and the loudness line, Grad-CAM per encoder layer, the spill-over per layer under erasure of the degraded stretch, and the per-layer summary">
-  <br><sub>whisper-base on the partly degraded clip. Inside the noise (the boxed stretch) every layer moves when the noise is erased. Outside it, the clean frames move more the deeper the layer: the noise leaking into the representation of clean speech. The Moonshine twin is <code>figures/latent__moonshine-base__id10274_89UnsytX6Y8_00006.png</code>.</sub>
+  <br><sub>whisper-base on the partly degraded clip. Inside the noise (the boxed stretch) every layer moves when the noise is erased. Outside it, the clean frames move more the deeper the layer, which shows the noise affecting the representation of clean speech. The Moonshine twin is <code>figures/latent__moonshine-base__id10274_89UnsytX6Y8_00006.png</code>.</sub>
 </p>
 
 Over the 60 controlled clips the spill-over outside the window grows with depth in every model:
@@ -671,8 +697,8 @@ whisper-tiny from 0.00 at the input to 0.19 at its top layer, whisper-base from 
 moonshine-base from 0.12 to 0.29. Moonshine's input embedding already moves outside the window
 because its encoder applies a GroupNorm with a single group right after its convolutions, which
 normalises over the whole clip. The Grad-CAM focus on the degraded stretch stays between 0.8 and
-1.2 in every layer of every model but one, and its correlation with loudness is weak, so the
-gradients do not single out loud or degraded frames. The representation shift does.
+1.2 in every layer of every model but one, and its correlation with loudness is weak. The gradients
+therefore do not single out loud or degraded frames, whereas the representation shift does.
 
 <details>
 <summary><b>Stats for nerds</b> (whisper-base per layer on the controlled set)</summary>
@@ -703,14 +729,14 @@ pip install --no-deps -e .
 pytest tests -q
 ```
 
-Python 3.12 in any virtual environment. The first call downloads the model from the Hugging Face
-Hub and, with `--aadd`, the AADD checkpoint (about 180 MB for v3), so it needs internet once. Add
-`--revision <commit>` to pin the model snapshot. A GPU is optional for one clip. Nothing in the
-repository assumes a home directory or a machine layout: the scripts call whatever `python` is on
-the path (or `PY=`), the experiments read a data folder through `WAYS_DATA=/path/to/it` (layout
-in `experiments/common.py`), and every path in a provenance file is written relative to this
-repository or as `$WAYS_DATA/...`. Re-running the experiments is described in
-[docs/reproducibility.md](docs/reproducibility.md#re-running).
+WAYS needs Python 3.12 in any virtual environment. The first call downloads the model from the
+Hugging Face Hub and, with `--aadd`, the AADD checkpoint (about 180 MB for v3), so it needs
+internet once. Add `--revision <commit>` to pin the model snapshot. A GPU is optional for one clip.
+The repository does not assume a home directory or a machine layout. The scripts call whatever
+`python` is on the path (or `PY=`), the experiments read a data folder through
+`WAYS_DATA=/path/to/it` (layout in `experiments/common.py`), and every path in a provenance file is
+written relative to this repository or as `$WAYS_DATA/...`. Re-running the experiments is described
+in [docs/reproducibility.md](docs/reproducibility.md#re-running).
 
 ```bash
 ways explain clip.wav --backend hf-whisper --model openai/whisper-base --aadd --figure --out out/
@@ -732,15 +758,19 @@ print(clip_summary(att, rows, probs))                    # att.save(path) / Attr
 
 ## The tool framework: sound-token, aud-cam and cross-check
 
-A WAYS tool is one question about one clip, with a name, a one-line summary, a JSON schema and a
-`run(wav, sr, **kwargs)` that returns a `ToolResult`. Three ship with the package: `sound-token`
-asks which audio each word used and whether that audio was clean or degraded, `aud-cam` what the
-degraded audio does inside the encoder layer by layer, and `cross-check` which tokens sit on
-degraded audio under the erasure test and under the encoder's gradient, and whether the two agree.
-The registry in `ways.tools` drives everything else: `ways tools` lists what is registered, every tool is a CLI subcommand,
-`schemas()` hands the tools to a language model, and `call(name, audio=...)` runs one by name. A
-package of your own adds a tool by registering a `Tool` under the `ways.tools` entry-point group
-([docs/tools.md](docs/tools.md), [CONTRIBUTING.md](CONTRIBUTING.md)).
+A WAYS tool answers one question about one clip. It has a name, a one-line summary, a JSON schema
+and a `run(wav, sr, **kwargs)` that returns a `ToolResult`. Three tools ship with the package:
+
+* `sound-token` reports which audio each word used and whether that audio was clean or degraded.
+* `aud-cam` reports what the degraded audio does inside the encoder, layer by layer.
+* `cross-check` reports which tokens are on degraded audio under the erasure test and under the
+  encoder's gradient, and whether the two agree.
+
+Everything else goes through the registry in `ways.tools`. `ways tools` lists what is registered,
+every tool is a CLI subcommand, `schemas()` hands the tools to a language model, and
+`call(name, audio=...)` runs one by name. A package of your own adds a tool by registering a `Tool`
+under the `ways.tools` entry-point group ([docs/tools.md](docs/tools.md),
+[CONTRIBUTING.md](CONTRIBUTING.md)).
 
 ```bash
 ways tools                       # sound-token  any backend  ...  /  aud-cam  white-box  ...  /  cross-check  white-box  ...
@@ -796,12 +826,15 @@ ways_figure(
     out="my_clip.png")                        # PNG at 300 dpi plus an SVG twin
 ```
 
-Three rules are enforced in code. **Every string is data**: headings, lane titles, axis names,
-verdict sentences and the caption are fields of `FigureText` and `LatentText`, colours and sizes
-are `FigureStyle`. **No overlapping text, ever**: labels are placed from measured text widths, every
-text box is checked against every other and against the page edge after drawing, and the function
-raises `LayoutError` rather than write a bad figure. **Same inputs, same bytes**: bundled font,
-fixed SVG hash salt, no dates in the metadata, and a test compares the SHA-256 of two runs.
+Three rules are enforced in code:
+
+* **Every string is data.** Headings, lane titles, axis names, verdict sentences and the caption
+  are fields of `FigureText` and `LatentText`, and colours and sizes are fields of `FigureStyle`.
+* **Text never overlaps.** Labels are placed from measured text widths. After drawing, every text
+  box is checked against every other and against the page edge, and the function raises
+  `LayoutError` instead of writing a bad figure.
+* **The same inputs give the same bytes.** The font is bundled, the SVG hash salt is fixed and the
+  metadata carries no dates. A test compares the SHA-256 of two runs.
 
 ## Backends: local weights, vLLM, llama.cpp
 
@@ -817,7 +850,7 @@ ways explain clip.wav --backend openai-compat --route transcriptions --base-url 
      --model openai/whisper-large-v3 --patch 0.2 --bands 4 --out out/
 ```
 
-The black-box path costs one request per patch, so a coarser grid is the sensible default. I have
+The black-box path costs one request per patch, so the example uses a coarser grid. I have
 not run a live vLLM or llama.cpp server for this repository. The client is the official `openai`
 package and the request shapes are the ones both servers document ([docs/backends.md](docs/backends.md)).
 
@@ -847,7 +880,7 @@ commands a workflow would run are `make test` and `make lint`.
   recorded sha256, disjoint from the development and held-out slices (the script asserts it). The
   LibriSpeech set and the VoiceBank-DEMAND archives are hashed the same way.
 * `requirements.txt` pins every version. AADD is pinned to a git commit because it is not on PyPI.
-  My first draft said `aadd==3.1.0`, and the clean-environment run caught it. Model weights are
+  An earlier version of the file listed `aadd==3.1.0`, which is not on PyPI, and the clean-environment run caught it. Model weights are
   pinned to Hugging Face snapshot commits (`experiments/common.py`).
 * Every model pass writes `provenance.json` with the git commit, Python, torch and CUDA versions,
   the GPU, input hashes, model commits, seeds, the claimed dependency list and the runtime
@@ -863,17 +896,21 @@ commands a workflow would run are `make test` and `make lint`.
 
 * **The erasure is not a hard zero** (33 to 36 dB down on average, 17 dB worst) because of the
   window overlap, and a patch's two time neighbours lose up to about 10 % of its effect.
-* **Teacher forcing scores the model's own transcript.** Δ says how much a patch supported what the
-  model wrote, not what it should have written. The WER column stays next to the maps for that reason.
+* **Teacher forcing scores the model's own transcript.** Δ measures how much a patch supported what
+  the model wrote, not what it should have written. The WER column stays next to the maps for that
+  reason.
 * **AADD is a detector, not ground truth**, and its flags blur at boundaries. The noise-focus ratio
   is reported on the clips where it is informative and under five detectors, and the main claims
   rest on the two datasets with known damage.
 * **Moonshine has no timestamps**, so the distance-to-timestamp summary exists only for Whisper.
 * **Grad-CAM with time-pooled weights carries no per-token time information** on these encoders
-  (shown on the ambiguous clip), so the per-layer CAM is a hint about layers and the token view uses
-  the per-frame gradient map, itself a saliency and not an erasure test.
-* **No live vLLM or llama.cpp run yet**, only the mock server. Three small models, 260 clips in all:
-  enough for paired comparisons with intervals, not for claims about large models or other languages.
+  (shown on the ambiguous clip). The per-layer CAM is therefore a hint about layers, and the token
+  view uses the per-frame gradient map, which is a saliency and not an erasure test.
+* **The per-token comparison of erasure and gradient is one clip.** It shows what the two methods
+  can separate. Why they disagree on some tokens is not established.
+* **No live vLLM or llama.cpp run yet**, only the mock server.
+* **Scale.** The results cover three small models and 260 clips. That supports paired comparisons
+  with intervals, not claims about large models or other languages.
 
 ## Status
 
