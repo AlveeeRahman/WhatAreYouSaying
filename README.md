@@ -12,7 +12,7 @@
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a>
   <img src="https://img.shields.io/badge/python-3.12-blue.svg" alt="Python 3.12">
-  <img src="https://img.shields.io/badge/tests-29%20passed-brightgreen.svg" alt="tests: 29 passed">
+  <img src="https://img.shields.io/badge/tests-34%20passed-brightgreen.svg" alt="tests: 34 passed">
   <img src="https://img.shields.io/badge/CI-not%20set%20up%20yet-lightgrey.svg" alt="CI: not set up yet">
 </p>
 
@@ -33,7 +33,7 @@ the pipeline repository,
 rewritten so that it does not depend on that pipeline and so that the same erasure operator serves
 every model.
 
-**Contents:** [What it answers](#what-it-answers) · [How it works](#how-it-works) · [What I verified](#what-i-verified) · [Results on 100 random test clips](#results-on-100-random-test-clips) · [Does the detector's backbone matter](#does-the-detectors-backbone-matter) · [Controlled degradation](#controlled-degradation-on-librispeech) · [Install and use](#install-and-use) · [The figure](#the-figure-plug-and-play) · [Latent space](#noise-in-the-latent-space) · [Backends](#backends-local-weights-vllm-llamacpp) · [Reproducibility](#reproducibility) · [Limitations and future work](#limitations-and-future-work) · [Status](#status) · [References](#references) · [Repository layout](#repository-layout) · [Credits and licence](#credits-and-licence)
+**Contents:** [What it answers](#what-it-answers) · [How it works](#how-it-works) · [What I verified](#what-i-verified) · [Results on 100 random test clips](#results-on-100-random-test-clips) · [Does the detector's backbone matter](#does-the-detectors-backbone-matter) · [Controlled degradation](#controlled-degradation-on-librispeech) · [Install and use](#install-and-use) · [Two tools](#two-tools-sound-token-and-aud-cam) · [The figure](#the-figure-plug-and-play) · [Latent space](#noise-in-the-latent-space) · [Backends](#backends-local-weights-vllm-llamacpp) · [Reproducibility](#reproducibility) · [Limitations and future work](#limitations-and-future-work) · [Status](#status) · [References](#references) · [Repository layout](#repository-layout) · [Credits and licence](#credits-and-licence)
 
 <details><summary>Stats for nerds</summary>
 
@@ -451,6 +451,64 @@ print(clip_summary(att, rows, probs))
 `att.save(path)` / `Attribution.load(path)` keep the arrays as a compressed npz with the
 transcript and grid in a JSON field.
 
+## Two tools: sound-token and aud-cam
+
+The two views have names, so a person, a script or a language model can call them. `sound-token`
+answers "which audio did each word use, and was that audio clean or degraded". `aud-cam` answers
+"what does the degraded audio do inside the encoder, layer by layer". Each call returns numbers
+and writes its own figure from the templates in `ways/figure.py`, so the figures of one tool
+always have the same shape and every heading in them can be changed from the call.
+
+```bash
+ways sound-token clip.wav --backend hf-whisper=openai/whisper-base --backend hf-moonshine=UsefulSensors/moonshine-base --aadd --out out/clip
+ways aud-cam     clip.wav --backend hf-whisper=openai/whisper-base --aadd --granular --out out/clip
+```
+
+`sound-token` writes `out/clip__sound-token.png` (and an SVG twin): the damage rows, one
+spectrogram per backend with a box per word, the transcript strip, the count against chance.
+`aud-cam` writes `out/clip__aud-cam.png` with the spectrogram, the Grad-CAM lane, the spill-over
+lane and the per-layer summary. With `--granular` it also writes each lane as its own figure,
+`__aud-cam-cam.png`, `__aud-cam-spillover.png` and `__aud-cam-layers.png`, for when one view
+has to be read on its own. Both print a JSON summary to stdout.
+
+<p align="center">
+  <img src="figures/tool_sound_token__vox_mixed.png" width="920" alt="sound-token on the mixed VoxCeleb clip, whisper-base and moonshine-base">
+</p>
+
+<p align="center">
+  <img src="figures/tool_aud_cam__vox_mixed__whisper-base__spillover.png" width="920" alt="aud-cam granular: spill-over per layer, whisper-base">
+  <img src="figures/tool_aud_cam__vox_mixed__whisper-base__layers.png" width="920" alt="aud-cam granular: per-layer summary, whisper-base">
+</p>
+
+From Python the tools take a waveform and return the arrays as well as the figure paths:
+
+```python
+import soundfile as sf
+from ways.tools import sound_token, aud_cam
+
+wav, sr = sf.read("clip.wav", dtype="float32")
+st = sound_token(wav, sr, backends=[("hf-whisper", "openai/whisper-base")], aadd=True, out="out/clip",
+                 text={"title": "my clip", "caption": "my caption"})     # any heading or sentence of the figure
+st["summaries"][0]["focus_ratio_mean"], st["figure"]
+ac = aud_cam(wav, sr, backend=("hf-whisper", "openai/whisper-base"), aadd=True, out="out/clip", granular=True)
+ac["summary"][-1]["shift_out"], ac["figures"]["spillover"]
+```
+
+For function calling, `ways.tools.schema()` returns the two tool definitions as JSON schemas
+(name, description, parameters with `audio` required) in the OpenAI function shape (for the
+Anthropic API rename `parameters` to `input_schema`), and `ways.tools.call(name, **arguments)` runs one by name from an audio path.
+Pass `window=[start_s, end_s]` instead of `aadd` when the damaged span is known.
+
+```python
+from ways.tools import schema, call
+tools = schema()                                   # hand these to the model
+out = call("aud-cam", audio="clip.wav", aadd=True, out="out/clip", granular=True)   # run what it chose
+```
+
+`aud-cam` needs a white-box backend (hf-whisper or hf-moonshine) because it reads the encoder.
+`sound-token` also works through `openai-compat` (vLLM, llama.cpp), where the per-word map is the
+black-box word-change map of the [Backends](#backends-local-weights-vllm-llamacpp) section.
+
 ## The figure, plug and play
 
 Every clip figure in this repository comes from one function in one self-contained file,
@@ -576,7 +634,7 @@ then tested on real hardware. The full checklist is [docs/reproducibility.md](do
 ## Status
 
 * Done: operator, three backends, scores, summaries, AADD context, CLI, the figure system, the
-  latent view, tests, 100-clip runs for three models, the detector-backbone check (whisper-small,
+  latent view, the two named tools (`sound-token`, `aud-cam`) with JSON schemas, tests, 100-clip runs for three models, the detector-backbone check (whisper-small,
   whisper-base, moonshine-base), the controlled LibriSpeech set, clean-environment run, provenance.
 * Next: CI workflow once Actions minutes are available (the test command is fixed); a live vLLM
   transcription run; the same 100 clips on Modal if a larger model is wanted.
@@ -604,11 +662,12 @@ then tested on real hardware. The full checklist is [docs/reproducibility.md](do
 | `ways/backends/` | `hf_whisper.py`, `hf_moonshine.py`, `openai_compat.py` (vLLM, llama.cpp) |
 | `ways/quality.py` | AADD wrapper, flagged mask, degraded intervals |
 | `ways/metrics.py` | token and clip summaries, noise-focus ratio, WER, bootstrap |
-| `ways/figure.py` | the universal clip figure and the latent figure, self-contained: text and style as data, overlap check, repeatable bytes |
+| `ways/figure.py` | the universal clip figure, the latent figure and the three granular aud-cam figures, self-contained: text and style as data, overlap check, repeatable bytes |
 | `ways/latent.py` | spill-over under erasure and Grad-CAM per encoder layer |
 | `ways/plots.py` | the method, comparison and controlled-summary figures; the clip figures call `ways/figure.py` |
 | `ways/provenance.py` | the provenance manifest (claimed and runtime dependencies, hashes, model commits) |
-| `ways/cli.py` | `ways explain`, `ways latent`, `ways quality` |
+| `ways/tools.py` | the two tools, `sound_token` and `aud_cam`, with their JSON schemas and `call(name, ...)` for function calling |
+| `ways/cli.py` | `ways sound-token`, `ways aud-cam`, `ways explain`, `ways latent`, `ways quality` |
 | `tests/` | operator and formula checks; mock OpenAI-compatible server and the HTTP test |
 | `experiments/` | sample selection, the three-model runs, the detector runs (`run_aadd_variants.py`, `train_detectors.py`, `detector_backbones.py`), comparison tables, the example clip, the controlled LibriSpeech set (`controlled.py`); `common.py` holds the pipeline path and the pinned model revisions |
 | `experiments/results/` | per-clip rows, per-token tables, `comparison.json`, `comparison.md`, provenance (npz maps are not committed) |

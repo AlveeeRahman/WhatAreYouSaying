@@ -618,3 +618,86 @@ def latent_figure(wav, sr=16000, quality=None, quality_hop=0.02, quality_classes
     if out is not None:
         _save(fig, out, S.dpi)
     return fig
+
+
+# ----------------------------------------------------------------------------- granular aud-cam figures
+# Each lane of latent_figure on its own, for when one view has to be read closely or placed alone.
+# They share the text (LatentText), the style, the measured layout and the overlap check.
+
+
+def _layer_lane(wav, sr, M, cmap, vmax, spans, lane_label, title, layer_hop, T, S, out, strict):
+    """One [layers, frames] heat map with the degraded spans boxed, under a title, over the caption."""
+    _rc(S)
+    wav = np.asarray(wav, np.float32); dur = len(wav) / sr
+    C = _Canvas(S, dur, S.width_in, right=0.93)
+    lane_in = 0.16 * M.shape[0] + 0.5
+    fig = plt.figure(figsize=(S.width_in, 1.0))                 # resized once the texts are measured
+    t_in, c_in = _title_and_caption(fig, C, title, T.caption)
+    H = t_in + 0.45 + lane_in + c_in + 0.7
+    fig.set_size_inches(S.width_in, H)
+    gs = fig.add_gridspec(1, 1, left=C.left, right=C.right, top=1 - (t_in + 0.45) / H, bottom=(c_in + 0.7) / H)
+    ax = fig.add_subplot(gs[0])
+    ax.imshow(M, aspect="auto", cmap=cmap, extent=[0, M.shape[1] * layer_hop, M.shape[0], 0], interpolation="nearest", vmin=0, vmax=vmax)
+    ax.set_yticks(np.arange(M.shape[0]) + 0.5); ax.set_yticklabels([str(i) for i in range(M.shape[0])], fontsize=S.label_size - 1)
+    ax.set_ylabel(T.y_layer, fontsize=S.label_size)
+    for a, b in spans:
+        ax.add_patch(Rectangle((a, 0), b - a, M.shape[0], fill=False, edgecolor=S.degraded, lw=1.2, zorder=3))
+    C.tidy(ax, True, T.x_time); C.label(ax, lane_label)
+    _settle(fig, gs, strict)
+    if out is not None:
+        _save(fig, out, S.dpi)
+    return fig
+
+
+def cam_figure(wav, sr, cam, quality=None, quality_hop=0.02, threshold=0.5, layer_hop=0.02, model_name="", title=None, out=None,
+               text=None, style=None, strict=True):
+    """Grad-CAM per encoder layer on its own, each row scaled to its own maximum, degraded spans boxed."""
+    T, S = _merge(LatentText, text), _merge(FigureStyle, style)
+    cam = np.asarray(cam, np.float32)
+    M = cam / np.maximum(cam.max(1, keepdims=True), 1e-12)
+    title = title if title is not None else (T.title or f"{model_name}: Grad-CAM per encoder layer".strip(": "))
+    return _layer_lane(wav, sr, M, "Greys", 1.0, degraded_spans(quality, quality_hop, threshold), T.cam_lane, title, layer_hop, T, S, out, strict)
+
+
+def spillover_figure(wav, sr, shift, quality=None, quality_hop=0.02, threshold=0.5, layer_hop=0.02, model_name="", title=None, out=None,
+                     text=None, style=None, strict=True):
+    """Spill-over per layer on its own (relative shift under erasure of the degraded stretch), degraded spans boxed."""
+    T, S = _merge(LatentText, text), _merge(FigureStyle, style)
+    shift = np.asarray(shift, np.float32)
+    vmax = max(float(np.percentile(shift, 98)), 1e-6)
+    title = title if title is not None else (T.title or f"{model_name}: spill-over under erasure of the degraded stretch".strip(": "))
+    return _layer_lane(wav, sr, shift, BLUE, vmax, degraded_spans(quality, quality_hop, threshold), T.shift_lane, title, layer_hop, T, S, out, strict)
+
+
+def layer_summary_figure(summary, model_name="", title=None, out=None, text=None, style=None, strict=True):
+    """The per-layer numbers on their own: shift inside and outside the degraded stretch as paired bars (top),
+    CAM focus as a line against 1 = no preference (bottom). One axis per panel, no shared y."""
+    T, S = _merge(LatentText, text), _merge(FigureStyle, style)
+    _rc(S)
+    ls = np.array([r["layer"] for r in summary]); w = 0.38
+    C = _Canvas(S, float(len(ls)), S.width_in, right=0.97)
+    title = title if title is not None else (T.title or f"{model_name}: per-layer summary".strip(": "))
+    fig = plt.figure(figsize=(S.width_in, 1.0))
+    t_in, c_in = _title_and_caption(fig, C, title, T.caption)
+    H = t_in + 0.45 + 2.2 + 0.6 + 1.6 + c_in + 0.7
+    fig.set_size_inches(S.width_in, H)
+    gs = fig.add_gridspec(2, 1, height_ratios=[2.2, 1.6], left=C.left, right=C.right, top=1 - (t_in + 0.45) / H, bottom=(c_in + 0.7) / H, hspace=0.6 / 1.9)
+    axb, axc = fig.add_subplot(gs[0]), fig.add_subplot(gs[1], sharex=None)
+    axb.bar(ls - w / 2, [r["shift_out"] for r in summary], width=w, color=S.degraded, alpha=0.85, label=T.legend_out)
+    axb.bar(ls + w / 2, [r["shift_in"] for r in summary], width=w, color=SEQ[2], label=T.legend_in)
+    axb.set_xticks(ls); axb.set_ylabel(T.y_shift, fontsize=S.label_size)
+    axb.set_ylim(0, max(max(r["shift_in"] for r in summary), max(r["shift_out"] for r in summary), 1e-3) * 1.35)
+    axb.legend(frameon=False, fontsize=S.label_size - 1, loc="upper left", ncol=2)
+    axc.plot(ls, [r["cam_focus"] for r in summary], color=S.token_colours[1], marker="o", lw=1.6)
+    axc.axhline(1, color=S.muted, lw=0.8, ls="--")
+    axc.set_xticks(ls); axc.set_xlabel(T.x_layer, labelpad=2); axc.set_ylabel(T.y_focus, fontsize=S.label_size)
+    for ax in (axb, axc):
+        for sp in ax.spines.values():
+            sp.set_color(S.border)
+        ax.tick_params(colors=S.text_soft, labelsize=S.label_size - 1)
+    axb.tick_params(labelbottom=False)
+    C.label(axb, T.summary_lane); C.label(axc, T.legend_cam)
+    _settle(fig, gs, strict)
+    if out is not None:
+        _save(fig, out, S.dpi)
+    return fig
