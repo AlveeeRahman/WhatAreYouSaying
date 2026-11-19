@@ -237,12 +237,16 @@ What this says, in order of how sure I am:
 | moonshine-base | 0.19 | 0.26 | 0.06 | 0.11 | 0.15 | 0.10 | 0.05 | 0.09 |
 
 <p align="center">
-  <img src="figures/vox_clean__id10271_gO805KoL2RM_00006.png" width="860" alt="A VoxCeleb clip that AADD rates clean, through whisper-tiny, whisper-base and moonshine-base: spectrogram with each token's most important patch boxed and labelled, and the transcript strip">
-  <br><sub>A clean clip (AADD flags no frame). whisper-base and moonshine-base agree on 25 of 26 words; whisper-tiny drops "kind of" and "it".</sub>
+  <img src="figures/vox_mixed__id10274_89UnsytX6Y8_00006.png" width="860" alt="A VoxCeleb clip that AADD rates degraded from 1.5 to 3.8 s, through whisper-tiny, whisper-base and moonshine-base: the degraded stretch is a blue band over the spectrogram, words whose evidence sits in it have dashed boxes and underlines, and each row counts them against chance">
+  <br><sub>How to read the clip figures. Orange is loud and pale is quiet: sound energy, not damage. The blue band is the audio AADD flags as degraded (here noise from 1.5 to 3.8 s, 43% of the clip). A dashed box and an underlined word mean that word's evidence sits on degraded audio; the row title counts those words against what chance would give. Here all three models lean slightly on the noisy stretch (12 of 23 with 10 expected, 12 of 25 with 11, 15 of 32 with 14).</sub>
+</p>
+<p align="center">
+  <img src="figures/vox_clean__id10271_gO805KoL2RM_00006.png" width="860" alt="A VoxCeleb clip that AADD rates clean, through the same three models">
+  <br><sub>A clip AADD rates clean (no band). whisper-base and moonshine-base agree on 25 of 26 words; whisper-tiny drops "kind of" and "it".</sub>
 </p>
 <p align="center">
   <img src="figures/vox_degraded__id10295_K1gPy1UKmBE_00007.png" width="860" alt="A VoxCeleb clip that AADD rates degraded in every frame, through the same three models">
-  <br><sub>A degraded clip (AADD flags every frame as noise). All three models get it with one error; the boxes still sit on the voiced harmonics, not on the noise floor.</sub>
+  <br><sub>A clip AADD flags end to end (the band covers everything, so the count says nothing). All three models get it with one error, and the boxes still sit on the voiced harmonics rather than the noise floor.</sub>
 </p>
 
 ## Does the detector's backbone matter
@@ -514,7 +518,7 @@ then tested on real hardware. The full checklist is [docs/reproducibility.md](do
 | `tests/` | operator and formula checks; mock OpenAI-compatible server and the HTTP test |
 | `experiments/` | sample selection, the three-model runs, the detector runs (`run_aadd_variants.py`, `train_detectors.py`, `detector_backbones.py`), comparison tables, the example clip, the controlled LibriSpeech set (`controlled.py`); `common.py` holds the pipeline path and the pinned model revisions |
 | `experiments/results/` | per-clip rows, per-token tables, `comparison.json`, `comparison.md`, provenance (npz maps are not committed) |
-| `figures/` | the method figure, per-model clip figures, the three-model figures (VoxCeleb clean and degraded, LibriSpeech clean and degraded), the comparison figures |
+| `figures/` | the method figure, per-model clip figures, the three-model figures (VoxCeleb partly degraded, clean and degraded; LibriSpeech clean and degraded), the comparison figures |
 | `docs/` | backends, reproducibility checklist; `docs/images/`: the icon and its drawing script, the two hand-drawn workflow figures (sources in `src/`, rendered by `render.py`), the two GIFs |
 | `provenance/` | clean-environment run log and runtime dependency set |
 | `scripts/reproduce_clean_env.sh` | the clean-environment execution test |

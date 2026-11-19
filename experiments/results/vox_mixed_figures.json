@@ -1,4 +1,19 @@
 {
+ "mixed": {
+  "clip": "id10274_89UnsytX6Y8_00006",
+  "frac_flagged": 0.4254545454545455,
+  "wer": {
+   "whisper-tiny": 0.1578947368421052,
+   "whisper-base": 0.0526315789473684,
+   "moonshine-base": 0.1578947368421052
+  },
+  "gold": "theoretical problems that could happen but probably won't probably right now we're doing a show called it's the pits",
+  "text": {
+   "whisper-tiny": "that could happen, but probably won't. Right now we're doing a show called It's the Pits.",
+   "whisper-base": "theoretical problems that could happen, but probably won't. Right now we're doing a show called It's the Pits.",
+   "moonshine-base": "We're atical problems that could happen, but probably won't. Right now we're doing a show called It's the Pits."
+  }
+ },
  "clean": {
   "clip": "id10271_gO805KoL2RM_00006",
   "frac_flagged": 0.0,

@@ -62,13 +62,51 @@ def _mel(ax, L):
     ax.set_ylim(0, 80); ax.set_yticks([0, 40, 80]); ax.set_yticklabels(["0", "1.9 k", "8 k"]); ax.set_ylabel("Hz (mel)")
 
 
+DEG = "#0d366b"
+
+
+def _flag_runs(probs, thr=0.5, min_gap=0.1):
+    """Contiguous stretches (start_s, end_s) where any AADD class is at or above thr, gaps under min_gap merged."""
+    if probs is None:
+        return []
+    fl = (np.asarray(probs) >= thr).any(1)
+    runs, a = [], None
+    for i, v in enumerate(fl):
+        if v and a is None:
+            a = i
+        if not v and a is not None:
+            runs.append([a * SEG_S, i * SEG_S]); a = None
+    if a is not None:
+        runs.append([a * SEG_S, len(fl) * SEG_S])
+    merged = []
+    for r in runs:
+        if merged and r[0] - merged[-1][1] < min_gap:
+            merged[-1][1] = r[1]
+        else:
+            merged.append(r)
+    return [tuple(r) for r in merged]
+
+
+def _bands(ax, probs, top_bar=True):
+    """Translucent blue bands over the degraded stretches, plus a solid blue rule along the top edge."""
+    for a, b in _flag_runs(probs):
+        ax.axvspan(a, b, color=DEG, alpha=0.16, lw=0, zorder=2)
+        if top_bar:
+            y0, y1 = ax.get_ylim()
+            ax.add_patch(Rectangle((a, y1 - (y1 - y0) * 0.035), b - a, (y1 - y0) * 0.035, facecolor=DEG, edgecolor="none", zorder=3))
+
+
 def _strip(ax, probs, dur):
+    """AADD's maximum class probability per 20 ms as a filled line, with the 0.5 threshold and the flagged stretches."""
     if probs is None:
         ax.text(dur / 2, 0.5, "no AADD scan", ha="center", va="center", color=MUTED); ax.set_yticks([]); return
-    pmax = probs.max(1)
+    pmax = np.clip(probs.max(1), 0, 1)
     t = np.arange(len(pmax)) * SEG_S
-    ax.bar(t, np.ones(len(pmax)), width=SEG_S, color=BLUE(np.clip(pmax, 0, 1)), align="edge", lw=0)
-    ax.set_ylim(0, 1); ax.set_yticks([])
+    ax.fill_between(t, 0, pmax, step="post", color=SEQ[-3], alpha=0.85, lw=0)
+    ax.axhline(0.5, color=TXT2, lw=1, ls="--")
+    for a, b in _flag_runs(probs):
+        ax.axvspan(a, b, color=DEG, alpha=0.16, lw=0, zorder=0)
+    ax.set_ylim(0, 1); ax.set_yticks([0, 0.5, 1]); ax.set_yticklabels(["0", "0.5", "1"], fontsize=9)
 
 
 def _colorbar(fig, x, y, w=0.16, h=0.014, label="AADD degradation probability"):
@@ -77,8 +115,12 @@ def _colorbar(fig, x, y, w=0.16, h=0.014, label="AADD degradation probability"):
     cb.set_ticks([0, 0.5, 1]); cax.tick_params(labelsize=10, colors=TXT2, length=2); cax.set_title(label, fontsize=10, color=TXT2, pad=2)
 
 
-def token_rows(att: Attribution):
+def token_rows(att: Attribution, probs=None):
+    """One dict per token: top patch, and, when an AADD scan is given, whether that patch sits on degraded audio."""
+    from .quality import flag_profile
+
     m = token_mass(att)
+    f = flag_profile(probs, att.n_t, att.patch_s) if probs is not None else None
     rows = []
     for k in range(m.shape[0]):
         r = dict(k=k, tok=att.pieces[k])
@@ -86,8 +128,25 @@ def token_rows(att: Attribution):
             prof = m[k].sum(0); bands = m[k].sum(1)
             r["top_t"], r["top_b"] = int(prof.argmax()), int(bands.argmax())
             r["patch"] = tuple(np.unravel_index(int(m[k].argmax()), m[k].shape))
+            if f is not None:
+                r["on_degraded"] = bool(f[r["top_t"]] >= 0.5)
         rows.append(r)
     return rows
+
+
+def degraded_summary(rows, probs, duration):
+    """'k of K words on degraded audio, expected e if no preference' from the rows and the clip's flagged share."""
+    if probs is None:
+        return ""
+    n20 = int(np.ceil(duration / SEG_S))
+    fl = (np.asarray(probs)[:n20] >= 0.5).any(1)
+    frac = float(fl.mean()) if len(fl) else 0.0
+    K = sum("patch" in r for r in rows); k = sum(r.get("on_degraded", False) for r in rows)
+    if frac <= 0:
+        return f"no degraded audio in this clip ({K} words)"
+    if frac >= 1:
+        return f"every frame degraded, so all {K} words sit on degraded audio"
+    return f"{k} of {K} words on degraded audio, {frac * K:.0f} expected by chance ({frac:.0%} of the clip is degraded)"
 
 
 def _lanes(rows, dur, patch_s, axis_in=8.1, char_in=0.095):
@@ -166,6 +225,8 @@ def _sentence_strip(ax, att, rows, axis_in):
         for k, x, text in line:
             ax.add_patch(Rectangle((x, y - 0.3), 0.16, 0.6, facecolor=col(k), edgecolor="white", lw=0.5))
             ax.text(x + 0.21, y, text, color=col(k), fontsize=12, ha="left", va="center", fontweight="bold")
+            if rows[k].get("on_degraded"):
+                ax.add_patch(Rectangle((x, y - 0.46), 0.16 + len(text) * 0.105 + 0.05, 0.07, facecolor=DEG, edgecolor="none"))
     return len(lines)
 
 
@@ -176,7 +237,8 @@ def _tokens_on_mel(axm, att, rows, dur, axis_in=8.1):
         if "patch" not in r:
             continue
         b, t = r["patch"]
-        axm.add_patch(Rectangle((t * ps, b * mel_per_band), ps, mel_per_band, fill=False, edgecolor=col(r["k"]), lw=2.0, zorder=3))
+        axm.add_patch(Rectangle((t * ps, b * mel_per_band), ps, mel_per_band, fill=False, edgecolor=col(r["k"]), lw=2.4 if r.get("on_degraded") else 2.0,
+                                ls=(0, (2.5, 1.5)) if r.get("on_degraded") else "-", zorder=4))
     for k, x, y, va in _place_labels(rows, att, dur, axis_in):
         axm.text(x, y, f'{k} {att.pieces[k].strip() or "_"}', color=col(k), fontsize=10, ha="left", va=va, fontweight="bold",
                  zorder=4, clip_on=True, bbox=dict(boxstyle="square,pad=0.08", fc=BG, ec="none", alpha=0.75))
@@ -186,16 +248,16 @@ def clip_figure(att: Attribution, probs, wav, path, title="", window=None):
     """AADD max-p strip, spectrogram with each token's most important patch boxed and labelled, and the
     transcript as one sentence in reading order with the same colours and numbers."""
     L = logmel(wav); dur = att.duration
-    rows = token_rows(att)
+    rows = token_rows(att, probs)
     axis_in = 10 * (0.97 - 0.16)
     nl = len(_sentence_lines(att, rows, axis_in))
     strip_h = 0.3 * nl + 0.25
     fig = plt.figure(figsize=(10, min(7.4 + strip_h * 0.8, 10.5)))
-    gs = fig.add_gridspec(3, 1, height_ratios=[0.25, 2.8, strip_h], hspace=0.45, left=0.16, right=0.97, top=0.86, bottom=0.09)
+    gs = fig.add_gridspec(3, 1, height_ratios=[0.55, 2.8, strip_h], hspace=0.45, left=0.16, right=0.97, top=0.86, bottom=0.09)
     axq, axm, axt = [fig.add_subplot(gs[i]) for i in range(3)]
-    _strip(axq, probs, dur); _tidy(axq, dur); _label(axq, "Audio quality: AADD maximum degradation probability per 20 ms (dark = degraded)")
-    _mel(axm, L); _tokens_on_mel(axm, att, rows, dur, axis_in); _tidy(axm, dur, bottom=True)
-    _label(axm, "Spectrogram; each box is the patch whose erasure raised that token's surprisal most")
+    _strip(axq, probs, dur); _tidy(axq, dur); _label(axq, "AADD degradation score per 20 ms; above the dashed 0.5 line it counts as degraded")
+    _mel(axm, L); _bands(axm, probs); _tokens_on_mel(axm, att, rows, dur, axis_in); _tidy(axm, dur, bottom=True)
+    _label(axm, f"Spectrogram with each word's top patch; {degraded_summary(rows, probs, dur)}")
     _sentence_strip(axt, att, rows, axis_in)
     _label(axt, "The transcript, token by token, in the colours and numbers used above")
     axt.set_ylim(-0.15, len(_sentence_lines(att, rows, axis_in)) + 0.15)
@@ -204,8 +266,8 @@ def clip_figure(att: Attribution, probs, wav, path, title="", window=None):
             ax.axvspan(window[0], window[1], color="#0d366b", alpha=0.10, lw=0, zorder=1)
             ax.axvline(window[0], color="#0d366b", lw=1.2, ls="--", zorder=5); ax.axvline(window[1], color="#0d366b", lw=1.2, ls="--", zorder=5)
     fig.suptitle(title, x=0.16, ha="left", fontsize=13, fontweight="bold", color=TXT, y=0.975)
-    fig.text(0.16, 0.012, f"Same colour and number = same token; colours repeat every {len(CAT)} tokens, the number is the link. "
-             "Box = the 0.1 s x one-band patch whose erasure hurts the token most.", fontsize=10, color=TXT2, va="bottom", wrap=True)
+    fig.text(0.16, 0.012, f"Same colour and number = same token; colours repeat every {len(CAT)} tokens. Orange = loud, pale = quiet (sound energy, not damage). "
+             "Blue bands = audio AADD flags as degraded; a dashed box and an underlined word mean the word's evidence sits there.", fontsize=10, color=TXT2, va="bottom", wrap=True)
     fig.savefig(path, dpi=DPI); fig.savefig(str(path).rsplit(".", 1)[0] + ".svg"); plt.close(fig)
 
 
@@ -285,20 +347,21 @@ def three_models_figure(atts: dict[str, Attribution], probs, wav, path, title=""
     L = logmel(wav); dur = next(iter(atts.values())).duration
     names = list(atts)
     axis_in = 12 * (0.97 - 0.12)
-    prepared = [(token_rows(atts[n]), None) for n in names]
-    hs = [0.25]
+    prepared = [(token_rows(atts[n], probs), None) for n in names]
+    hs = [0.55]
     for rows, _ in prepared:
         nl = len(_sentence_lines(atts[names[0]], rows, axis_in))
         hs += [2.6, 0.42 * nl + 0.1]
-    fig = plt.figure(figsize=(12, min(1.2 + sum(hs) * 0.62, 14)))
-    gs = fig.add_gridspec(len(hs), 1, height_ratios=hs, hspace=0.3, left=0.12, right=0.97, top=0.89, bottom=0.05)
-    axq = fig.add_subplot(gs[0]); _strip(axq, probs, dur); _tidy(axq, dur); _label(axq, "AADD maximum degradation probability (dark = degraded)")
+    fig = plt.figure(figsize=(12, min(1.4 + sum(hs) * 0.62, 14.5)))
+    gs = fig.add_gridspec(len(hs), 1, height_ratios=hs, hspace=0.3, left=0.12, right=0.97, top=0.89, bottom=0.065)
+    axq = fig.add_subplot(gs[0]); _strip(axq, probs, dur); _tidy(axq, dur)
+    _label(axq, "AADD degradation score per 20 ms; above the dashed 0.5 line the audio counts as degraded (blue bands)")
     if window is not None:
         axq.axvspan(window[0], window[1], color="#0d366b", alpha=0.10, lw=0, zorder=1)
     for i, n in enumerate(names):
         rows, _ = prepared[i]
         axm = fig.add_subplot(gs[1 + 2 * i]); axt = fig.add_subplot(gs[2 + 2 * i])
-        _mel(axm, L); _tokens_on_mel(axm, atts[n], rows, dur, axis_in); _tidy(axm, dur, bottom=True)
+        _mel(axm, L); _bands(axm, probs); _tokens_on_mel(axm, atts[n], rows, dur, axis_in); _tidy(axm, dur, bottom=True)
         if i < len(names) - 1:
             axm.set_xlabel("")
         _sentence_strip(axt, atts[n], rows, axis_in)
@@ -306,9 +369,11 @@ def three_models_figure(atts: dict[str, Attribution], probs, wav, path, title=""
             axm.axvspan(window[0], window[1], color="#0d366b", alpha=0.10, lw=0, zorder=1)
             axm.axvline(window[0], color="#0d366b", lw=1.2, ls="--", zorder=5); axm.axvline(window[1], color="#0d366b", lw=1.2, ls="--", zorder=5)
         w = f"  ·  WER {wers[n]:.0%}" if wers and n in wers and np.isfinite(wers[n]) else ""
-        _label(axm, f"{n}{w}  ·  {len(rows)} tokens")
+        _label(axm, f"{n}{w}  ·  {degraded_summary(rows, probs, dur)}")
     title = "\n".join(textwrap.fill(line, 95) for line in title.split("\n"))
     fig.suptitle(title, x=0.12, ha="left", fontsize=13, fontweight="bold", color=TXT, y=0.985, va="top")
+    fig.text(0.12, 0.006, "Orange = loud, pale = quiet (sound energy, not damage). Blue bands = audio AADD flags as degraded.\n"
+             "Dashed box and underlined word = that word's evidence sits on degraded audio.", fontsize=10, color=TXT2, va="bottom")
     fig.savefig(path, dpi=DPI); fig.savefig(str(path).rsplit(".", 1)[0] + ".svg"); plt.close(fig)
 
 

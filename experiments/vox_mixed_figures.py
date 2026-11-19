@@ -19,7 +19,8 @@ AUDIO = PIPE / "audio"
 AADD_CSV = PIPE / "aadd_frames_20ms.csv"
 FIG = HERE.parent / "figures"
 MODELS = ["whisper-tiny", "whisper-base", "moonshine-base"]
-PICK = {"clean": "id10271_gO805KoL2RM_00006", "degraded": "id10295_K1gPy1UKmBE_00007"}
+PICK = {"mixed": "id10274_89UnsytX6Y8_00006", "clean": "id10271_gO805KoL2RM_00006", "degraded": "id10295_K1gPy1UKmBE_00007"}
+TAG = {"mixed": "partly degraded", "clean": "clean", "degraded": "degraded"}
 
 aadd = load_scan_csv(AADD_CSV)
 clips = {m: pd.read_csv(HERE / "results" / m / "clips.csv").set_index("clip") for m in MODELS}
@@ -31,7 +32,7 @@ for tag, clip in PICK.items():
     fl = float(clips[MODELS[0]].loc[clip, "frac_flagged"])
     gold = clips[MODELS[0]].loc[clip, "gold"]
     three_models_figure(atts, aadd[clip], wav, FIG / f"vox_{tag}__{clip}.png",
-                        title=f"VoxCeleb, AADD rates it {tag} ({fl:.0%} of frames flagged): {clip}\ngold: '{gold}'", wers=wers)
+                        title=f"VoxCeleb, AADD rates it {TAG[tag]} ({fl:.0%} of frames flagged): {clip}\ngold: '{gold}'", wers=wers)
     out[tag] = dict(clip=clip, frac_flagged=fl, wer=wers, gold=gold, text={m: atts[m].text for m in MODELS})
     print(tag, clip, wers)
 (HERE / "results/vox_mixed_figures.json").write_text(json.dumps(out, indent=1))
