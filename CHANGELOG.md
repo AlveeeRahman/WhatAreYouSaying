@@ -2,6 +2,9 @@
 
 ## 0.2.2
 
+- **The aud-cam counterpart of the controlled figure**: the same clip and the same three models
+  (whisper-tiny added to `experiments/ambiguous_case.py`), one lane of per-token gradient saliency per
+  model with the erasure test's first patch as a tick, under the controlled figure in the README.
 - **experiments/ambiguous_wer.py**: the clean and the degraded transcript of each model on the
   ambiguous clip aligned to the gold, every word placed at its first-ranked erasure patch, the
   shared words joined; explains the WER change (and whisper-base's unchanged WER) through the noisy
