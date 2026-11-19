@@ -1,24 +1,24 @@
 {
  "detectors": {
-  "whisper-small (AADD v3.1)": {
+  "whisper-small detector (AADD v3.1)": {
    "n_params": 88625177,
-   "trained_by": "AADD"
+   "weights": "AADD v3.1 release"
   },
-  "whisper-base (trained here)": {
+  "whisper-base detector": {
    "n_params": 21015059,
-   "trained_by": "this repository",
+   "weights": "AADD recipe on LibriSpeech dev-clean",
    "val_auc": 0.9818009638043992,
    "steps": 3400
   },
-  "moonshine-base (trained here)": {
+  "moonshine-base detector": {
    "n_params": 21017717,
-   "trained_by": "this repository",
+   "weights": "AADD recipe on LibriSpeech dev-clean",
    "val_auc": 0.9667974937399069,
    "steps": 2600
   }
  },
  "controlled": {
-  "whisper-small (AADD v3.1)": {
+  "whisper-small detector (AADD v3.1)": {
    "overall": {
     "flagged_inside": 0.919,
     "flagged_outside": 0.125,
@@ -57,7 +57,7 @@
     }
    }
   },
-  "whisper-base (trained here)": {
+  "whisper-base detector": {
    "overall": {
     "flagged_inside": 0.835,
     "flagged_outside": 0.175,
@@ -96,7 +96,7 @@
     }
    }
   },
-  "moonshine-base (trained here)": {
+  "moonshine-base detector": {
    "overall": {
     "flagged_inside": 0.736,
     "flagged_outside": 0.195,
@@ -137,7 +137,7 @@
   }
  },
  "focus": {
-  "whisper-small (AADD v3.1)": {
+  "whisper-small detector (AADD v3.1)": {
    "whisper-tiny": {
     "n": 46,
     "mean": 0.953260825950806,
@@ -176,7 +176,7 @@
     "n_pairs": 46
    }
   },
-  "whisper-base (trained here)": {
+  "whisper-base detector": {
    "whisper-tiny": {
     "n": 92,
     "mean": 0.9661734861163241,
@@ -215,7 +215,7 @@
     "n_pairs": 92
    }
   },
-  "moonshine-base (trained here)": {
+  "moonshine-base detector": {
    "whisper-tiny": {
     "n": 91,
     "mean": 0.8447475912548914,

@@ -26,7 +26,7 @@ def xpos(v):
 
 names = list(S["detectors"])
 ref_left = xpos(1.0)
-short = {n: n.split(" (")[0] + (" · AADD v3.1" if "AADD" in n else " · trained here") for n in names}
+short = {n: n.replace(" detector", "").replace(" (AADD v3.1)", " · AADD v3.1") for n in names}
 
 # ---- panel (a): dumbbells --------------------------------------------------------------------------
 rows_a = []
@@ -86,7 +86,7 @@ body = f'''
 <div style="width: 1200px; height: 830px; box-sizing: border-box; padding: 40px 48px; background: {PAGE}; color: {INK}; font-family: 'IBM Plex Sans', system-ui, sans-serif; display: flex; flex-direction: column; gap: 18px;">
   <div style="display: flex; flex-direction: column; gap: 6px;">
     <h1 style="margin: 0; font-family: 'Space Grotesk', system-ui, sans-serif; font-size: 30px; line-height: 36px; font-weight: 700;">Same question, three detector backbones</h1>
-    <p style="margin: 0; font-size: 15px; line-height: 22px; color: {SOFT}; max-width: 1000px;">The attribution maps never change. Only the detector that says which audio is degraded does: AADD's own (whisper-small inside), and two trained here with AADD's recipe on the whisper-base and Moonshine encoders.</p>
+    <p style="margin: 0; font-size: 15px; line-height: 22px; color: {SOFT}; max-width: 1000px;">The attribution maps never change. Only the detector that says which audio is degraded does: AADD's own, with a whisper-small encoder inside, and two more built with AADD's recipe on the whisper-base and Moonshine encoders.</p>
   </div>
   <div style="display: grid; grid-template-columns: 500px 1fr; gap: 28px; flex: 1;">
     <div style="background: {CARD}; border: 1px solid {LINE}; border-radius: 10px; padding: 20px 22px; display: flex; flex-direction: column; gap: 10px;">

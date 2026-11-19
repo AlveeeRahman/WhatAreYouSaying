@@ -1,11 +1,12 @@
 """The same noise-focus question under three detectors whose backbones differ:
   whisper-small   AADD v3.1 as shipped (gertelrina/aadd, 88.6 M parameters)
-  whisper-base    AADD's own frame model on the whisper-base encoder, trained here (experiments/train_detectors.py)
-  moonshine-base  the same head on the Moonshine encoder, trained here
+  whisper-base    AADD's own frame model on the whisper-base encoder, weights from experiments/train_detectors.py
+  moonshine-base  the same head on the Moonshine encoder, weights from experiments/train_detectors.py
 Each detector scores (a) the 60 controlled clips, where the damaged window is known, so its hit rate inside and
 outside the window is measured against ground truth, and (b) the 100 VoxCeleb clips, where its flags feed the
 noise-focus ratio of each speech-to-text model. The attribution maps never change; only the flags do.
-Writes experiments/results/detector_backbones.{json,md} and figures/detector_backbones.png."""
+Writes experiments/results/detector_backbones.{json,md}; the figure is built from the json by
+docs/images/src/make_detector_figure.py."""
 import json
 import sys
 from pathlib import Path
@@ -37,10 +38,10 @@ man = pd.read_csv(RES / "controlled/manifest.csv")
 def detectors():
     from aadd.infer import Detector
     v3 = Detector(model="v3", resolution=0.02)
-    yield "whisper-small (AADD v3.1)", lambda w: np.asarray(v3.predict(w, 16000).frame_probs, np.float32), dict(n_params=int(sum(p.numel() for p in v3.model.parameters())), trained_by="AADD")
+    yield "whisper-small detector (AADD v3.1)", lambda w: np.asarray(v3.predict(w, 16000).frame_probs, np.float32), dict(n_params=int(sum(p.numel() for p in v3.model.parameters())), weights="AADD v3.1 release")
     for name in ("whisper-base", "moonshine-base"):
         m, ck = load_detector(name, DEV)
-        yield f"{name} (trained here)", (lambda w, m=m: frame_probs(m, w, DEV)), dict(n_params=int(sum(p.numel() for p in m.parameters())), trained_by="this repository", val_auc=ck["meta"]["val_auc"], steps=ck["meta"]["step"])
+        yield f"{name} detector", (lambda w, m=m: frame_probs(m, w, DEV)), dict(n_params=int(sum(p.numel() for p in m.parameters())), weights="AADD recipe on LibriSpeech dev-clean", val_auc=ck["meta"]["val_auc"], steps=ck["meta"]["step"])
 
 
 S = dict(detectors={}, controlled={}, focus={})
@@ -80,38 +81,12 @@ for name in S["detectors"]:
 (RES / "detector_backbones.json").write_text(json.dumps(S, indent=1, default=float))
 
 ci = lambda d, f="{:.2f}": f"{f.format(d['mean'])} [{f.format(d['ci'][0])}, {f.format(d['ci'][1])}]"
-L = ["| detector backbone | parameters | trained by | flags inside the damaged 2 s | flags outside | right class inside |", "|---|---|---|---|---|---|"]
+L = ["| detector | parameters | weights | flags inside the damaged 2 s | flags outside | right class inside |", "|---|---|---|---|---|---|"]
 for name, info in S["detectors"].items():
     o = S["controlled"][name]["overall"]
-    L.append(f"| {name} | {info['n_params'] / 1e6:.1f} M | {info['trained_by']} | {o['flagged_inside']:.2f} | {o['flagged_outside']:.2f} | {o['class_inside']:.2f} |")
-L += ["", "| detector backbone | " + " | ".join(ASR) + " | paired whisper-base − moonshine-base |", "|---|" + "---|" * (len(ASR) + 1)]
+    L.append(f"| {name} | {info['n_params'] / 1e6:.1f} M | {info['weights']} | {o['flagged_inside']:.2f} | {o['flagged_outside']:.2f} | {o['class_inside']:.2f} |")
+L += ["", "| detector | " + " | ".join(ASR) + " | paired whisper-base − moonshine-base |", "|---|" + "---|" * (len(ASR) + 1)]
 for name, d in S["focus"].items():
     L.append(f"| {name} | " + " | ".join(ci(d[m]) + f" (n={d[m]['n']})" for m in ASR) + f" | {ci(d['paired whisper-base - moonshine-base'], '{:+.3f}')} |")
 (RES / "detector_backbones.md").write_text("\n".join(L) + "\n")
 print("\n".join(L))
-
-# figure
-import matplotlib
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt
-from ways.plots import BORDER, CAT, TXT, TXT2, DPI, _label
-names = list(S["detectors"])
-fig, axes = plt.subplots(1, 2, figsize=(13, 5.2), gridspec_kw=dict(left=0.07, right=0.98, top=0.78, bottom=0.2, wspace=0.3))
-ax = axes[0]; x = np.arange(len(names)); w = 0.38
-ax.bar(x - w / 2, [S["controlled"][n]["overall"]["flagged_inside"] for n in names], width=w, color=CAT[0], label="inside the damaged 2 s")
-ax.bar(x + w / 2, [S["controlled"][n]["overall"]["flagged_outside"] for n in names], width=w, color=CAT[1], label="outside it")
-ax.set_xticks(x); ax.set_xticklabels([n.replace(" (", "\n(") for n in names]); ax.set_ylim(0, 1); ax.set_ylabel("share of frames flagged")
-ax.legend(frameon=False); _label(ax, "(a) Does the detector find the damage? 60 LibriSpeech clips")
-ax = axes[1]; w = 0.8 / len(ASR)
-for i, m in enumerate(ASR):
-    v = [S["focus"][n][m]["mean"] for n in names]; e = [[S["focus"][n][m]["mean"] - S["focus"][n][m]["ci"][0] for n in names], [S["focus"][n][m]["ci"][1] - S["focus"][n][m]["mean"] for n in names]]
-    ax.bar(x + (i - 1) * w, v, width=w, color=CAT[i], label=m, yerr=e, capsize=3, error_kw=dict(ecolor=TXT2, lw=1))
-ax.axhline(1, color=TXT2, lw=1, ls="--"); ax.set_xticks(x); ax.set_xticklabels([n.replace(" (", "\n(") for n in names])
-ax.set_ylabel("evidence on flagged audio / share flagged"); ax.legend(frameon=False, title="speech-to-text model", title_fontsize=11)
-_label(ax, "(b) Noise-focus ratio, 100 VoxCeleb clips (95 % intervals)")
-for a_ in axes:
-    for s in a_.spines.values():
-        s.set_color(BORDER)
-fig.suptitle("Same question, three detector backbones: whisper-small (AADD's), whisper-base, moonshine-base", x=0.07, ha="left", fontsize=13, fontweight="bold", color=TXT, y=0.96)
-fig.savefig(FIG / "detector_backbones.png", dpi=DPI); fig.savefig(FIG / "detector_backbones.svg")
-print("figure written")
