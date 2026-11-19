@@ -13,6 +13,8 @@ SRC = HERE / "src"
 FIGS = {  # name: (width, height, output)
     "workflow_method": (1200, 1350, HERE / "workflow_method.png"),
     "workflow_experiments": (1200, 1330, HERE / "workflow_experiments.png"),
+    "detector_backbones": (1200, 830, HERE.parents[1] / "figures/detector_backbones.png"),   # built by src/make_detector_figure.py
+    "demand_tracking": (1200, 830, HERE.parents[1] / "figures/demand_tracking.png"),         # built by src/make_demand_figure.py
 }
 SCALE = 3
 

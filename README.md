@@ -12,7 +12,7 @@
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a>
   <img src="https://img.shields.io/badge/python-3.12-blue.svg" alt="Python 3.12">
-  <img src="https://img.shields.io/badge/tests-34%20passed-brightgreen.svg" alt="tests: 34 passed">
+  <img src="https://img.shields.io/badge/tests-37%20passed-brightgreen.svg" alt="tests: 37 passed">
   <img src="https://img.shields.io/badge/CI-not%20set%20up%20yet-lightgrey.svg" alt="CI: not set up yet">
 </p>
 
@@ -33,7 +33,7 @@ the pipeline repository,
 rewritten so that it does not depend on that pipeline and so that the same erasure operator serves
 every model.
 
-**Contents:** [What it answers](#what-it-answers) · [How it works](#how-it-works) · [What I verified](#what-i-verified) · [Results on 100 random test clips](#results-on-100-random-test-clips) · [Does the detector's backbone matter](#does-the-detectors-backbone-matter) · [Controlled degradation](#controlled-degradation-on-librispeech) · [Install and use](#install-and-use) · [Two tools](#two-tools-sound-token-and-aud-cam) · [The figure](#the-figure-plug-and-play) · [Latent space](#noise-in-the-latent-space) · [Backends](#backends-local-weights-vllm-llamacpp) · [Reproducibility](#reproducibility) · [Limitations and future work](#limitations-and-future-work) · [Status](#status) · [References](#references) · [Repository layout](#repository-layout) · [Credits and licence](#credits-and-licence)
+**Contents:** [What it answers](#what-it-answers) · [How it works](#how-it-works) · [What I verified](#what-i-verified) · [Results on 100 random test clips](#results-on-100-random-test-clips) · [Does the detector's backbone matter](#does-the-detectors-backbone-matter) · [Controlled degradation](#controlled-degradation-on-librispeech) · [Real noise on and off](#real-noise-that-comes-and-goes-voicebank-demand) · [Install and use](#install-and-use) · [Two tools](#two-tools-sound-token-and-aud-cam) · [The figure](#the-figure-plug-and-play) · [Latent space](#noise-in-the-latent-space) · [Backends](#backends-local-weights-vllm-llamacpp) · [Reproducibility](#reproducibility) · [Limitations and future work](#limitations-and-future-work) · [Status](#status) · [References](#references) · [Repository layout](#repository-layout) · [Credits and licence](#credits-and-licence)
 
 <details><summary>Stats for nerds</summary>
 
@@ -45,8 +45,9 @@ every model.
 | cost | one teacher-forced forward pass per patch, batched 64 at a time; 4.3 s per clip for moonshine-base, about 15 s for whisper-base on an RTX 4000 Ada (20 GB) |
 | sample | 100 clips, simple random sample with seed 8001 from the saved 1 500-clip test slice (sha256 `dfb0451d…`), total 862 s of audio |
 | controlled set | 60 LibriSpeech test-clean utterances, one 2 s degradation each from AADD's synthesiser, clean and degraded twins, three models |
+| on-and-off set | 100 VoiceBank-DEMAND sentences (CC BY 4.0), real noise at 2.5 to 17.5 dB switched on and off in 4 to 7 segments per sentence, clean and noisy-throughout twins, three models, 30 min cap per model |
 | detectors | AADD v3.1 (whisper-small backbone, 88.6 M parameters); AADD's head on whisper-base and on moonshine-base encoders (21 M each, AADD recipe on LibriSpeech dev-clean); plus AADD v3-lite (CRNN, 1.3 M) and v2 (EfficientNet-B0, 4.0 M) |
-| tests | 27 CPU checks of the operator, the formulas, the figures (overlaps, repeatability, editable text) and the latent view, 2 end-to-end HTTP checks against a mock OpenAI-compatible server |
+| tests | 35 CPU checks of the operator, the formulas, the figures (overlaps, page edges, repeatability, editable text), the latent view and the two tools, 2 end-to-end HTTP checks against a mock OpenAI-compatible server |
 
 </details>
 
@@ -363,6 +364,54 @@ What the controlled set shows:
   <br><sub>LibriSpeech 2094-142345-0024 with pink noise at 0 dB inserted at 0.6 to 2.6 s (dashed). The clean twin is <code>figures/controlled_noise_clean__2094-142345-0024.png</code>; a reverb pair is in the same folder.</sub>
 </p>
 
+## Real noise that comes and goes: VoiceBank-DEMAND
+
+The first two datasets could not answer one question: when the noise comes and goes inside a
+sentence, does each word's evidence follow the word, or does it drift into the noise? The VoxCeleb
+flags cover most of every clip, and the LibriSpeech set has one damaged window per clip. So the
+third dataset is the VoiceBank-DEMAND test set [[7]](#ref-7), CC BY 4.0, downloaded from Edinburgh
+DataShare with the four archives' SHA-256 checked in `experiments/demand.py`: 824 VCTK sentences
+from two speakers, each released clean and with one real DEMAND recording (bus, cafe, living room,
+office, public square) mixed in at 2.5, 7.5, 12.5 or 17.5 dB. The clean and noisy twins are
+sample-aligned, so I can cut a sentence into 4 to 7 segments of about 0.4 to 0.9 s and take each
+segment from the clean or the noisy twin, following a random pattern with at least two noisy runs
+and two clean runs, with 10 ms crossfades. That gives "noisy, clean, noisy, clean, clean, noisy"
+inside one sentence, with real noise and the exact boundaries known. 100 clips (seed 8001,
+302 s of audio), three conditions each: clean, noisy throughout, and on-and-off. Each model ran
+with a 30 minute cap; whisper-base took 24 minutes, whisper-tiny 12, moonshine-base 2.
+
+The truth for where a word is spoken is whisper-base's word timestamp on the clean recording,
+matched to each model's words by string alignment, so one truth serves all three models. Then,
+on the on-and-off clips, I ask where `sound-token` put the word's strongest patch of evidence.
+
+<p align="center">
+  <img src="figures/demand_tracking.png" width="860" alt="Two panels: share of words whose evidence sits on the right kind of audio and in the right segment, per model with intervals and chance lines; and dumbbells of evidence mass in noisy audio for words spoken in noise versus clean, plus AADD flags in noisy versus clean segments and the word error rates per condition">
+</p>
+
+* **The evidence follows the word, not the noise.** 78 % of whisper-tiny's and whisper-base's
+  words and 79 % of moonshine-base's land on the same kind of audio they were spoken on, against
+  52 % by chance, and 74 to 76 % land in the very segment they were spoken in, against 23 % by
+  chance (95 % intervals in `experiments/results/demand/summary.md`). The median distance from the
+  top patch to the word's timestamp is 0.11 to 0.12 s, the same as on VoxCeleb.
+* **A word spoken in noise draws about 70 % of its evidence from the noisy segments; a word spoken
+  in clean audio draws 36 to 37 %**, below the 51 % of the clip that is noisy. So the clean words
+  are not pulled into the noise next to them. This is the per-word reading of the LibriSpeech
+  result: damage concentrates the evidence of the words spoken inside it.
+* **AADD sees the pattern but blurs its edges.** It flags no frame of the clean studio recordings,
+  69 % of the frames when the noise runs throughout (97 % at 2.5 dB, 56 to 68 % above), and on the
+  on-and-off clips 77 % of the noisy frames but also 42 % of the clean ones, merging the 2.4 noisy
+  runs per clip into 1.5 spans. Its windowed scoring spreads a flag over the clean audio next to
+  the noise, which is why the figure and the counts above use the known boundaries, and why the
+  VoxCeleb flags should be read as coarse.
+* **The words themselves survive.** WER on the on-and-off clips is 0.09 for the two Whisper models
+  and 0.05 for moonshine-base, the same as clean for whisper-base and within 0.02 of clean for the
+  others. Real bus or cafe noise at these SNRs costs few words; it moves evidence, not transcripts.
+
+<p align="center">
+  <img src="figures/demand_alt__p257_003.png" width="860" alt="VoiceBank-DEMAND sentence p257_003 with bus noise switched on and off, through the three models: the dashed windows mark the noisy segments and the boxes of the words spoken inside them sit inside them">
+  <br><sub>p257_003, bus noise at 7.5 dB in the pattern noisy, clean, noisy, clean, clean, clean, noisy (dashed). The row titles count against the known windows. The same sentence with the noise throughout is <code>figures/demand_noisy__p257_003.png</code>.</sub>
+</p>
+
 ## Noise in the latent space
 
 The attribution says which audio each word used. This view asks what the degraded audio does to
@@ -635,7 +684,7 @@ then tested on real hardware. The full checklist is [docs/reproducibility.md](do
 
 * Done: operator, three backends, scores, summaries, AADD context, CLI, the figure system, the
   latent view, the two named tools (`sound-token`, `aud-cam`) with JSON schemas, tests, 100-clip runs for three models, the detector-backbone check (whisper-small,
-  whisper-base, moonshine-base), the controlled LibriSpeech set, clean-environment run, provenance.
+  whisper-base, moonshine-base), the controlled LibriSpeech set, the VoiceBank-DEMAND on-and-off set, clean-environment run, provenance.
 * Next: CI workflow once Actions minutes are available (the test command is fixed); a live vLLM
   transcription run; the same 100 clips on Modal if a larger model is wanted.
 
@@ -653,6 +702,8 @@ then tested on real hardware. The full checklist is [docs/reproducibility.md](do
 
 <a id="ref-6"></a>[6] B. P. Vangala, A. Adibifar, A. Gehani, and T. Malik, "AI-generated code is not reproducible (yet): An empirical study of dependency gaps in LLM-based coding agents," *arXiv:2512.22387*, v3, Mar. 2026. [arXiv](https://arxiv.org/abs/2512.22387)
 
+<a id="ref-7"></a>[7] C. Valentini-Botinhao, "Noisy speech database for training speech enhancement algorithms and TTS models," University of Edinburgh, School of Informatics, Centre for Speech Technology Research, 2017, CC BY 4.0. [DataShare](https://datashare.ed.ac.uk/handle/10283/2791). Speech from the CSTR VCTK corpus, noise from DEMAND (J. Thiemann, N. Ito, and E. Vincent, 2013).
+
 ## Repository layout
 
 | Path | What it holds |
@@ -669,10 +720,10 @@ then tested on real hardware. The full checklist is [docs/reproducibility.md](do
 | `ways/tools.py` | the two tools, `sound_token` and `aud_cam`, with their JSON schemas and `call(name, ...)` for function calling |
 | `ways/cli.py` | `ways sound-token`, `ways aud-cam`, `ways explain`, `ways latent`, `ways quality` |
 | `tests/` | operator and formula checks; mock OpenAI-compatible server and the HTTP test |
-| `experiments/` | sample selection, the three-model runs, the detector runs (`run_aadd_variants.py`, `train_detectors.py`, `detector_backbones.py`), comparison tables, the example clip, the controlled LibriSpeech set (`controlled.py`); `common.py` holds the pipeline path and the pinned model revisions |
+| `experiments/` | sample selection, the three-model runs, the detector runs (`run_aadd_variants.py`, `train_detectors.py`, `detector_backbones.py`), comparison tables, the example clip, the controlled LibriSpeech set (`controlled.py`); the VoiceBank-DEMAND on-and-off set (`demand.py`, `demand_figures.py`); `common.py` holds the pipeline path and the pinned model revisions |
 | `experiments/results/` | per-clip rows, per-token tables, `comparison.json`, `comparison.md`, provenance (npz maps are not committed) |
-| `figures/` | the method figure, per-model clip figures, the three-model figures (VoxCeleb partly degraded, clean and degraded; LibriSpeech clean and degraded), the comparison figures |
-| `docs/` | backends, reproducibility checklist; `docs/images/`: the icon and its drawing script, the two hand-drawn workflow figures (sources in `src/`, rendered by `render.py`), the two GIFs |
+| `figures/` | the method figure, per-model clip figures, the three-model figures (VoxCeleb partly degraded, clean and degraded; LibriSpeech clean and degraded; VoiceBank-DEMAND on and off), the comparison figures, the two HTML charts rendered by `docs/images/render.py` |
+| `docs/` | backends, reproducibility checklist; `docs/images/`: the icon and its drawing script, the two hand-drawn workflow figures and the two charts (sources in `src/`, rendered by `render.py`), the two GIFs |
 | `provenance/` | clean-environment run log and runtime dependency set |
 | `scripts/reproduce_clean_env.sh` | the clean-environment execution test |
 

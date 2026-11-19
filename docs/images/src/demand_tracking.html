@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Noise that comes and goes</title>
+<style>
+@font-face { font-family: 'Space Grotesk'; font-weight: 300 700; src: url('../fonts/SpaceGrotesk[wght].ttf'); }
+@font-face { font-family: 'IBM Plex Sans'; font-weight: 100 700; src: url('../fonts/IBMPlexSans[wdth,wght].ttf'); }
+@font-face { font-family: 'IBM Plex Mono'; font-weight: 400; src: url('../fonts/IBMPlexMono-Regular.ttf'); }
+@font-face { font-family: 'IBM Plex Mono'; font-weight: 600; src: url('../fonts/IBMPlexMono-SemiBold.ttf'); }
+html, body { margin: 0; background: #F5F2EB; }</style></head>
+<body>
+<div style="width: 1200px; height: 830px; box-sizing: border-box; padding: 40px 48px; background: #F5F2EB; color: #17212E; font-family: 'IBM Plex Sans', system-ui, sans-serif; display: flex; flex-direction: column; gap: 18px;">
+  <div style="display: flex; flex-direction: column; gap: 6px;">
+    <h1 style="margin: 0; font-family: 'Space Grotesk', system-ui, sans-serif; font-size: 30px; line-height: 36px; font-weight: 700;">Noise that comes and goes: does each word land on the right audio?</h1>
+    <p style="margin: 0; font-size: 15px; line-height: 22px; color: #57616F; max-width: 1040px;">100 VoiceBank-DEMAND sentences (CC BY 4.0), real bus, cafe, living-room, office and square noise at 2.5 to 17.5 dB, switched on and off in 4 to 7 segments per sentence. The truth for where each word is spoken comes from the clean recording. Dot = mean over clips, bar = 95% bootstrap interval.</p>
+  </div>
+  <div style="display: grid; grid-template-columns: 1fr 470px; gap: 28px; flex: 1;">
+    <div style="background: #FFFFFF; border: 1px solid #C9C1B3; border-radius: 10px; padding: 20px 22px; display: flex; flex-direction: column; gap: 6px;">
+      <div style="font-size: 17px; font-weight: 600;">(a) Where sound-token places each word</div>
+      <div style="font-size: 13px; color: #57616F; line-height: 18px;">Share of words whose strongest patch of evidence sits on the same kind of audio the word was spoken on (noisy or clean), and in the very segment it was spoken in.</div>
+      <div style="display: grid; grid-template-columns: 118px 1fr 250px; gap: 12px;"><div></div><div style="position: relative; height: 16px;"><div style="position: absolute; left: 0.0%; top: 0; transform: translateX(-50%); font-size: 12px; color: #57616F;">0%</div><div style="position: absolute; left: 25.0%; top: 0; transform: translateX(-50%); font-size: 12px; color: #57616F;">25%</div><div style="position: absolute; left: 50.0%; top: 0; transform: translateX(-50%); font-size: 12px; color: #57616F;">50%</div><div style="position: absolute; left: 75.0%; top: 0; transform: translateX(-50%); font-size: 12px; color: #57616F;">75%</div><div style="position: absolute; left: 100.0%; top: 0; transform: translateX(-50%); font-size: 12px; color: #57616F;">100%</div></div><div style="font-size: 12px; color: #57616F; padding-left: 16px;">dashed line = chance</div></div>
+      <div style="font-size: 14px; font-weight: 600; margin-top: 6px;">Right side, noisy or clean</div>
+      
+<div style="display: grid; grid-template-columns: 118px 1fr 250px; align-items: center; gap: 12px; height: 34px;">
+  <div style="font-size: 14px; color: #17212E;">whisper-tiny</div>
+  <div style="position: relative; height: 22px;">
+    <div style="position: absolute; left: 52.0%; top: -6px; bottom: -6px; border-left: 2px dashed #9AA3AE;"></div>
+    <div style="position: absolute; left: 74.8%; width: calc(81.1% - 74.8%); top: 9px; height: 4px; background: #2a78d6; opacity: 0.45; border-radius: 2px;"></div>
+    <div style="position: absolute; left: calc(78.1% - 7px); top: 4px; width: 14px; height: 14px; border-radius: 50%; background: #2a78d6; border: 2px solid #FFFFFF;"></div>
+  </div>
+  <div style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #17212E;">78% <span style="color: #57616F;">[75%, 81%]</span> <span style="color: #57616F;">chance 52%</span></div>
+</div>
+<div style="display: grid; grid-template-columns: 118px 1fr 250px; align-items: center; gap: 12px; height: 34px;">
+  <div style="font-size: 14px; color: #17212E;">whisper-base</div>
+  <div style="position: relative; height: 22px;">
+    <div style="position: absolute; left: 51.9%; top: -6px; bottom: -6px; border-left: 2px dashed #9AA3AE;"></div>
+    <div style="position: absolute; left: 74.2%; width: calc(80.6% - 74.2%); top: 9px; height: 4px; background: #c2185b; opacity: 0.45; border-radius: 2px;"></div>
+    <div style="position: absolute; left: calc(77.5% - 7px); top: 4px; width: 14px; height: 14px; border-radius: 50%; background: #c2185b; border: 2px solid #FFFFFF;"></div>
+  </div>
+  <div style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #17212E;">78% <span style="color: #57616F;">[74%, 81%]</span> <span style="color: #57616F;">chance 52%</span></div>
+</div>
+<div style="display: grid; grid-template-columns: 118px 1fr 250px; align-items: center; gap: 12px; height: 34px;">
+  <div style="font-size: 14px; color: #17212E;">moonshine-base</div>
+  <div style="position: relative; height: 22px;">
+    <div style="position: absolute; left: 51.8%; top: -6px; bottom: -6px; border-left: 2px dashed #9AA3AE;"></div>
+    <div style="position: absolute; left: 75.8%; width: calc(81.6% - 75.8%); top: 9px; height: 4px; background: #1b9e77; opacity: 0.45; border-radius: 2px;"></div>
+    <div style="position: absolute; left: calc(78.8% - 7px); top: 4px; width: 14px; height: 14px; border-radius: 50%; background: #1b9e77; border: 2px solid #FFFFFF;"></div>
+  </div>
+  <div style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #17212E;">79% <span style="color: #57616F;">[76%, 82%]</span> <span style="color: #57616F;">chance 52%</span></div>
+</div>
+      <div style="font-size: 14px; font-weight: 600; margin-top: 8px;">Right segment</div>
+      
+<div style="display: grid; grid-template-columns: 118px 1fr 250px; align-items: center; gap: 12px; height: 34px;">
+  <div style="font-size: 14px; color: #17212E;">whisper-tiny</div>
+  <div style="position: relative; height: 22px;">
+    <div style="position: absolute; left: 22.9%; top: -6px; bottom: -6px; border-left: 2px dashed #9AA3AE;"></div>
+    <div style="position: absolute; left: 72.3%; width: calc(79.2% - 72.3%); top: 9px; height: 4px; background: #2a78d6; opacity: 0.45; border-radius: 2px;"></div>
+    <div style="position: absolute; left: calc(75.9% - 7px); top: 4px; width: 14px; height: 14px; border-radius: 50%; background: #2a78d6; border: 2px solid #FFFFFF;"></div>
+  </div>
+  <div style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #17212E;">76% <span style="color: #57616F;">[72%, 79%]</span> <span style="color: #57616F;">chance 23%</span></div>
+</div>
+<div style="display: grid; grid-template-columns: 118px 1fr 250px; align-items: center; gap: 12px; height: 34px;">
+  <div style="font-size: 14px; color: #17212E;">whisper-base</div>
+  <div style="position: relative; height: 22px;">
+    <div style="position: absolute; left: 23.0%; top: -6px; bottom: -6px; border-left: 2px dashed #9AA3AE;"></div>
+    <div style="position: absolute; left: 70.5%; width: calc(76.8% - 70.5%); top: 9px; height: 4px; background: #c2185b; opacity: 0.45; border-radius: 2px;"></div>
+    <div style="position: absolute; left: calc(73.7% - 7px); top: 4px; width: 14px; height: 14px; border-radius: 50%; background: #c2185b; border: 2px solid #FFFFFF;"></div>
+  </div>
+  <div style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #17212E;">74% <span style="color: #57616F;">[70%, 77%]</span> <span style="color: #57616F;">chance 23%</span></div>
+</div>
+<div style="display: grid; grid-template-columns: 118px 1fr 250px; align-items: center; gap: 12px; height: 34px;">
+  <div style="font-size: 14px; color: #17212E;">moonshine-base</div>
+  <div style="position: relative; height: 22px;">
+    <div style="position: absolute; left: 23.0%; top: -6px; bottom: -6px; border-left: 2px dashed #9AA3AE;"></div>
+    <div style="position: absolute; left: 72.0%; width: calc(77.8% - 72.0%); top: 9px; height: 4px; background: #1b9e77; opacity: 0.45; border-radius: 2px;"></div>
+    <div style="position: absolute; left: calc(74.9% - 7px); top: 4px; width: 14px; height: 14px; border-radius: 50%; background: #1b9e77; border: 2px solid #FFFFFF;"></div>
+  </div>
+  <div style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #17212E;">75% <span style="color: #57616F;">[72%, 78%]</span> <span style="color: #57616F;">chance 23%</span></div>
+</div>
+      <div style="font-size: 13px; color: #57616F; line-height: 18px; margin-top: auto;">Chance is what a randomly placed patch would score given each clip's noisy share and segment lengths.</div>
+    </div>
+    <div style="background: #FFFFFF; border: 1px solid #C9C1B3; border-radius: 10px; padding: 20px 22px; display: flex; flex-direction: column; gap: 10px;">
+      <div style="font-size: 17px; font-weight: 600;">(b) Evidence in noisy audio</div>
+      <div style="font-size: 13px; color: #57616F; line-height: 18px;">Share of a word's evidence that lies in the noisy segments when the word is spoken <span style="color: #2a78d6; font-weight: 600;">in noise</span> and when it is spoken <span style="color: #c2185b; font-weight: 600;">in clean audio</span>. Last row: share of 20 ms frames AADD flags in the noisy and the clean segments.</div>
+      <div style="display: grid; grid-template-columns: 150px 1fr 132px; gap: 14px; font-size: 12px; color: #57616F;"><div></div><div style="display: flex; justify-content: space-between;"><span>0%</span><span>50%</span><span>100%</span></div><div></div></div>
+      
+<div style="display: grid; grid-template-columns: 150px 1fr 132px; align-items: center; gap: 14px; height: 44px;">
+  <div style="font-size: 14px; color: #17212E; line-height: 18px;">whisper-tiny</div>
+  <div style="position: relative; height: 24px;">
+    <div style="position: absolute; left: 0; right: 0; top: 11px; height: 2px; background: #C9C1B3;"></div>
+    <div style="position: absolute; left: 36.2%; width: 35.8%; top: 9px; height: 6px; background: #D9D3C7; border-radius: 3px;"></div>
+    <div style="position: absolute; left: calc(36.2% - 8px); top: 4px; width: 16px; height: 16px; border-radius: 50%; background: #c2185b; border: 2px solid #FFFFFF;"></div>
+    <div style="position: absolute; left: calc(72.0% - 8px); top: 4px; width: 16px; height: 16px; border-radius: 50%; background: #2a78d6; border: 2px solid #FFFFFF;"></div>
+  </div>
+  <div style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #57616F;"><span style="color: #2a78d6; font-weight: 600;">72%</span> / <span style="color: #c2185b; font-weight: 600;">36%</span></div>
+</div>
+<div style="display: grid; grid-template-columns: 150px 1fr 132px; align-items: center; gap: 14px; height: 44px;">
+  <div style="font-size: 14px; color: #17212E; line-height: 18px;">whisper-base</div>
+  <div style="position: relative; height: 24px;">
+    <div style="position: absolute; left: 0; right: 0; top: 11px; height: 2px; background: #C9C1B3;"></div>
+    <div style="position: absolute; left: 36.6%; width: 33.1%; top: 9px; height: 6px; background: #D9D3C7; border-radius: 3px;"></div>
+    <div style="position: absolute; left: calc(36.6% - 8px); top: 4px; width: 16px; height: 16px; border-radius: 50%; background: #c2185b; border: 2px solid #FFFFFF;"></div>
+    <div style="position: absolute; left: calc(69.8% - 8px); top: 4px; width: 16px; height: 16px; border-radius: 50%; background: #2a78d6; border: 2px solid #FFFFFF;"></div>
+  </div>
+  <div style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #57616F;"><span style="color: #2a78d6; font-weight: 600;">70%</span> / <span style="color: #c2185b; font-weight: 600;">37%</span></div>
+</div>
+<div style="display: grid; grid-template-columns: 150px 1fr 132px; align-items: center; gap: 14px; height: 44px;">
+  <div style="font-size: 14px; color: #17212E; line-height: 18px;">moonshine-base</div>
+  <div style="position: relative; height: 24px;">
+    <div style="position: absolute; left: 0; right: 0; top: 11px; height: 2px; background: #C9C1B3;"></div>
+    <div style="position: absolute; left: 36.6%; width: 35.0%; top: 9px; height: 6px; background: #D9D3C7; border-radius: 3px;"></div>
+    <div style="position: absolute; left: calc(36.6% - 8px); top: 4px; width: 16px; height: 16px; border-radius: 50%; background: #c2185b; border: 2px solid #FFFFFF;"></div>
+    <div style="position: absolute; left: calc(71.7% - 8px); top: 4px; width: 16px; height: 16px; border-radius: 50%; background: #2a78d6; border: 2px solid #FFFFFF;"></div>
+  </div>
+  <div style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #57616F;"><span style="color: #2a78d6; font-weight: 600;">72%</span> / <span style="color: #c2185b; font-weight: 600;">37%</span></div>
+</div>
+      
+<div style="display: grid; grid-template-columns: 150px 1fr 132px; align-items: center; gap: 14px; height: 44px;">
+  <div style="font-size: 14px; color: #17212E; line-height: 18px;">AADD v3 flags</div>
+  <div style="position: relative; height: 24px;">
+    <div style="position: absolute; left: 0; right: 0; top: 11px; height: 2px; background: #C9C1B3;"></div>
+    <div style="position: absolute; left: 42.4%; width: 34.5%; top: 9px; height: 6px; background: #D9D3C7; border-radius: 3px;"></div>
+    <div style="position: absolute; left: calc(42.4% - 8px); top: 4px; width: 16px; height: 16px; border-radius: 50%; background: #c2185b; border: 2px solid #FFFFFF;"></div>
+    <div style="position: absolute; left: calc(76.9% - 8px); top: 4px; width: 16px; height: 16px; border-radius: 50%; background: #2a78d6; border: 2px solid #FFFFFF;"></div>
+  </div>
+  <div style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #57616F;"><span style="color: #2a78d6; font-weight: 600;">77%</span> / <span style="color: #c2185b; font-weight: 600;">42%</span></div>
+</div>
+      <div style="margin-top: 10px; font-size: 14px; font-weight: 600;">Word error rate per condition</div>
+      <div style="display: grid; grid-template-columns: 118px repeat(3, minmax(0, 1fr)); gap: 6px 10px; align-items: center;"><div></div><div style="font-size: 12px; color: #57616F; text-align: center;">clean</div><div style="font-size: 12px; color: #57616F; text-align: center;">noisy throughout</div><div style="font-size: 12px; color: #57616F; text-align: center;">on and off</div><div style="font-size: 13px; color: #17212E;">whisper-tiny</div><div style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; text-align: center;">9%</div><div style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; text-align: center;">13%</div><div style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; text-align: center;">9%</div><div style="font-size: 13px; color: #17212E;">whisper-base</div><div style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; text-align: center;">7%</div><div style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; text-align: center;">9%</div><div style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; text-align: center;">9%</div><div style="font-size: 13px; color: #17212E;">moonshine-base</div><div style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; text-align: center;">3%</div><div style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; text-align: center;">6%</div><div style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; text-align: center;">5%</div></div>
+      <div style="font-size: 13px; color: #57616F; line-height: 18px; margin-top: auto;">The attribution follows the words, not the noise: a word spoken in noise draws its evidence from the noisy stretch, a word spoken in clean audio does not. AADD's flags bleed into the clean segments next to the noise.</div>
+    </div>
+  </div>
+</div>
+<script>
+const want = ["700 30px 'Space Grotesk'", "400 15px 'IBM Plex Sans'", "400 13px 'IBM Plex Mono'"];
+Promise.all(want.map(f => document.fonts.load(f))).then(() => { document.body.dataset.overflow = ""; document.body.dataset.fonts = want.map(f => document.fonts.check(f) ? 'ok' : 'MISSING').join(','); });
+</script></body></html>

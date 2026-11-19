@@ -101,6 +101,7 @@ class FigureText:
     verdict_all: str = "every frame degraded, so all {K} words sit on degraded audio"
     verdict_mixed: str = "{k} of {K} words on degraded audio, {expected:.0f} expected by chance ({frac:.0%} of the clip is degraded)"
     verdict_no_quality: str = "{K} words"
+    verdict_window: str = "{k} of {K} words on the known damaged audio, {expected:.0f} expected by chance ({frac:.0%} of the clip)"
     y_mel: str = "Hz (mel)"
     x_time: str = "time (s)"
     mel_ticks: tuple = ("0", "1.9 k", "8 k")
@@ -173,7 +174,9 @@ def text_width_pt(s: str, size: float, weight: str = "normal", font: str = "Deja
 
 
 def wrap_to_width(s: str, width_pt: float, size: float, weight: str = "normal", font: str = "DejaVu Sans") -> str:
-    """Wrap on spaces so that no line is wider than width_pt."""
+    """Wrap on spaces so that no line is wider than width_pt. Explicit line breaks are kept."""
+    if "\n" in s:
+        return "\n".join(wrap_to_width(part, width_pt, size, weight, font) for part in s.split("\n"))
     words, lines, cur = s.split(" "), [], ""
     for w in words:
         cand = (cur + " " + w).strip()
@@ -187,12 +190,21 @@ def wrap_to_width(s: str, width_pt: float, size: float, weight: str = "normal", 
 
 
 def text_overlaps(fig, min_px: float = 0.5) -> list[tuple[str, str]]:
-    """Pairs of visible, non-empty text artists whose pixel boxes overlap (after a draw)."""
+    """Pairs of visible, non-empty text artists whose pixel boxes overlap (after a draw). A text that runs
+    past the page edge is reported as a pair with "page edge"."""
     fig.canvas.draw()
     r = fig.canvas.get_renderer()
+    W, Hpx = fig.bbox.width, fig.bbox.height
+    hidden = set()                                   # tick labels outside their axis range are never drawn
+    for ax in fig.get_axes():
+        for axis, lim in ((ax.xaxis, ax.get_xlim()), (ax.yaxis, ax.get_ylim())):
+            lo, hi = min(lim), max(lim)
+            for tick in axis.get_major_ticks() + axis.get_minor_ticks():
+                if not (lo <= tick.get_loc() <= hi):
+                    hidden.update((id(tick.label1), id(tick.label2)))
     items = []
     for t in fig.findobj(Text):
-        if not t.get_visible() or not t.get_text().strip():
+        if not t.get_visible() or not t.get_text().strip() or id(t) in hidden:
             continue
         try:
             bb = t.get_window_extent(r)
@@ -202,6 +214,9 @@ def text_overlaps(fig, min_px: float = 0.5) -> list[tuple[str, str]]:
             continue
         items.append((t.get_text().replace("\n", " ")[:60], bb))
     out = []
+    for name, bb in items:
+        if bb.x0 < -min_px or bb.y0 < -min_px or bb.x1 > W + min_px or bb.y1 > Hpx + min_px:
+            out.append((name, "page edge"))
     for i in range(len(items)):
         ai, a = items[i]
         for j in range(i + 1, len(items)):
@@ -219,6 +234,8 @@ def _settle(fig, gs, strict: bool, rounds: int = 8, step: float = 0.12):
         if not ov:
             fig.ways_overlaps = []
             return
+        if all(b == "page edge" for _, b in ov):     # wider rows cannot pull a text back onto the page
+            break
         hspace += step
         gs.update(hspace=hspace)
     ov = text_overlaps(fig)
@@ -450,7 +467,8 @@ def ways_figure(wav, sr=16000, quality=None, quality_hop=0.02, quality_classes=N
     """Draw the standard WAYS figure. Returns the matplotlib Figure; writes `out` (PNG plus an SVG twin) when given.
 
     models: list of dicts with name, tokens, top ((band, time) or None per token), patch_s (default 0.1),
-    n_bands (default 8), wer (optional). window: (start_s, end_s) of a known damaged span, drawn dashed.
+    n_bands (default 8), wer (optional). window: (start_s, end_s) of a known damaged span, or a list of
+    such spans, drawn dashed; when given, the words are counted against these spans, not the detector.
     text: FigureText or dict of overrides; `title` is a shortcut for text["title"]. style: FigureStyle or dict.
     """
     T, S = _merge(FigureText, text), _merge(FigureStyle, style)
@@ -466,12 +484,18 @@ def ways_figure(wav, sr=16000, quality=None, quality_hop=0.02, quality_classes=N
         q = np.asarray(quality, np.float32); q = q[:, None] if q.ndim == 1 else q
         n = int(np.ceil(dur / quality_hop)); fl = (q[:n] >= threshold).any(1)
         frac = float(fl.mean()) if len(fl) else 0.0
+    windows = [] if window is None else ([tuple(window)] if np.isscalar(window[0]) else [tuple(w) for w in window])
+    if windows:                                     # known damaged spans beat the detector as the reference
+        frac = float(sum(min(b, dur) - max(a, 0.0) for a, b in windows) / dur)
     models = models or []
     prepared = []
     for m in models:
         ps = m.get("patch_s", 0.1); n_t = int(np.ceil(dur / ps))
-        f = _flag_per_patch(quality, quality_hop, threshold, ps, n_t)
-        on = [None if tp is None else (bool(f[min(tp[1], n_t - 1)] >= 0.5) if f is not None else False) for tp in m["top"]]
+        if windows:
+            on = [None if tp is None else any(a <= (tp[1] + 0.5) * ps < b for a, b in windows) for tp in m["top"]]
+        else:
+            f = _flag_per_patch(quality, quality_hop, threshold, ps, n_t)
+            on = [None if tp is None else (bool(f[min(tp[1], n_t - 1)] >= 0.5) if f is not None else False) for tp in m["top"]]
         prepared.append((m, on, len(C.sentence_lines(m["tokens"]))))
     n_dmg_rows = 1
     if quality is not None:
@@ -502,8 +526,8 @@ def ways_figure(wav, sr=16000, quality=None, quality_hop=0.02, quality_classes=N
         axq.text(dur / 2, 0.5, T.damage_none, ha="center", va="center", color=S.muted); axq.set_yticks([])
         C.label(axq, T.damage_missing_lane)
     C.tidy(axq)
-    if window is not None:
-        axq.axvspan(window[0], window[1], color=S.degraded, alpha=0.10, lw=0, zorder=1)
+    for a_, b_ in windows:
+        axq.axvspan(a_, b_, color=S.degraded, alpha=0.10, lw=0, zorder=1)
     if not prepared:
         axm = fig.add_subplot(gs[1]); C.mel(axm, L, T.y_mel, T.mel_ticks); C.bands(axm, spans); C.tidy(axm, True, T.x_time)
         C.label(axm, T.spectrogram_only)
@@ -523,11 +547,11 @@ def ways_figure(wav, sr=16000, quality=None, quality_hop=0.02, quality_classes=N
             axm.text(x, y, lab, color=C.col(k), fontsize=S.label_size, ha="left", va=va, fontweight="bold", zorder=5, clip_on=True,
                      bbox=dict(boxstyle="square,pad=0.08", fc=S.background, ec="none", alpha=0.75))
         C.tidy(axm, True, T.x_time if i == len(prepared) - 1 else "")
-        if window is not None:
-            axm.axvspan(window[0], window[1], color=S.degraded, alpha=0.10, lw=0, zorder=1)
-            axm.axvline(window[0], color=S.degraded, lw=1.2, ls="--", zorder=5); axm.axvline(window[1], color=S.degraded, lw=1.2, ls="--", zorder=5)
+        for a_, b_ in windows:
+            axm.axvspan(a_, b_, color=S.degraded, alpha=0.10, lw=0, zorder=1)
+            axm.axvline(a_, color=S.degraded, lw=1.2, ls="--", zorder=5); axm.axvline(b_, color=S.degraded, lw=1.2, ls="--", zorder=5)
         w = T.wer.format(wer=m["wer"]) if m.get("wer") is not None and np.isfinite(m["wer"]) else ""
-        C.label(axm, T.model_row.format(name=m["name"], wer=w, verdict=verdict(on, frac, T)))
+        C.label(axm, T.model_row.format(name=m["name"], wer=w, verdict=verdict(on, frac, T if not windows else replace(T, verdict_mixed=T.verdict_window))))
         C.sentence_strip(axt, m["tokens"], on)
     _settle(fig, gs, strict)
     if out is not None:

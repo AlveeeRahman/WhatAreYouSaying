@@ -125,7 +125,7 @@ def schema():
         "audio": {"type": "string", "description": "Path to a mono audio file (any sample rate; resampled to 16 kHz)."},
         "aadd": {"type": "boolean", "description": "Run AADD v3 on the clip to find degraded audio.", "default": True},
         "window": {"type": "array", "items": {"type": "number"}, "minItems": 2, "maxItems": 2,
-                   "description": "Known damaged span [start_s, end_s]; used instead of AADD flags."},
+                   "description": "Known damaged span [start_s, end_s]; used instead of AADD flags. sound-token also takes a list of spans."},
         "out": {"type": "string", "description": "Output path stem; figures are written next to it."},
         "title": {"type": "string", "description": "Figure title."},
     }
@@ -165,7 +165,8 @@ def call(name, **kwargs):
     if "backend" in kwargs:
         kwargs["backend"] = tuple(kwargs["backend"])
     if kwargs.get("window") is not None:
-        kwargs["window"] = tuple(kwargs["window"])
+        w = kwargs["window"]
+        kwargs["window"] = [tuple(x) for x in w] if isinstance(w[0], (list, tuple)) else tuple(w)
     out = TOOLS[name](wav, sr, **kwargs)
     return {k: v for k, v in out.items() if k not in ("attributions", "result")}
 

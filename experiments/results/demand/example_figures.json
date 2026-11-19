@@ -1,0 +1,102 @@
+{
+ "alt": {
+  "clip": "p257_003",
+  "segments": [
+   [
+    0.0,
+    0.8936883516502848,
+    true
+   ],
+   [
+    0.8936883516502848,
+    1.8032881120818214,
+    false
+   ],
+   [
+    1.8032881120818214,
+    2.360445787509841,
+    true
+   ],
+   [
+    2.360445787509841,
+    3.246470702561839,
+    false
+   ],
+   [
+    3.246470702561839,
+    4.207802536617949,
+    false
+   ],
+   [
+    4.207802536617949,
+    5.036872295241565,
+    false
+   ],
+   [
+    5.036872295241565,
+    5.5214375,
+    true
+   ]
+  ],
+  "wer": {
+   "whisper-tiny": 0.1,
+   "whisper-base": 0.15,
+   "moonshine-base": 0.05
+  },
+  "text": {
+   "whisper-tiny": "Six spoons of fresh no-peas, five thick slabs of blue cheese and maybe a snack for her brother Bob.",
+   "whisper-base": "Six spoons of fresh nopes, five thick slabs of blue cheese and maybe a snack of her brother Bob.",
+   "moonshine-base": "Six spoons of fresh snow peas, five thick slabs of blue cheese and maybe a snack of her brother Bob."
+  }
+ },
+ "noisy": {
+  "clip": "p257_003",
+  "segments": [
+   [
+    0.0,
+    0.8936883516502848,
+    true
+   ],
+   [
+    0.8936883516502848,
+    1.8032881120818214,
+    false
+   ],
+   [
+    1.8032881120818214,
+    2.360445787509841,
+    true
+   ],
+   [
+    2.360445787509841,
+    3.246470702561839,
+    false
+   ],
+   [
+    3.246470702561839,
+    4.207802536617949,
+    false
+   ],
+   [
+    4.207802536617949,
+    5.036872295241565,
+    false
+   ],
+   [
+    5.036872295241565,
+    5.5214375,
+    true
+   ]
+  ],
+  "wer": {
+   "whisper-tiny": 0.1,
+   "whisper-base": 0.2,
+   "moonshine-base": 0.05
+  },
+  "text": {
+   "whisper-tiny": "Six spoons of fresh no-peas, five thick slabs of blue cheese, and maybe a snack for her brother Bob.",
+   "whisper-base": "6 spoons of fresh no peas, 5 thick slabs of blue cheese and maybe a snack of her brother Bob.",
+   "moonshine-base": "Six spoons of fresh snow peas, five thick slabs of blue cheese, and maybe a snack of her brother Bob."
+  }
+ }
+}

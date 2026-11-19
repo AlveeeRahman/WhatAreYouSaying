@@ -99,6 +99,9 @@ python experiments/controlled.py prepare && experiments/run_controlled.sh && pyt
 # detector backbones: LibriSpeech dev-clean into experiments/cache/librispeech/, then
 curl -L https://www.openslr.org/resources/12/dev-clean.tar.gz | tar xz -C experiments/cache/librispeech
 experiments/run_backbones.sh                      # trains two detectors (about 5 minutes) and runs the comparison
+# VoiceBank-DEMAND on-and-off set: demand.py downloads the four test-set archives from Edinburgh DataShare
+# (about 330 MB, SHA-256 checked), then the three models with a 30 minute cap each, then the figures
+experiments/run_demand.sh && python experiments/demand_figures.py && python docs/images/src/make_demand_figure.py && python docs/images/render.py demand_tracking
 # the hand-drawn workflow figures and the detector figure (fonts are in docs/images/fonts, no internet needed)
 python -m playwright install chromium && python docs/images/render.py
 ```

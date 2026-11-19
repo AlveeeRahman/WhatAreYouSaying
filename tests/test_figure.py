@@ -119,3 +119,25 @@ def test_latent_figure_from_arrays_no_overlaps_and_editable(tmp_path):
                         loudness_db=loudness_db(wav, n), summary=summary, model_name="synthetic",
                         text=LatentText(title="LATENT 789", summary_lane="per layer"), out=out)
     assert out.exists() and text_overlaps(fig) == [] and "LATENT 789" in out.with_suffix(".svg").read_text()
+
+
+def test_window_accepts_one_span_or_a_list(tmp_path):
+    f1 = ways_figure(_wav(), 16000, quality=_quality(), quality_classes=["noise", "reverb", "hum"], models=_models(), window=(0.5, 1.0), out=tmp_path / "w1.png")
+    f2 = ways_figure(_wav(), 16000, quality=_quality(), quality_classes=["noise", "reverb", "hum"], models=_models(),
+                     window=[(0.3, 0.8), (1.4, 1.9), (2.4, 2.8)], out=tmp_path / "w3.png")
+    assert text_overlaps(f1) == [] and text_overlaps(f2) == []
+    svg = (tmp_path / "w3.svg").read_text()
+    assert svg.count("stroke-dasharray") >= 6          # two dashed edges per window
+
+
+def test_explicit_line_break_in_title_is_wrapped_per_line_and_nothing_leaves_the_page(tmp_path):
+    long = "first line that is long enough to need wrapping on its own " * 3 + "\nsecond line, also long " * 4
+    fig = ways_figure(_wav(), 16000, quality=_quality(), quality_classes=["noise", "reverb", "hum"], models=_models(), title=long, out=tmp_path / "nl.png")
+    assert text_overlaps(fig) == []
+
+
+def test_known_windows_are_the_reference_for_the_verdict(tmp_path):
+    models = [dict(name="m", tokens=["a", "b", "c"], top=[(1, 5), (2, 20), (3, 27)], patch_s=0.1, n_bands=8)]
+    fig = ways_figure(_wav(3), 16000, models=models, window=[(0.4, 0.7), (2.5, 3.0)], out=tmp_path / "win.png")
+    svg = (tmp_path / "win.svg").read_text()
+    assert "2 of 3 words on the known damaged audio" in svg and text_overlaps(fig) == []

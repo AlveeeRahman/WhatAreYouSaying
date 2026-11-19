@@ -6,3 +6,4 @@ experiments/cache/
 *.wav
 .pytest_cache/
 experiments/results/detectors/*.pt
+experiments/results/demand_run.log
