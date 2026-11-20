@@ -86,7 +86,7 @@ For each clip WAYS returns three things:
 ## How it works
 
 <p align="center">
-  <img src="docs/images/workflow_method.png" width="900" alt="Hand-drawn workflow for one clip, six numbered cards: the audio and its patch grid; erase one patch; ask the model again, with local weights or a server; score each word for each patch; sum it up per word and draw it; AADD rates the same audio">
+  <img src="docs/images/workflow_method.png" width="900" alt="Workflow diagram for one clip, six numbered cards: the audio and its patch grid; erase one patch; ask the model again, with local weights or a server; score each word for each patch; sum it up per word and draw it; AADD rates the same audio">
 </p>
 
 Li et al. [[1]](#ref-1) erase one dimension of the input by setting it to zero, then measure the
@@ -885,7 +885,7 @@ package and the request shapes are the ones both servers document ([docs/backend
 ## Reproducibility
 
 <p align="center">
-  <img src="docs/images/workflow_reproducibility.png" width="900" alt="Hand-drawn figure, five numbered cards in a row: fixed hashed inputs; pinned claims (dependencies, weights, seeds); provenance written by the code; the clean-room test; real hardware. Below them a red dashed box with what the 2026 study measured and what the clean-room test caught in this repository">
+  <img src="docs/images/workflow_reproducibility.png" width="900" alt="Diagram, five numbered cards in a row: fixed hashed inputs; pinned claims (dependencies, weights, seeds); provenance written by the code; the clean-room test; real hardware. Below them a red dashed box with what the 2026 study measured and what the clean-room test caught in this repository">
 </p>
 
 The five steps come from Sciunits [[5]](#ref-5), which packages code, data and the recorded run
@@ -901,7 +901,7 @@ commands a workflow would run are `make test` and `make lint`.
 <summary><b>Stats for nerds</b> (how the results were made, step by step)</summary>
 
 <p align="center">
-  <img src="docs/images/workflow_experiments.png" width="900" alt="Hand-drawn workflow of the experiments, six numbered cards: 100 VoxCeleb clips from a hashed test slice; 60 LibriSpeech clips with known damage; three models over every patch; every run writes provenance.json; statistics; the clean-room test, with the dependency gap it caught in red">
+  <img src="docs/images/workflow_experiments.png" width="900" alt="Workflow diagram of the experiments, six numbered cards: 100 VoxCeleb clips from a hashed test slice; 60 LibriSpeech clips with known damage; three models over every patch; every run writes provenance.json; statistics; the clean-room test, with the dependency gap it caught in red">
 </p>
 
 * The 100 clips are `default_rng(8001).choice(1500, 100, replace=False)` on a test slice with a
@@ -982,7 +982,7 @@ commands a workflow would run are `make test` and `make lint`.
 | `experiments/` | sample selection, the three-model runs, the detector runs, the controlled LibriSpeech set (`controlled.py`), the VoiceBank-DEMAND set (`demand.py`), the latent runs; `common.py` holds the data-folder layout and the pinned model revisions |
 | `experiments/results/` | per-clip rows, per-token tables, summaries, provenance (npz maps are not committed) |
 | `figures/` | every figure in this README and its SVG twin |
-| `docs/` | backends, reproducibility checklist and audit; `docs/images/`: the icon, the hand-drawn workflow figures and the two charts (sources in `src/`, rendered by `render.py`), the GIFs |
+| `docs/` | backends, reproducibility checklist and audit; `docs/images/`: the icon, the workflow figures and the two charts (sources in `src/`, rendered by `render.py`), the GIFs |
 | `provenance/` | clean-environment run logs, runtime dependency sets and lock files, for the CPU and the CUDA 12.8 torch builds |
 | `scripts/reproduce_clean_env.sh` | the clean-environment execution test |
 | `Makefile`, `CHANGELOG.md`, `CONTRIBUTING.md`, `SECURITY.md`, `CITATION.cff` | day-to-day targets, release notes, how to add a tool, what the code does with the network, how to cite |
