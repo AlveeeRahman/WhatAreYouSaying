@@ -7,10 +7,10 @@ produce the same pixels on any machine.
 
 | family | file | used for |
 |---|---|---|
-| Kalam | `Kalam-Bold.ttf`, `Kalam-Regular.ttf` | titles in the hand-drawn workflow figures |
-| Patrick Hand | `PatrickHand-Regular.ttf` | text in the hand-drawn workflow figures and the GIFs |
+| Kalam | `Kalam-Bold.ttf`, `Kalam-Regular.ttf` | titles in the erase-sweep GIF |
+| Patrick Hand | `PatrickHand-Regular.ttf` | text in the GIFs |
 | Space Grotesk | `SpaceGrotesk[wght].ttf` | the title of the detector-backbone figure |
-| IBM Plex Sans | `IBMPlexSans[wdth,wght].ttf` | text in the detector-backbone figure |
+| IBM Plex Sans | `IBMPlexSans[wdth,wght].ttf` | text in the workflow figures and the detector-backbone figure |
 | IBM Plex Mono | `IBMPlexMono-Regular.ttf`, `IBMPlexMono-SemiBold.ttf` | numbers in the detector-backbone figure |
 
 Source: https://github.com/google/fonts (ofl/kalam, ofl/patrickhand, ofl/spacegrotesk, ofl/ibmplexsans, ofl/ibmplexmono).

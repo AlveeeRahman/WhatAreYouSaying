@@ -1,16 +1,14 @@
 <!doctype html>
-<!-- WAYS figure: how one clip is explained, hand-drawn. Render with docs/images/render.py (Playwright Chromium).
+<!-- WAYS figure: how one clip is explained (technical figure, helpers in fig.js). Render with docs/images/render.py (Playwright Chromium).
      Facts from ways/erasure.py (grid, projections), ways/attribution.py (scores), ways/metrics.py (summaries),
      ways/quality.py (AADD flags) and tests/test_erasure.py (the measured suppression). ?step=N draws cards 1..N. -->
 <html lang="en"><head><meta charset="utf-8"><title>How WAYS explains one clip</title>
 <style>
-@font-face { font-family: 'Kalam'; font-weight: 400; src: url('../fonts/Kalam-Regular.ttf'); }
-@font-face { font-family: 'Kalam'; font-weight: 700; src: url('../fonts/Kalam-Bold.ttf'); }
-@font-face { font-family: 'Patrick Hand'; font-weight: 400; src: url('../fonts/PatrickHand-Regular.ttf'); }
-html, body { margin: 0; background: #FBF4E4; } svg { display: block; }</style>
+@font-face { font-family: 'IBM Plex Sans'; font-weight: 100 700; src: url('../fonts/IBMPlexSans[wdth,wght].ttf'); }
+html, body { margin: 0; background: #FFFFFF; } svg { display: block; }</style>
 </head><body>
 <svg id="fig" width="1200" height="1350" viewBox="0 0 1200 1350" xmlns="http://www.w3.org/2000/svg"></svg>
-<script src="rough.js"></script>
+<script src="fig.js"></script>
 <script>
 const STEP = +(new URLSearchParams(location.search).get('step') || 99);
 
@@ -27,11 +25,8 @@ function miniGrid(x, y, w, h, cols, rows, fillCell) {
 function draw() {
   el('rect', { width: W, height: H, fill: C.page });
 
-  star(64, 62, 19, C.amber);
-  const tt = text(96, 76, 'How WAYS explains one clip', { font: TITLE, weight: 700, size: 44 });
-  const tw = tt.getComputedTextLength();
-  roughLine([[94, 92], [96 + tw * 0.5, 96], [100 + tw, 91]], C.amber, { arrow: false, sw: 3.2, bow: 0.004 });
-  roughLine([[110, 99], [96 + tw * 0.6, 102], [90 + tw, 98]], C.amber, { arrow: false, sw: 2, bow: 0.004 });
+  text(60, 72, 'How WAYS explains one clip', { weight: 600, size: 38, color: C.ink });
+  el('rect', { x: 60, y: 90, width: W - 120, height: 1, fill: C.rule });
   wrap(60, 140, 'Erase one small patch of the audio, ask the speech-to-text model again how sure it is of each word it ' +
     'wrote, and keep the drop. Do that for every patch, and each word ends up with a map of the audio it leaned on.',
     1080, 28, { size: 22, color: C.soft });

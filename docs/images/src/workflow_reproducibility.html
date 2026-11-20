@@ -1,15 +1,13 @@
 <!doctype html>
-<!-- WAYS figure: the five reproducibility steps the repository follows, hand-drawn. Render with docs/images/render.py.
+<!-- WAYS figure: the five reproducibility steps the repository follows (technical figure, helpers in fig.js). Render with docs/images/render.py.
      Facts from docs/reproducibility.md, ways/provenance.py, scripts/reproduce_clean_env.sh, experiments/common.py. -->
 <html lang="en"><head><meta charset="utf-8"><title>Five steps to a re-executable result</title>
 <style>
-@font-face { font-family: 'Kalam'; font-weight: 400; src: url('../fonts/Kalam-Regular.ttf'); }
-@font-face { font-family: 'Kalam'; font-weight: 700; src: url('../fonts/Kalam-Bold.ttf'); }
-@font-face { font-family: 'Patrick Hand'; font-weight: 400; src: url('../fonts/PatrickHand-Regular.ttf'); }
-html, body { margin: 0; background: #FBF4E4; } svg { display: block; }</style>
+@font-face { font-family: 'IBM Plex Sans'; font-weight: 100 700; src: url('../fonts/IBMPlexSans[wdth,wght].ttf'); }
+html, body { margin: 0; background: #FFFFFF; } svg { display: block; }</style>
 </head><body>
 <svg id="fig" width="1200" height="770" viewBox="0 0 1200 770" xmlns="http://www.w3.org/2000/svg"></svg>
-<script src="rough.js"></script>
+<script src="fig.js"></script>
 <script>
 function bullets(x, y, items, maxW, color, size = 18, lh = 22) {
   for (const s of items) {
@@ -21,10 +19,8 @@ function bullets(x, y, items, maxW, color, size = 18, lh = 22) {
 
 function draw() {
   el('rect', { width: W, height: H, fill: C.page });
-  star(64, 62, 19, C.amber);
-  const tt = text(96, 76, 'Five steps to a result someone else can re-run', { font: TITLE, weight: 700, size: 40 });
-  const tw = tt.getComputedTextLength();
-  roughLine([[94, 92], [96 + tw * 0.5, 96], [100 + tw, 91]], C.amber, { arrow: false, sw: 3.2, bow: 0.004 });
+  text(60, 72, 'Five steps to a result someone else can re-run', { weight: 600, size: 38, color: C.ink });
+  el('rect', { x: 60, y: 90, width: W - 120, height: 1, fill: C.rule });
   wrap(60, 134, 'The steps come from work on reproducible computation: package the code, the data and the recorded run together ' +
     '(Sciunits, 2017), and measure what a project claims it needs against what loads when it runs (Vangala, Adibifar, Gehani and Malik, 2026). ' +
     'Each card says what WAYS does for that step and where.', 1080, 27, { size: 21, color: C.soft });

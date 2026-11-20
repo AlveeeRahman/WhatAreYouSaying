@@ -1,16 +1,14 @@
 <!doctype html>
-<!-- WAYS figure: how the results were produced and how to check them, hand-drawn. Render with docs/images/render.py.
+<!-- WAYS figure: how the results were produced and how to check them (technical figure, helpers in fig.js). Render with docs/images/render.py.
      Facts from experiments/sample_test100.py, experiments/controlled.py, experiments/run_all.sh, ways/provenance.py,
      scripts/reproduce_clean_env.sh and provenance/clean_env_run.log. ?step=N draws cards 1..N. -->
 <html lang="en"><head><meta charset="utf-8"><title>How the results were made and checked</title>
 <style>
-@font-face { font-family: 'Kalam'; font-weight: 400; src: url('../fonts/Kalam-Regular.ttf'); }
-@font-face { font-family: 'Kalam'; font-weight: 700; src: url('../fonts/Kalam-Bold.ttf'); }
-@font-face { font-family: 'Patrick Hand'; font-weight: 400; src: url('../fonts/PatrickHand-Regular.ttf'); }
-html, body { margin: 0; background: #FBF4E4; } svg { display: block; }</style>
+@font-face { font-family: 'IBM Plex Sans'; font-weight: 100 700; src: url('../fonts/IBMPlexSans[wdth,wght].ttf'); }
+html, body { margin: 0; background: #FFFFFF; } svg { display: block; }</style>
 </head><body>
 <svg id="fig" width="1200" height="1330" viewBox="0 0 1200 1330" xmlns="http://www.w3.org/2000/svg"></svg>
-<script src="rough.js"></script>
+<script src="fig.js"></script>
 <script>
 const STEP = +(new URLSearchParams(location.search).get('step') || 99);
 
@@ -25,11 +23,8 @@ function bullets(x, y, items, maxW, color, size = 19, lh = 23) {
 function draw() {
   el('rect', { width: W, height: H, fill: C.page });
 
-  star(64, 62, 19, C.amber);
-  const tt = text(96, 76, 'How the results were made, and how to check them', { font: TITLE, weight: 700, size: 40 });
-  const tw = tt.getComputedTextLength();
-  roughLine([[94, 92], [96 + tw * 0.5, 96], [100 + tw, 91]], C.amber, { arrow: false, sw: 3.2, bow: 0.004 });
-  roughLine([[110, 99], [96 + tw * 0.6, 102], [90 + tw, 98]], C.amber, { arrow: false, sw: 2, bow: 0.004 });
+  text(60, 72, 'How the results were made, and how to check them', { weight: 600, size: 38, color: C.ink });
+  el('rect', { x: 60, y: 90, width: W - 120, height: 1, fill: C.rule });
   wrap(60, 140, 'Two datasets, three speech-to-text models, every patch of every clip. Every run writes down what it ' +
     'used, and a clean-room install checks that the repository runs from its own requirements file, the steps Dr Malik’s group teaches.',
     1080, 28, { size: 22, color: C.soft });

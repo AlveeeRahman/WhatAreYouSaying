@@ -12,3 +12,4 @@ experiments/results/demand_run.log
 .claude*
 CLAUDE.md
 claude.md
+docs-src/_build/

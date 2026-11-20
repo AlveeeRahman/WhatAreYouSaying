@@ -1,4 +1,4 @@
-"""Render the hand-drawn figure sources in docs/images/src to PNG at 3x with the Playwright Chromium
+"""Render the figure sources in docs/images/src to PNG at 3x with the Playwright Chromium
 (user-local, no system install), the way OpenCarMind's docs/images/render.sh does with Chrome.
 Run from the repository root:  python docs/images/render.py [name ...]
 Each source reports missing fonts and text that runs past the page in data attributes on <body>;
