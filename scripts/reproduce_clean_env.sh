@@ -33,7 +33,7 @@ import json, os, sys
 import ways, ways.attribution, ways.metrics, ways.quality, ways.plots, ways.cli, ways.backends.openai_compat
 # every third-party module the package, the experiments and the figure scripts import (no weights, no GPU):
 # an ImportError here is a claimed-versus-working gap the tests alone would not show
-import aadd.infer, aadd.v3.synth, aadd.v3.model, jiwer, librosa, openai, pandas, PIL.Image, playwright.sync_api  # noqa: F401
+import aadd.infer, aadd.v3.synth, aadd.v3.model, jiwer, librosa, openai, pandas, pennylane, PIL.Image, playwright.sync_api  # noqa: F401
 from transformers import AutoProcessor, MoonshineForConditionalGeneration, WhisperForConditionalGeneration  # noqa: F401
 from huggingface_hub import scan_cache_dir  # noqa: F401
 from ways.provenance import claimed_dependencies, runtime_dependencies

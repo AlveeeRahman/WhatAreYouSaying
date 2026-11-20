@@ -1,5 +1,16 @@
-"""Whisper (Hugging Face transformers) white-box backend."""
+"""Whisper (Hugging Face transformers) white-box backend.
+
+Two attention implementations compute the same function, softmax(Q K^T / sqrt(d)) V. The "eager" one
+does it in separate steps and returns the attention weights, which the token timestamps need, so
+transcription uses it. The "sdpa" one calls torch's fused scaled-dot-product kernel, which never
+builds the weight matrix. Scoring an erased clip needs only the logits, so `surprisal` uses the
+fused kernel unless `fast_attention=False`. Same weights, same precision, same formula. The two
+differ only in floating-point rounding order (see tests/test_fast_attention.py and
+experiments/check_fast_attention.py).
+"""
 from __future__ import annotations
+
+from contextlib import contextmanager
 
 import numpy as np
 import torch
@@ -12,10 +23,11 @@ class WhisperBackend(Backend):
     supports_surprisal = True
 
     def __init__(self, model_id: str = "openai/whisper-base", revision: str | None = None,
-                 device: str | None = None, language: str = "en"):
+                 device: str | None = None, language: str = "en", fast_attention: bool = True):
         from transformers import WhisperForConditionalGeneration, WhisperProcessor
 
         self.model_id, self.revision, self.language = model_id, revision, language
+        self.fast_attention = fast_attention
         self.device = device or ("cuda" if torch.cuda.is_available() else "cpu")
         self.proc = WhisperProcessor.from_pretrained(model_id, revision=revision)
         self.model = WhisperForConditionalGeneration.from_pretrained(
@@ -25,6 +37,18 @@ class WhisperBackend(Backend):
         self.eot = self.proc.tokenizer.eos_token_id
         self.max_seconds = 30.0
         self.has_alignment_heads = getattr(self.model.generation_config, "alignment_heads", None) is not None
+
+    @contextmanager
+    def _attention(self, implementation: str):
+        """Run the model with one attention implementation, then put the eager one back."""
+        self.model.set_attn_implementation(implementation)
+        try:
+            yield
+        finally:
+            self.model.set_attn_implementation("eager")
+
+    def describe(self) -> dict:
+        return dict(super().describe(), scoring_attention="sdpa" if self.fast_attention else "eager")
 
     def features(self, wavs: np.ndarray):
         f = self.proc.feature_extractor(list(np.asarray(wavs, np.float32)), sampling_rate=SR, return_tensors="pt",
@@ -53,7 +77,7 @@ class WhisperBackend(Backend):
         seq = torch.as_tensor(tr.ids, device=self.device)
         keep = torch.as_tensor(tr.keep, device=self.device)
         dec_in = seq[:-1].unsqueeze(0).expand(feats.shape[0], -1)
-        with torch.no_grad():
+        with torch.no_grad(), self._attention("sdpa" if self.fast_attention else "eager"):
             logits = self.model(input_features=feats, decoder_input_ids=dec_in).logits.float()
         lp = torch.log_softmax(logits, -1)
         tgt = seq[1:]

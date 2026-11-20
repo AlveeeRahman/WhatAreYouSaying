@@ -8,6 +8,7 @@ the degradation context, and returns a `ToolResult`. Three ship with the package
 | `sound-token` | which audio did each word use, and was that audio clean or degraded | any (`openai-compat` gives the black-box word-change map) | the per-word figure (`ways_figure`) |
 | `aud-cam` | what does the degraded audio do inside the encoder, layer by layer | white-box only (`hf-whisper`, `hf-moonshine`) | the latent figure (`latent_figure`), three granular lanes with `granular=True`, and a per-token gradient saliency with figure and summary with `tokens=True` |
 | `cross-check` | which tokens sit on degraded audio under the erasure test and under the encoder's gradient map, and do the two agree | white-box only | the cross-check figure (`cross_check_figure`): erasure boxes, gradient lanes, per-layer shares; `ways.tools.cross_check.table(result)` gives the Markdown table |
+| `q-select` | which of several models' transcripts of this clip has the fewest errors | white-box only | no figure; the summary lists every transcript with its score and the one kept. `scorer` is `quantum`, `quantum-no-entanglement` or `classical` |
 
 ## The contract
 

@@ -1,4 +1,4 @@
-clean venv at <tmp>/ways-clean-venv, Python 3.12.3
+clean venv at <tmp>/ways-clean-venv, Python 3.12.3, torch index cpu
   <tmp>:354: BuildBackendWarning: Editable installation.
   !!
   
@@ -10,18 +10,23 @@ clean venv at <tmp>/ways-clean-venv, Python 3.12.3
   !!
     with strategy, WheelFile(wheel_path, "w") as wheel_obj:
 No broken requirements found.
-................................................                         [100%]
+..........................................................               [100%]
 =============================== warnings summary ===============================
 tests/test_figure.py::test_strict_layout_error_is_raised_when_text_cannot_be_separated
   ways/figure.py:569: UserWarning: figure has overlapping text: 'reverb' / 'page edge'; 'Damage per 20 ms frame (dark blue = sure). A boxed stretch r' / 'page edge'; '3.0' / 'page edge'; 'Hz (mel)' / 'page edge'; '1.9 k' / 'page edge'; '3.0' / 'page edge'
     _settle(fig, gs, strict)
+
+tests/test_qgate.py::test_entanglement_changes_the_output_and_gradients_flow
+  tests/test_qgate.py:30: UserWarning: Converting a tensor with requires_grad=True to a scalar may lead to unexpected behavior.
+  Consider using tensor.detach() first. (Triggered internally at /pytorch/torch/csrc/autograd/generated/python_variable_methods.cpp:836.)
+    assert abs(float(a(x)) - float(b(x))) > 1e-4
 
 tests/test_tools.py::test_granular_figures_with_many_layers_and_long_title
   ways/figure.py:667: RuntimeWarning: More than 20 figures have been opened. Figures created through the pyplot interface (`matplotlib.pyplot.figure`) are retained until explicitly closed and may consume too much memory. (To control this warning, see the rcParam `figure.max_open_warning`). Consider using `matplotlib.pyplot.close()`.
     fig = plt.figure(figsize=(S.width_in, 1.0))
 
 -- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
-48 passed, 2 deselected, 2 warnings in 33.06s
-claimed 16 packages, runtime 60, multiplier 3.8x; not claimed: 45
-lock file: 84 pinned distributions in provenance/requirements-lock.txt
+58 passed, 3 deselected, 3 warnings in 34.03s
+claimed 17 packages, runtime 71, multiplier 4.2x; not claimed: 55
+lock file: 96 pinned distributions in provenance/requirements-lock.txt
 clean-environment run passed

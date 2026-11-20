@@ -9,7 +9,7 @@
   <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/python-3.12%2B-blue.svg" alt="Python 3.12+"></a>
   <a href="requirements.txt"><img src="https://img.shields.io/badge/PyTorch-2.11-EE4C2C.svg" alt="PyTorch 2.11"></a>
   <a href="https://github.com/gertelrina/aadd"><img src="https://img.shields.io/badge/AADD-v3.1-191919.svg" alt="AADD v3.1"></a>
-  <a href="tests/"><img src="https://img.shields.io/badge/tests-50%20passed-brightgreen.svg" alt="tests: 50 passed"></a>
+  <a href="tests/"><img src="https://img.shields.io/badge/tests-61%20passed-brightgreen.svg" alt="tests: 61 passed"></a>
   <a href="provenance/clean_env_run.log"><img src="https://img.shields.io/badge/clean--env%20run-passed-brightgreen.svg" alt="clean-environment run: passed"></a>
   <a href="#reproducibility"><img src="https://img.shields.io/badge/CI-not%20set%20up%20yet-lightgrey.svg" alt="CI: not set up yet"></a>
 </p>
@@ -41,7 +41,7 @@ is MIT licensed, and changes are listed in [CHANGELOG.md](CHANGELOG.md).
 model, other languages and new tools. They are listed in [docs/help-wanted.md](docs/help-wanted.md),
 and [CONTRIBUTING.md](CONTRIBUTING.md) covers setup and tests.
 
-**Contents:** [What it answers](#what-it-answers) · [How it works](#how-it-works) · [What I verified](#what-i-verified) · [100 VoxCeleb clips](#100-voxceleb-clips-three-models) · [Detector backbones](#does-the-detectors-backbone-matter) · [Controlled damage](#controlled-damage-on-librispeech) · [One ambiguous clip](#one-ambiguous-clip-read-in-depth) · [Noise on and off](#real-noise-that-comes-and-goes-voicebank-demand) · [Latent space](#noise-in-the-latent-space) · [Install and use](#install-and-use) · [The tool framework](#the-tool-framework-sound-token-aud-cam-and-cross-check) · [The figure](#the-figure-plug-and-play) · [Backends](#backends-local-weights-vllm-llamacpp) · [Reproducibility](#reproducibility) · [Limitations](#limitations-and-future-work) · [Status](#status) · [References](#references) · [Layout](#repository-layout) · [Credits and licence](#credits-and-licence)
+**Contents:** [What it answers](#what-it-answers) · [How it works](#how-it-works) · [What I verified](#what-i-verified) · [100 VoxCeleb clips](#100-voxceleb-clips-three-models) · [Detector backbones](#does-the-detectors-backbone-matter) · [Controlled damage](#controlled-damage-on-librispeech) · [One ambiguous clip](#one-ambiguous-clip-read-in-depth) · [Noise on and off](#real-noise-that-comes-and-goes-voicebank-demand) · [Latent space](#noise-in-the-latent-space) · [Choosing the best transcript](#choosing-the-best-transcript-with-a-four-qubit-circuit) · [Install and use](#install-and-use) · [The tool framework](#the-tool-framework-sound-token-aud-cam-and-cross-check) · [The figure](#the-figure-plug-and-play) · [Backends](#backends-local-weights-vllm-llamacpp) · [Reproducibility](#reproducibility) · [Limitations](#limitations-and-future-work) · [Status](#status) · [References](#references) · [Layout](#repository-layout) · [Credits and licence](#credits-and-licence)
 
 <details>
 <summary><b>Stats for nerds</b> (the grid, the scores, the data, the cost)</summary>
@@ -51,12 +51,12 @@ and [CONTRIBUTING.md](CONTRIBUTING.md) covers setup and tests.
 | erasure grid | 100 ms x 8 mel-spaced bands (0, 372, 745, 1128, 1657, 2433, 3571, 5244, 8000 Hz), on Whisper's STFT (25 ms Hann window, 10 ms hop) |
 | erased patch, measured in Whisper's log-mel input | down 33 to 36 dB on average over three real clips, worst patch 17 dB, which leaves it below each recording's own 10th-percentile background level |
 | scores per token and patch | surprisal change in nats, Li et al.'s relative change, argmax flip; black-box servers get a 0/1 word-change map |
-| cost | one teacher-forced forward pass per patch, batched 64 at a time; 4.3 s per clip for moonshine-base, about 15 s for whisper-base on an RTX 4000 Ada (20 GB) |
+| cost | one teacher-forced forward pass per patch, batched 64 at a time; per clip 4.3 s for moonshine-base, 5.5 s for whisper-tiny and 9.8 s for whisper-base on an RTX 4000 Ada (20 GB) |
 | VoxCeleb sample | 100 clips, simple random sample with seed 8001 from a fixed 1 500-clip test slice (sha256 `dfb0451d…`), 862 s of interview audio with human transcripts |
 | controlled set | 60 LibriSpeech test-clean utterances, one 2 s degradation each from AADD's synthesiser, clean and degraded twins, three models |
 | on-and-off set | 100 VoiceBank-DEMAND sentences (CC BY 4.0), real noise at 2.5 to 17.5 dB switched on and off in 4 to 7 segments per sentence, clean and noisy-throughout twins, three models, 30 min cap per model |
 | detectors | AADD v3.1 (whisper-small backbone, 88.6 M parameters); AADD's head on whisper-base and on moonshine-base encoders (21 M each, AADD recipe on LibriSpeech dev-clean); plus AADD v3-lite (CRNN, 1.3 M) and v2 (EfficientNet-B0, 4.0 M) |
-| tests | 48 CPU checks of the operator, the formulas, the figures (overlaps, page edges, repeatability, editable text), the latent view and the tool framework, 2 end-to-end HTTP checks against a mock OpenAI-compatible server |
+| tests | 58 CPU checks of the operator, the formulas, the figures (overlaps, page edges, repeatability, editable text), the latent view, the tool framework, the circuit and the scorer; 3 GPU checks (2 end to end over HTTP against a mock OpenAI-compatible server, 1 of the two attention kernels) |
 
 </details>
 
@@ -146,6 +146,30 @@ $$
 
 </details>
 
+### Faster scoring with the same scores
+
+Scoring an erased clip needs the model's logits and never its attention weights. Since 0.3.3 the
+scoring passes of the Whisper backend use PyTorch's fused scaled-dot-product attention. It evaluates
+the same expression, softmax(QKᵀ / √d) V, with the same weights and in the same 32-bit precision,
+but it does not build the weight matrix. Transcription keeps the step-by-step attention, because the
+token timestamps are read from those weights. The two kernels can differ only in the order of
+floating-point operations. Moonshine already used the fused kernel.
+
+I rescored the 100 test-slice clips with the fused kernel and compared them with the saved maps,
+which were made with the step-by-step one (`experiments/check_fast_attention.py`):
+
+| model | transcripts unchanged | top patch unchanged | largest change of any score | flips that differ | largest change of a clip's noise-focus ratio | seconds per clip, before and after |
+|---|---|---|---|---|---|---|
+| whisper-tiny | 100 of 100 | 4 034 of 4 034 tokens | 0.0002 nats | 5 of 4 259 824 | 0.0001 | 7.4 and 5.5 (1.36x) |
+| whisper-base | 100 of 100 | 3 267 of 3 267 tokens | 0.0001 nats | 1 of 3 149 872 | 0.0001 | 14.2 and 9.8 (1.45x) |
+
+The six flips that differ are tokens whose two best candidates were tied to within rounding.
+`load_backend("hf-whisper", ..., fast_attention=False)` restores the old path. Three faster options
+were measured on 12 controlled clips and not adopted, because they change the maps: half precision
+(3.4x, same top patch, scores off by 0.006 nats), running the encoder without Whisper's 30 s padding
+(4x, top patch kept for 83 % of tokens) and the gradient approximation known as attribution patching
+(7x, rank correlation 0.30 with true erasure).
+
 ## What I verified
 
 Every formula above has a test in `tests/`. The numbers in the table are the values those tests and
@@ -232,7 +256,7 @@ over clips.
 
 The per-clip WER means of moonshine and whisper-tiny have wide intervals because each has one clip
 where the model looped and produced far more words than the reference. Per clip: 7 s for
-whisper-tiny, 14 s for whisper-base and 4 s for moonshine-base on the GPU in
+whisper-tiny, 14 s for whisper-base and 4 s for moonshine-base when these runs were made, on the GPU in
 [Reproducibility](#reproducibility). A clip AADD rates clean is
 `figures/vox_clean__id10271_gO805KoL2RM_00006.png` (whisper-base and moonshine-base agree on 25 of
 26 words). A clip it flags end to end is `figures/vox_degraded__id10295_K1gPy1UKmBE_00007.png` (all
@@ -723,6 +747,61 @@ VoxCeleb clips and the controlled set: `experiments/results/latent/<model>/summa
 
 </details>
 
+## Choosing the best transcript with a four-qubit circuit
+
+The sections above explain a transcript. This one tries to improve it on noisy audio, with a small
+quantum circuit written in PennyLane and two controls that say what the circuit contributes. The
+circuit has four qubits, one per input feature. Each of its two layers encodes the features as RX
+rotations with trainable scales, applies a trainable rotation to every qubit and entangles
+neighbours with a ring of CNOTs. Its output is (1 + mean ⟨Z⟩) / 2. The controls are the same circuit
+without the CNOTs and a perceptron of about the same size. The circuit is simulated exactly. Nothing
+here ran on quantum hardware.
+
+Both designs were fitted on the 500-clip development slice (400 to fit, 100 to choose the stopping
+point) and scored once on the 100 test-slice clips, of which the detector flags at least half the
+frames in 58.
+
+**Design 1, a gate on the audio, did not help.** The circuit read four numbers per patch (loudness
+against the clip, against the other bands, against its neighbours in time, and the detector's flag)
+and output how much of the patch to keep, in front of a frozen Whisper model. Training pushed every
+gate to "keep everything". Removing audio only made the model less sure of the correct words, for
+all three gates and both models, and the word error rate stayed where it was
+(`experiments/qgate_train.py`).
+
+**Design 2, choosing among models, lowers the error rate.** whisper-tiny, whisper-base and
+moonshine-base each transcribe the clip. Each transcript is described by the model's mean surprisal
+of it, its disagreement with the other two transcripts, its length against the median, and the
+flagged share of the clip. The scorer predicts 1 − WER from those four numbers plus one offset per
+model, and the best-scored transcript is kept (`experiments/qselect_train.py`, tool `q-select`).
+
+| transcript kept | corpus WER, 100 test clips | per-clip WER against whisper-base | corpus WER, 58 noisy clips |
+|---|---|---|---|
+| whisper-base alone, the best single model | 0.182 | | 0.184 |
+| lowest surprisal | 0.198 | +0.022 [-0.040, +0.132] | 0.218 |
+| closest to the other two | 0.185 | +0.000 [-0.019, +0.023] | 0.182 |
+| scorer, four-qubit circuit | 0.157 | -0.027 [-0.046, -0.010] | 0.157 |
+| scorer, same circuit without entanglement | 0.153 | -0.031 [-0.050, -0.013] | 0.157 |
+| scorer, perceptron | 0.152 | -0.034 [-0.053, -0.017] | 0.157 |
+| oracle, always the best of the three | 0.138 | -0.051 [-0.069, -0.035] | 0.142 |
+
+* **The scorer removes about a seventh of the errors**, from 0.182 to between 0.152 and 0.157, and
+  the interval of the paired difference excludes zero. On the 58 noisy clips it goes from 0.184 to
+  0.157. Neither simple rule does this: the lowest surprisal picks moonshine-base 90 % of the time
+  and is worse than whisper-base alone.
+* **The gain comes from choosing, not from the circuit.** The three scorers are within 0.005 of each
+  other, the perceptron is nominally the best, and removing the entanglement does not hurt. This is
+  the usual finding for small quantum models [[9]](#ref-9).
+* **It costs three models per clip** instead of one, and it stops 0.015 to 0.019 short of the oracle.
+
+```bash
+ways q-select clip.wav --aadd                       # the three default models, the four-qubit scorer
+ways q-select clip.wav --aadd --scorer classical    # the perceptron, no PennyLane needed
+```
+
+Earlier work passed spectrogram patches through small quantum circuits as a front end for speech
+recognition [[8]](#ref-8). The patch gate above is the closest relative of that idea in this
+repository, and it is the design that did not help.
+
 ## Install and use
 
 ```bash
@@ -763,12 +842,14 @@ print(clip_summary(att, rows, probs))                    # att.save(path) / Attr
 ## The tool framework: sound-token, aud-cam and cross-check
 
 A WAYS tool answers one question about one clip. It has a name, a one-line summary, a JSON schema
-and a `run(wav, sr, **kwargs)` that returns a `ToolResult`. Three tools ship with the package:
+and a `run(wav, sr, **kwargs)` that returns a `ToolResult`. Four tools ship with the package:
 
 * `sound-token` reports which audio each word used and whether that audio was clean or degraded.
 * `aud-cam` reports what the degraded audio does inside the encoder, layer by layer.
 * `cross-check` reports which tokens are on degraded audio under the erasure test and under the
   encoder's gradient, and whether the two agree.
+* `q-select` runs several models on the clip and keeps the transcript a small scorer trusts most
+  ([Choosing the best transcript](#choosing-the-best-transcript-with-a-four-qubit-circuit)).
 
 Everything else goes through the registry in `ways.tools`. `ways tools` lists what is registered,
 every tool is a CLI subcommand, `schemas()` hands the tools to a language model, and
@@ -781,13 +862,14 @@ ways tools                       # sound-token  any backend  ...  /  aud-cam  wh
 ways sound-token clip.wav --backend hf-whisper=openai/whisper-base --backend hf-moonshine=UsefulSensors/moonshine-base --aadd --out out/clip
 ways aud-cam     clip.wav --backend hf-whisper=openai/whisper-base --aadd --granular --out out/clip
 ways cross-check clip.wav --backend hf-whisper=openai/whisper-base --window 0.6 2.6 --out out/clip
+ways q-select    clip.wav --aadd --scorer quantum      # or --scorer classical, which needs no PennyLane
 ```
 
 `sound-token` writes `out/clip__sound-token.png` and an SVG twin. `aud-cam` writes
 `out/clip__aud-cam.png`, with `--granular` the Grad-CAM lane, the spill-over lane and the
 per-layer summary as their own figures, and with `--tokens` a gradient saliency per token (one
 backward pass each) with its own figure and per-token summary. `cross-check` writes
-`out/clip__cross-check.png`. All three print the `ToolResult` as JSON.
+`out/clip__cross-check.png`. `q-select` writes no figure. All four print the `ToolResult` as JSON.
 
 <p align="center">
   <img src="figures/tool_aud_cam__vox_mixed__whisper-base__spillover.png" width="920" alt="aud-cam granular: spill-over per layer, whisper-base">
@@ -805,7 +887,8 @@ tools = schemas()                                  # OpenAI function shape; rena
 call("aud-cam", audio="clip.wav", aadd=True, out="out/clip", granular=True).to_json()
 ```
 
-`aud-cam` and `cross-check` need a white-box backend because they read the encoder. `sound-token`
+`aud-cam`, `cross-check` and `q-select` need a white-box backend because they read the encoder or
+the surprisal. `sound-token`
 also works through `openai-compat` with the black-box word-change map.
 
 ## The figure, plug and play
@@ -893,8 +976,8 @@ commands a workflow would run are `make test` and `make lint`.
   those runs. The next run of each script writes a new one.
 * `scripts/reproduce_clean_env.sh` builds a fresh venv, installs only `requirements.txt`, runs the
   tests, imports every third-party module the code uses, and records what loaded. It passed for
-  both torch builds. CPU: 48 tests, 16 claimed packages, 60 distributions loaded, 84 versions in
-  `provenance/requirements-lock.txt`. CUDA 12.8 on the GPU above: all 50 tests, 63 loaded, 103
+  both torch builds. CPU: 58 tests, 17 claimed packages, 71 distributions loaded, 96 versions in
+  `provenance/requirements-lock.txt`. CUDA 12.8 on the GPU above: all 61 tests, 74 loaded, 115
   versions in `provenance/requirements-lock-cu128.txt`.
 
 </details>
@@ -910,8 +993,9 @@ commands a workflow would run are `make test` and `make lint`.
 
 ## Status
 
-* Done (0.3.2): operator, three backends, scores, summaries, AADD context, the figure system, the
-  latent view, the tool framework with three registered tools and plug-in discovery, the per-token
+* Done (0.4.0): operator, three backends, scores, summaries, AADD context, the figure system, the
+  latent view, the tool framework with four registered tools and plug-in discovery, the transcript
+  scorer with a quantum circuit and its classical control, the per-token
   gradient view and the ambiguous-clip experiment, tests, the three datasets through three models,
   the detector-backbone check, clean-environment run, provenance.
 * Next: a CI workflow once Actions minutes are available (the test command is fixed), a live vLLM
@@ -934,6 +1018,10 @@ commands a workflow would run are `make test` and `make lint`.
 
 <a id="ref-7"></a>[7] C. Valentini-Botinhao, "Noisy speech database for training speech enhancement algorithms and TTS models," University of Edinburgh, School of Informatics, Centre for Speech Technology Research, 2017, CC BY 4.0. [DataShare](https://datashare.ed.ac.uk/handle/10283/2791). Speech from the CSTR VCTK corpus, noise from DEMAND (J. Thiemann, N. Ito, and E. Vincent, 2013).
 
+<a id="ref-8"></a>[8] C.-H. H. Yang, J. Qi, et al., "Decentralizing feature extraction with quantum convolutional neural network for automatic speech recognition," in *Proc. IEEE ICASSP*, 2021. [arXiv](https://arxiv.org/abs/2010.13309)
+
+<a id="ref-9"></a>[9] J. Bowles, S. Ahmed, and M. Schuld, "Better than classical? The subtle art of benchmarking quantum machine learning models," *arXiv:2403.07059*, 2024. [arXiv](https://arxiv.org/abs/2403.07059)
+
 ## Repository layout
 
 <details>
@@ -950,8 +1038,9 @@ commands a workflow would run are `make test` and `make lint`.
 | `ways/latent.py` | spill-over under erasure, Grad-CAM per encoder layer, the per-token gradient map |
 | `ways/plots.py` | the method, comparison and controlled-summary figures |
 | `ways/provenance.py` | the provenance manifest (claimed and runtime dependencies, hashes, model commits, public paths) |
-| `ways/tools/` | the tool framework: `base.py` (Tool, ToolResult), `registry.py` (register, get, schemas, entry-point discovery), `sound_token.py`, `aud_cam.py`, `cross_check.py` |
-| `ways/cli.py` | `ways sound-token`, `ways aud-cam`, `ways cross-check`, `ways explain`, `ways latent`, `ways quality` |
+| `ways/tools/` | the tool framework: `base.py` (Tool, ToolResult), `registry.py` (register, get, schemas, entry-point discovery), `sound_token.py`, `aud_cam.py`, `cross_check.py`, `q_select.py` |
+| `ways/qgate.py`, `ways/qselect.py`, `ways/gates/` | the four-qubit circuit and its classical control, the transcript scorer built on them, and the three fitted scorers as JSON |
+| `ways/cli.py` | `ways sound-token`, `ways aud-cam`, `ways cross-check`, `ways q-select`, `ways explain`, `ways latent`, `ways quality` |
 | `tests/` | operator, formula, figure and tool checks; mock OpenAI-compatible server and the HTTP test |
 | `experiments/` | sample selection, the three-model runs, the detector runs, the controlled LibriSpeech set (`controlled.py`), the VoiceBank-DEMAND set (`demand.py`), the latent runs; `common.py` holds the data-folder layout and the pinned model revisions |
 | `experiments/results/` | per-clip rows, per-token tables, summaries, provenance (npz maps are not committed) |

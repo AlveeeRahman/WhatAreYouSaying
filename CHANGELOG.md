@@ -5,6 +5,22 @@
 - **docs/help-wanted.md**: the open work for contributors (CI workflow, a live vLLM or llama.cpp run, a
   larger model, other languages, new tools, reproduction reports), linked from the README.
 
+## 0.4.0
+
+- **q-select**, a fourth tool: several models transcribe a clip and a small scorer keeps the transcript
+  it predicts to have the fewest errors. The scorer is a four-qubit PennyLane circuit, the same circuit
+  without entanglement, or a perceptron, fitted on the development slice and shipped in `ways/gates/`.
+  On the 100 test-slice clips the corpus WER goes from 0.182 (whisper-base alone) to 0.157, 0.153 and
+  0.152, and from 0.184 to 0.157 on the 58 noisy clips. The classical control matches the circuit.
+- **A gate on the audio patches did not help** (`ways/qgate.py`, `experiments/qgate_train.py`): every
+  gate, quantum or classical, learned to keep all the audio and the WER did not move. Kept as a
+  documented negative result.
+- **Faster scoring with the same scores.** The Whisper backend scores erased clips with PyTorch's fused
+  attention kernel: 1.36x and 1.45x faster for whisper-tiny and whisper-base, every top patch and
+  transcript unchanged on the 100 test-slice clips, largest change of any score 0.0002 nats
+  (`experiments/check_fast_attention.py`). `fast_attention=False` restores the old path.
+- PennyLane is pinned in `requirements.txt` and is the optional extra `quantum`.
+
 ## 0.3.2
 
 - **Two checks of the method.** `experiments/check_timestamps.py` joins pairs of utterances and

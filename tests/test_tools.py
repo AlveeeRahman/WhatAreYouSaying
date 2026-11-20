@@ -26,7 +26,7 @@ def _latent(n=100, layers=5, seed=4):
 
 def test_schema_names_match_registry_and_is_json():
     s = schema()
-    assert [t["name"] for t in s] == ["sound-token", "aud-cam", "cross-check"] == list(TOOLS)
+    assert [t["name"] for t in s] == ["sound-token", "aud-cam", "cross-check", "q-select"] == list(TOOLS)
     for t in s:
         assert t["parameters"]["type"] == "object" and t["parameters"]["required"] == ["audio"]
         assert "audio" in t["parameters"]["properties"]
@@ -39,10 +39,10 @@ def test_call_rejects_unknown_tool():
         call("not-a-tool", audio="x.wav")
 
 
-def test_registry_lists_the_three_tools_with_their_contract():
-    assert names() == ["sound-token", "aud-cam", "cross-check"] and [t["name"] for t in schemas()] == names()
+def test_registry_lists_the_tools_with_their_contract():
+    assert names() == ["sound-token", "aud-cam", "cross-check", "q-select"] and [t["name"] for t in schemas()] == names()
     assert get("aud-cam").needs_white_box and get("cross-check").needs_white_box and not get("sound-token").needs_white_box
-    assert TOOLS["sound-token"] is get("sound-token").run and len(TOOLS) == 3
+    assert TOOLS["sound-token"] is get("sound-token").run and len(TOOLS) == 4 and get("q-select").needs_white_box
     with pytest.raises(KeyError):
         get("nope")
 

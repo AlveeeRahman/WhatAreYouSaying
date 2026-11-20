@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ways"
-version = "0.3.2"
+version = "0.4.0"
 description = "WhatAreYouSaying: representation-erasure attribution from speech-to-text tokens back to the audio, with AADD degradation context"
 readme = "README.md"
 requires-python = ">=3.12"  # the pinned set in requirements.txt (numpy 2.5, scipy 1.18) needs 3.12; tested on 3.12.3
@@ -42,12 +42,16 @@ Issues = "https://github.com/AlveeeRahman/WhatAreYouSaying/issues"
 test = ["pytest>=8"]
 dev = ["pytest>=8", "ruff>=0.8"]
 figures = ["pillow>=10", "playwright>=1.40"]
+quantum = ["pennylane>=0.40"]
 
 [project.scripts]
 ways = "ways.cli:main"
 
 [tool.setuptools.packages.find]
 include = ["ways*"]
+
+[tool.setuptools.package-data]
+ways = ["gates/*.json"]
 
 [tool.pytest.ini_options]
 markers = ["gpu: needs a CUDA device and the cached Hugging Face weights", "slow: minutes, not seconds"]

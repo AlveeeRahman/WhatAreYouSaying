@@ -103,6 +103,7 @@ def cmd_tool(a):
     from .tools import call, get
 
     tool = get(a.cmd)
+    given = bool(a.backend)
     a.backend = a.backend or ["hf-whisper=openai/whisper-base"]
     specs = [b.split("=", 1) if "=" in b else [b, None] for b in a.backend]
     kw = dict(audio=a.audio, aadd=a.aadd, out=a.out, title=a.title)
@@ -110,7 +111,8 @@ def cmd_tool(a):
         kw["window"] = a.window
     props = tool.parameters.get("properties", {})
     if "backends" in props:
-        kw["backends"] = specs
+        if given or "default" not in props["backends"]:
+            kw["backends"] = specs
     elif "backend" in props:
         kw["backend"] = specs[0]
     if "wer_reference" in props and a.reference:
@@ -119,6 +121,13 @@ def cmd_tool(a):
         kw["granular"] = a.granular
     if "tokens" in props:
         kw["tokens"] = a.tokens
+    if "weights" in props and a.weights:
+        kw["weights"] = a.weights
+    if "scorer" in props and a.scorer:
+        kw["scorer"] = a.scorer
+    for key in ("title", "window"):
+        if key not in props:
+            kw.pop(key, None)
     print(call(a.cmd, **kw).to_json())
 
 
@@ -188,6 +197,8 @@ def main(argv=None):
         t.add_argument("--reference", default=None, help="human transcript, to report WER (tools that take wer_reference)")
         t.add_argument("--granular", action="store_true", help="also write each lane as its own figure (tools that take granular)")
         t.add_argument("--tokens", action="store_true", help="also compute Grad-CAM per token (tools that take tokens)")
+        t.add_argument("--weights", default=None, help="scorer weights file (tools that take weights)")
+        t.add_argument("--scorer", default=None, help="quantum, quantum-no-entanglement or classical (tools that take scorer)")
         t.add_argument("--title", default=None)
         t.add_argument("--out", default="ways_out/clip")
         t.set_defaults(fn=cmd_tool)
