@@ -121,10 +121,6 @@ def cmd_tool(a):
         kw["granular"] = a.granular
     if "tokens" in props:
         kw["tokens"] = a.tokens
-    if "weights" in props and a.weights:
-        kw["weights"] = a.weights
-    if "scorer" in props and a.scorer:
-        kw["scorer"] = a.scorer
     for key in ("title", "window"):
         if key not in props:
             kw.pop(key, None)
@@ -197,8 +193,6 @@ def main(argv=None):
         t.add_argument("--reference", default=None, help="human transcript, to report WER (tools that take wer_reference)")
         t.add_argument("--granular", action="store_true", help="also write each lane as its own figure (tools that take granular)")
         t.add_argument("--tokens", action="store_true", help="also compute Grad-CAM per token (tools that take tokens)")
-        t.add_argument("--weights", default=None, help="scorer weights file (tools that take weights)")
-        t.add_argument("--scorer", default=None, help="quantum, quantum-no-entanglement or classical (tools that take scorer)")
         t.add_argument("--title", default=None)
         t.add_argument("--out", default="ways_out/clip")
         t.set_defaults(fn=cmd_tool)

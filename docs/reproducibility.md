@@ -134,7 +134,6 @@ python experiments/tool_examples.py "$WAYS_DATA"
 python experiments/check_timestamps.py && python experiments/check_spillover_frontend.py
 # the scoring-speed check, then the two circuit experiments (development slice to fit, test clips scored once)
 python experiments/check_fast_attention.py "$WAYS_DATA"
-python experiments/qgate_train.py "$WAYS_DATA" && python experiments/qselect_train.py "$WAYS_DATA"
 # the hand-drawn workflow figures and the two charts (fonts are in docs/images/fonts, no internet needed)
 python -m playwright install chromium
 python docs/images/src/make_detector_figure.py && python docs/images/src/make_demand_figure.py && python docs/images/render.py

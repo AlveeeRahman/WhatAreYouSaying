@@ -1,6 +1,6 @@
 # Help wanted
 
-WAYS is at version 0.4.0 and open to contributors. These are the open pieces of work, each sized so one person can own it. Read [CONTRIBUTING.md](../CONTRIBUTING.md) first, and open an issue before starting anything bigger than a fix so we can agree on the approach.
+WAYS is at version 0.4.1 and open to contributors. These are the open pieces of work, each sized so one person can own it. Read [CONTRIBUTING.md](../CONTRIBUTING.md) first, and open an issue before starting anything bigger than a fix so we can agree on the approach.
 
 ## Good first issues
 

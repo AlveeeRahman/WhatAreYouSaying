@@ -20,11 +20,10 @@ import json
 from .aud_cam import aud_cam
 from .base import Tool, ToolResult
 from .cross_check import cross_check
-from .q_select import q_select
 from .registry import get, names, register, schemas, tools
 from .sound_token import sound_token
 
-__all__ = ["Tool", "ToolResult", "sound_token", "aud_cam", "cross_check", "q_select", "get", "names", "register", "schemas", "tools",
+__all__ = ["Tool", "ToolResult", "sound_token", "aud_cam", "cross_check", "get", "names", "register", "schemas", "tools",
            "schema", "schema_json", "call", "TOOLS"]
 
 
